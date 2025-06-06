@@ -1,0 +1,6 @@
+
+{
+  "name": "Prompt Engineering Studio",
+  "description": "A tool to help users craft better prompts using various engineering techniques, powered by Gemini.",
+  "requestFramePermissions": []
+}

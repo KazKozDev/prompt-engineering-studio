@@ -1,0 +1,398 @@
+/* Basic Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Roboto', sans-serif;
+  line-height: 1.6;
+  background-color: #f4f7f9;
+  color: #333;
+  display: flex;
+  flex-direction: column; /* Ensure #app and .site-attribution stack vertically */
+  align-items: center; /* Center #app and .site-attribution horizontally */
+  justify-content: flex-start; /* Align content to the top */
+  min-height: 100vh;
+  padding: 20px 20px 0 20px; /* Add padding, but remove bottom for .site-attribution to control it*/
+}
+
+#app {
+  width: 100%;
+  max-width: 900px;
+  background-color: #fff;
+  padding: 20px 30px;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+header {
+  text-align: center;
+  margin-bottom: 30px;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 20px;
+}
+
+header h1 {
+  color: #2c3e50;
+  font-size: 2rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+header h1 .material-symbols-outlined {
+  font-size: 2.2rem;
+  color: #007bff; /* Gemini-like blue */
+}
+
+header p {
+  color: #555;
+  font-size: 1rem;
+  text-align: center; /* Ensure subtitle text is centered */
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #34495e;
+}
+
+textarea#user-query {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 1rem;
+  resize: vertical;
+  transition: border-color 0.3s;
+}
+
+textarea#user-query:focus {
+  border-color: #007bff;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+#techniques-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 10px; /* Gap for items within the grid */
+  padding: 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  max-height: 250px; /* Increased max-height slightly for Select All */
+  overflow-y: auto;
+}
+
+.technique-item {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.technique-item:hover {
+  background-color: #f0f0f0;
+}
+
+.technique-item input[type="checkbox"] {
+  margin-right: 10px;
+  transform: scale(1.1);
+  accent-color: #007bff;
+}
+
+/* Styling for the "Select All" checkbox item */
+.select-all-item {
+  grid-column: 1 / -1; /* Make it span all columns */
+  font-weight: bold;
+  margin-bottom: 10px; /* Space below Select All */
+  padding-bottom: 10px; /* Padding within the item */
+  border-bottom: 1px solid #e0e0e0; /* Separator line */
+}
+
+.select-all-item:hover {
+  background-color: transparent; /* Override hover for select-all item if needed */
+}
+
+
+#generate-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  font-size: 1rem;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+#generate-button:hover {
+  background-color: #0056b3;
+}
+
+#generate-button:active {
+  transform: scale(0.98);
+}
+
+#generate-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 15px;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.spinner {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #007bff;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+#results-section {
+  margin-top: 20px;
+}
+
+.result-card {
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.result-card h3 {
+  color: #007bff;
+  margin-bottom: 10px;
+  font-size: 1.3rem;
+  font-weight: 500;
+}
+
+.result-card strong {
+  display: block;
+  margin-top: 15px;
+  margin-bottom: 5px;
+  color: #34495e;
+}
+
+.result-card pre {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 4px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.9rem;
+  border: 1px solid #eee;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.result-card .token-count {
+  font-size: 0.85rem;
+  color: #555;
+  margin-top: 10px;
+  padding-top: 5px;
+  border-top: 1px dashed #f0f0f0;
+}
+
+.result-card .token-count strong {
+  color: #34495e;
+  font-weight: 500;
+  display: inline; /* Keep "Tokens:" and value on same line */
+}
+
+
+.result-card .citation {
+  font-size: 0.85rem;
+  color: #555;
+  margin-top: 10px;
+  border-top: 1px dashed #eee;
+  padding-top: 10px;
+}
+
+.result-card .citation p {
+  margin-bottom: 3px;
+}
+
+.result-card .citation a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.result-card .citation a:hover {
+  text-decoration: underline;
+}
+
+.copy-button {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.copy-button:hover {
+  background-color: #5a6268;
+}
+
+.error-message {
+  color: #d9534f;
+  background-color: #f2dede;
+  border: 1px solid #ebccd1;
+  padding: 10px;
+  border-radius: 4px;
+  margin-top: 10px;
+}
+
+/* Screen reader only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+footer {
+  text-align: center;
+  margin-top: 30px;
+}
+
+.site-attribution {
+  text-align: center;
+  margin-top: 20px; 
+  padding-bottom: 20px; 
+  font-size: 0.9rem;
+  color: #777;
+  width: 100%; 
+}
+
+.site-attribution a {
+  color: #777;
+  text-decoration: none;
+}
+
+.site-attribution a:hover {
+  text-decoration: underline;
+}
+
+/* LLM Configuration Row Styles */
+.llm-config-row {
+  display: flex;
+  gap: 15px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.llm-config-item {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 200px;
+}
+
+.llm-config-item.hidden {
+  display: none;
+}
+
+.llm-config-item label {
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #34495e;
+}
+
+.llm-config-item select,
+.llm-config-item input {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition: border-color 0.3s;
+}
+
+.llm-config-item select:focus,
+.llm-config-item input:focus {
+  border-color: #007bff;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+@media (max-width: 768px) {
+  body {
+    padding: 15px 15px 0 15px;
+  }
+  #app {
+    padding: 15px;
+  }
+  header h1 {
+    font-size: 1.8rem;
+  }
+  #techniques-list {
+    grid-template-columns: 1fr; /* Stack techniques on smaller screens */
+  }
+  .select-all-item { /* Ensure select all still looks good when stacked */
+    margin-right: 0; /* Remove any right margin if it was set for grid */
+  }
+  .site-attribution {
+    padding-bottom: 15px;
+  }
+  .llm-config-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .llm-config-item {
+    min-width: auto;
+  }
+}
