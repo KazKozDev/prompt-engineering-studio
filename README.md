@@ -8,7 +8,7 @@ Prompt Engineering Studio is for anyone who wants to take their prompts — and 
 
 ![Screenshot 2025-06-06 at 12 37 29](https://github.com/user-attachments/assets/acc1785d-656e-4b46-9ba1-ea1b9466c3fc)
 
-### Features
+## Features
 
 - **26+ Prompt Engineering Techniques** - From basic Zero-Shot to advanced Tree of Thoughts
 - **Multi-Provider Support** - Works with Gemini, Ollama (local), and more
@@ -17,7 +17,7 @@ Prompt Engineering Studio is for anyone who wants to take their prompts — and 
 - **Academic References** - Each technique includes paper citations and arXiv links
 - **Modern UI** - Clean, responsive interface built with modern web technologies
 
-### Supported Prompt Techniques
+## Supported Prompt Techniques
 
 ### Basic Techniques
 - **Zero-Shot Prompting** - Direct queries without examples
@@ -42,7 +42,7 @@ Prompt Engineering Studio is for anyone who wants to take their prompts — and 
 - **System Prompt Optimization** - Meta-learning approaches
 - **Visual Chain-of-Thought** - Multimodal reasoning
 
-### Supported LLM Providers
+## Supported LLM Providers
 
 ### Google Gemini
 - **Models**: `gemini-2.5-flash-preview-04-17`, `gemini-pro`, etc.
@@ -59,7 +59,7 @@ Prompt Engineering Studio is for anyone who wants to take their prompts — and 
 - **Status**: Implementation planned
 - **Models**: GPT-4, GPT-3.5, etc.
 
-### Quick Start
+## Quick Start
 
 ### Prerequisites
 - **Node.js** (v16 or higher)
@@ -108,7 +108,7 @@ ollama pull llama3.2
    http://localhost:5173
    ```
 
-### Usage
+## Usage
 
 1. **Configure LLM Provider**
    - Select your provider (Gemini/Ollama) from the dropdown
