@@ -179,7 +179,7 @@ This project implements techniques from cutting-edge research papers:
 - **Meta-Prompting**: Suzgun & Kalai (2024) - [arXiv:2401.12954](https://arxiv.org/abs/2401.12954)
 - [... and 22+ more techniques with full citations]
 
-### Tech Stack
+## Tech Stack
 
 - **Frontend**: TypeScript, HTML5, CSS3
 - **Build Tool**: Vite
