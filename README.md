@@ -4,6 +4,8 @@ A web application that transforms your simple queries into advanced, optimized p
 
 ![Prompt Engineering Studio Demo](https://img.shields.io/badge/Status-Working-brightgreen) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white) ![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)
 
+![Screenshot 2025-06-06 at 12 37 29](https://github.com/user-attachments/assets/acc1785d-656e-4b46-9ba1-ea1b9466c3fc)
+
 ### Features
 
 - **26+ Prompt Engineering Techniques** - From basic Zero-Shot to advanced Tree of Thoughts
