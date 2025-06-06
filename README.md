@@ -4,6 +4,8 @@ A web application that transforms your simple queries into advanced, optimized p
 
 ![Prompt Engineering Studio Demo](https://img.shields.io/badge/Status-Working-brightgreen) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white) ![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)
 
+Prompt Engineering Studio is for anyone who wants to take their prompts — and LLM results — to the next level. Whether you're an AI practitioner or developer fine-tuning outputs, a researcher or student exploring cutting-edge techniques, a product engineer integrating smarter AI into your apps, a prompt engineer or UX designer shaping better model behavior, or a curious tinkerer experimenting with local and cloud-based LLMs — this tool gives you the power to explore, optimize, and innovate. No prior prompt engineering experience needed — just dive in and start enhancing your prompts today.
+
 ![Screenshot 2025-06-06 at 12 37 29](https://github.com/user-attachments/assets/acc1785d-656e-4b46-9ba1-ea1b9466c3fc)
 
 ### Features
