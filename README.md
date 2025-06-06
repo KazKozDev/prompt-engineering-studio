@@ -4,7 +4,7 @@ A powerful web application that transforms your simple queries into advanced, op
 
 ![Prompt Engineering Studio Demo](https://img.shields.io/badge/Status-Working-brightgreen) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white) ![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)
 
-## ✨ Features
+### Features
 
 - **26+ Prompt Engineering Techniques** - From basic Zero-Shot to advanced Tree of Thoughts
 - **Multi-Provider Support** - Works with Gemini, Ollama (local), and more
@@ -13,7 +13,7 @@ A powerful web application that transforms your simple queries into advanced, op
 - **Academic References** - Each technique includes paper citations and arXiv links
 - **Modern UI** - Clean, responsive interface built with modern web technologies
 
-## 🎯 Supported Prompt Techniques
+### Supported Prompt Techniques
 
 ### Basic Techniques
 - **Zero-Shot Prompting** - Direct queries without examples
@@ -38,24 +38,24 @@ A powerful web application that transforms your simple queries into advanced, op
 - **System Prompt Optimization** - Meta-learning approaches
 - **Visual Chain-of-Thought** - Multimodal reasoning
 
-## 🔧 Supported LLM Providers
+### Supported LLM Providers
 
-### 🤖 Google Gemini
+### Google Gemini
 - **Models**: `gemini-2.5-flash-preview-04-17`, `gemini-pro`, etc.
 - **Setup**: Requires API key from [Google AI Studio](https://makersuite.google.com/)
 - **Cost**: Pay-per-use
 
-### 🏠 Ollama (Local)
+### Ollama (Local)
 - **Models**: `llama3.2`, `llama2`, `codellama`, `mistral`, etc.
 - **Setup**: Runs locally, no API key required
 - **Cost**: Free (after initial setup)
 - **Privacy**: Complete data privacy, offline capable
 
-### 🔮 OpenAI (Coming Soon)
+### OpenAI (Coming Soon)
 - **Status**: Implementation planned
 - **Models**: GPT-4, GPT-3.5, etc.
 
-## 🚀 Quick Start
+### Quick Start
 
 ### Prerequisites
 - **Node.js** (v16 or higher)
@@ -104,7 +104,7 @@ ollama pull llama3.2
    http://localhost:5173
    ```
 
-## 🔧 Usage
+### Usage
 
 1. **Configure LLM Provider**
    - Select your provider (Gemini/Ollama) from the dropdown
@@ -125,7 +125,7 @@ ollama pull llama3.2
    - Wait for AI to create optimized versions
    - Copy and use the generated prompts with any LLM
 
-## 📊 Example Transformation
+### Example Transformation
 
 **Input Query:**
 ```
@@ -147,7 +147,7 @@ Please follow this structure:
 Please think through each step carefully and show your reasoning process as you build up the explanation from basic concepts to more complex applications.
 ```
 
-## 🧪 Testing
+### Testing
 
 ### Test Ollama Connection
 ```bash
@@ -165,7 +165,7 @@ npm run build
 npm run preview
 ```
 
-## 📚 Academic References
+### Academic References
 
 This project implements techniques from cutting-edge research papers:
 
@@ -175,7 +175,7 @@ This project implements techniques from cutting-edge research papers:
 - **Meta-Prompting**: Suzgun & Kalai (2024) - [arXiv:2401.12954](https://arxiv.org/abs/2401.12954)
 - [... and 22+ more techniques with full citations]
 
-## 🛠️ Tech Stack
+### Tech Stack
 
 - **Frontend**: TypeScript, HTML5, CSS3
 - **Build Tool**: Vite
@@ -183,7 +183,7 @@ This project implements techniques from cutting-edge research papers:
 - **Styling**: Modern CSS with responsive design
 - **Icons**: Material Symbols
 
-## 🤝 Contributing
+### Contributing
 
 Contributions are welcome! Here's how you can help:
 
@@ -207,23 +207,10 @@ To add a new prompt engineering technique:
 3. Update configuration handling
 4. Add comprehensive error handling
 
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Research papers and authors of prompt engineering techniques
-- Google for the Gemini API
-- Ollama team for local LLM infrastructure
-- Open source community for tools and libraries
-
-## 📞 Support
-
-- **Issues**: [GitHub Issues](https://github.com/KazKozDev/prompt-engineering-studio/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/KazKozDev/prompt-engineering-studio/discussions)
-- **Documentation**: This README and inline code comments
-
 ---
 
-**Made with ❤️ for the AI and prompt engineering community**
+If you like this project, please give it a star ⭐
+
+For questions, feedback, or support, reach out to:
+
+[Artem KK](https://www.linkedin.com/in/kazkozdev/) | MIT [LICENSE](LICENSE) 
