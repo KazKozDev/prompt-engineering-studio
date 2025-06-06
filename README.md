@@ -51,7 +51,7 @@ Prompt Engineering Studio is intended for AI practitioners, LLM developers, rese
 - **Cost**: Pay-per-use
 
 ### Ollama (Local)
-- **Models**: `llama3.2`, `llama2`, `codellama`, `mistral`, etc.
+- **Models**: `llama3.2`, `llama2`, `mistral`, etc.
 - **Setup**: Runs locally, no API key required
 - **Cost**: Free (after initial setup)
 - **Privacy**: Complete data privacy, offline capable
