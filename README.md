@@ -1,4 +1,4 @@
-# 🚀 Prompt Engineering Studio
+# Prompt Engineering Studio
 
 A powerful web application that transforms your simple queries into advanced, optimized prompts using cutting-edge prompt engineering techniques. Support for multiple LLM providers including Gemini, Ollama, and more.
 
