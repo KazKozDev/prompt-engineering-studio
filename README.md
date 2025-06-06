@@ -55,7 +55,7 @@ Prompt Engineering Studio is for anyone who wants to take their prompts — and 
 - **Cost**: Free (after initial setup)
 - **Privacy**: Complete data privacy, offline capable
 
-### OpenAI (Coming Soon)
+### OpenAI
 - **Status**: Implementation planned
 - **Models**: GPT-4, GPT-3.5, etc.
 
