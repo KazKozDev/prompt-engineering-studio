@@ -183,30 +183,6 @@ This project implements techniques from cutting-edge research papers:
 - **Styling**: Modern CSS with responsive design
 - **Icons**: Material Symbols
 
-### Contributing
-
-Contributions are welcome! Here's how you can help:
-
-1. **Fork the repository**
-2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
-3. **Commit changes**: `git commit -m 'Add amazing feature'`
-4. **Push to branch**: `git push origin feature/amazing-feature`
-5. **Open a Pull Request**
-
-### Adding New Techniques
-To add a new prompt engineering technique:
-
-1. Add the technique object to `promptTechniques` array in `index.tsx`
-2. Include proper academic citation
-3. Test with multiple LLM providers
-4. Update documentation
-
-### Adding New LLM Providers
-1. Extend the `initializeGenAI()` function
-2. Add provider-specific UI elements
-3. Update configuration handling
-4. Add comprehensive error handling
-
 ---
 
 If you like this project, please give it a star ⭐
