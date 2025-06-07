@@ -1,6 +1,6 @@
 # Prompt Engineering Studio
 
-Automatically transforms your input — from zero-shot to advanced prompting — into optimized prompts for local and cloud LLMs.
+Automatically transforms your input — from zero-shot to advanced prompting — into optimized prompts. 
 
 
 ![Prompt Engineering Studio Demo](https://img.shields.io/badge/Status-Working-brightgreen) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white) ![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)
