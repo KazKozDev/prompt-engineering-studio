@@ -48,17 +48,15 @@ Prompt Engineering Studio is intended for AI practitioners, LLM developers, rese
 ### Google Gemini
 - **Models**: `gemini-2.5-flash-preview-04-17`, `gemini-pro`, etc.
 - **Setup**: Requires API key from [Google AI Studio](https://makersuite.google.com/)
-- **Cost**: Pay-per-use
 
 ### Ollama (Local)
-- **Models**: `llama3.2`, `llama2`, `mistral`, etc.
+- **Models**: `llama3.2`, `gemma3:12b`, `mistral`, etc.
 - **Setup**: Runs locally, no API key required
-- **Cost**: Free (after initial setup)
 - **Privacy**: Complete data privacy, offline capable
 
 ### OpenAI
 - **Status**: Implementation planned
-- **Models**: GPT-4, GPT-3.5, etc.
+- **Models**: GPT-4o, GPT-4o-mini, etc.
 
 ## Quick Start
 
