@@ -11,7 +11,7 @@ Prompt Engineering Studio is intended for AI practitioners, LLM developers, rese
 
 ## Features
 
-- **26+ Prompt Engineering Techniques** - From basic Zero-Shot to advanced Tree of Thoughts
+- **20+ Prompt Engineering Techniques** - From basic Zero-Shot to advanced Tree of Thoughts
 - **Multi-Provider Support** - Works with Gemini, Ollama (local), and more
 - **Real-time Generation** - Generate enhanced prompts instantly
 - **Copy & Use** - One-click copy of generated prompts
