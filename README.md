@@ -5,7 +5,7 @@ Automatically transforms your input — from zero-shot to advanced prompting —
 
 ![Prompt Engineering Studio Demo](https://img.shields.io/badge/Status-Working-brightgreen) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white) ![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)
 
-Prompt Engineering Studio is intended for AI practitioners, LLM developers, researchers, students, product engineers, prompt engineers, UX designers, and hobbyists who want to explore and apply advanced prompt engineering techniques. The tool automatically transforms user input into optimized prompts according to selected techniques — from basic to state-of-the-art — making it useful for both experimentation and integration into real-world applications. It supports both local and cloud-based LLMs, and is accessible to users with or without prior experience in prompt engineering.
+Prompt Engineering Studio is intended for AI practitioners, LLM developers, researchers, students, prompt engineers, UX designers, and hobbyists who want to explore and apply advanced prompt engineering techniques. The tool automatically transforms user input into optimized prompts according to selected techniques — from basic to state-of-the-art — making it useful for both experimentation and integration into real-world applications. It supports both local and cloud-based LLMs, and is accessible to users with or without prior experience in prompt engineering.
 
 ![Screenshot 2025-06-06 at 12 37 29](https://github.com/user-attachments/assets/acc1785d-656e-4b46-9ba1-ea1b9466c3fc)
 
