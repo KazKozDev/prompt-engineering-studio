@@ -94,7 +94,7 @@ curl -fsSL https://ollama.ai/install.sh | sh
 ollama serve
 
 # Pull a model (in another terminal)
-ollama pull llama3.2
+ollama pull gemma3:12b
 ```
 
 4. **Start the development server**
@@ -111,7 +111,7 @@ ollama pull llama3.2
 
 1. **Configure LLM Provider**
    - Select your provider (Gemini/Ollama) from the dropdown
-   - Enter model name (e.g., `llama3.2` for Ollama)
+   - Enter model name (e.g., `gemma3:12b` for Ollama)
    - For Gemini: Enter your API key
    - Click "Save LLM Settings"
 
@@ -176,7 +176,7 @@ This project implements techniques from cutting-edge research papers:
 - **Tree of Thoughts**: Yao et al. (2023) - [arXiv:2305.10601](https://arxiv.org/abs/2305.10601)
 - **ReAct**: Yao et al. (2022) - [arXiv:2210.03629](https://arxiv.org/abs/2210.03629)
 - **Meta-Prompting**: Suzgun & Kalai (2024) - [arXiv:2401.12954](https://arxiv.org/abs/2401.12954)
-- [... and 22+ more techniques with full citations]
+- [... and 20+ more techniques with full citations]
 
 ## Tech Stack
 
