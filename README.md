@@ -10,8 +10,8 @@ Prompt Engineering Studio is intended for AI practitioners, LLM developers, rese
 
 ## Quick Start
 
-> Try Prompt Engineering Studio in your browser via Claude artifact: [Launch Online](https://claude.ai/public/artifacts/877bfef6-6a2a-453c-8fa6-99651477fc15)
-
+> Try Prompt Engineering Studio in your browser via Claude artifact: [Launch Online](https://claude.ai/public/artifacts/6572baf6-d867-4cee-b1a7-2625b24b2593)
+> 
 ## Features
 
 * **20+ Prompt Engineering Techniques** - From basic Zero-Shot to advanced Tree of Thoughts
