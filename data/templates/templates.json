@@ -1,0 +1,16 @@
+[
+  {
+    "id": "20251128_142225",
+    "name": "Code Review",
+    "prompt": "Review the following code and provide suggestions",
+    "description": "Template for code review tasks",
+    "category": "Coding",
+    "tags": [
+      "code",
+      "review"
+    ],
+    "created_at": "2025-11-28T14:22:25.400553",
+    "updated_at": "2025-11-28T14:22:25.400556",
+    "usage_count": 0
+  }
+]

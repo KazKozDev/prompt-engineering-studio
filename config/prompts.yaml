@@ -1,0 +1,305 @@
+techniques:
+  zero_shot:
+    name: "Zero-Shot Prompting"
+    description: "Direct query without examples. Just ask directly — pure question to the model."
+    authors: "Tom B. Brown et al."
+    paper: "Language Models are Few-Shot Learners"
+    arxiv: "https://arxiv.org/abs/2005.14165"
+    year: "2020"
+    categories: ["General", "Reasoning", "Coding", "Summarization", "Creative Writing", "Data Extraction"]
+  few_shot:
+    name: "Few-Shot Prompting"
+    description: "Provide 2-5 input→output examples before the main query. Model learns the pattern from examples."
+    authors: "Tom B. Brown et al."
+    paper: "Language Models are Few-Shot Learners"
+    arxiv: "https://arxiv.org/abs/2005.14165"
+    year: "2020"
+    categories: ["General", "Coding", "Data Extraction"]
+  role_prompting:
+    name: "Role Prompting"
+    description: "Assign expert role to the model. Start with 'You are an expert [role]...' — model adopts expertise and tone."
+    authors: "Chenglei Si et al."
+    paper: "Prompting GPT-3 To Be Reliable"
+    arxiv: "https://arxiv.org/abs/2210.09150"
+    year: "2022"
+    categories: ["General", "Coding", "Creative Writing"]
+  step_back:
+    name: "Step-Back Prompting"
+    description: "First analyze general principles, then apply to specific task. Ask 'What are the key concepts?' before solving."
+    authors: "Huaixiu Steven Zheng et al."
+    paper: "Take a Step Back: Evoking Reasoning via Abstraction in Large Language Models"
+    arxiv: "https://arxiv.org/abs/2310.06117"
+    year: "2023"
+    categories: ["Reasoning", "General"]
+  chain_of_thought:
+    name: "Chain-of-Thought Prompting"
+    description: "Step-by-step reasoning. Add 'Let's think step by step' — model explains each logical step of the solution."
+    authors: "Jason Wei et al."
+    paper: "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models"
+    arxiv: "https://arxiv.org/abs/2201.11903"
+    year: "2022"
+    categories: ["Reasoning", "Coding", "General"]
+  least_to_most:
+    name: "Least-to-Most Prompting"
+    description: "Break complex problems into simpler subproblems. Solve simplest first, build up: 'First solve X, then use it for Y.'"
+    authors: "Denny Zhou et al."
+    paper: "Least-to-Most Prompting Enables Complex Reasoning in Large Language Models"
+    arxiv: "https://arxiv.org/abs/2205.10625"
+    year: "2022"
+    categories: ["Reasoning", "Coding"]
+  complexity_based:
+    name: "Complexity-Based Prompting"
+    description: "Use examples with many reasoning steps. More complex demonstrations with longer chains = better performance."
+    authors: "Yao Fu et al."
+    paper: "Complexity-Based Prompting for Multi-Step Reasoning"
+    arxiv: "https://arxiv.org/abs/2210.00720"
+    year: "2022"
+    categories: ["Reasoning"]
+  structured_cot:
+    name: "Structured Chain-of-Thought"
+    description: "Apply programming constructs to reasoning. Structure like code: IF condition THEN action, WHILE loop, sequential steps."
+    authors: "Jia Li et al."
+    paper: "Structured Chain-of-Thought Prompting for Code Generation"
+    arxiv: "https://arxiv.org/abs/2305.06599"
+    year: "2023"
+    categories: ["Coding", "Reasoning"]
+  reaction:
+    name: "ReAct (Reasoning and Acting)"
+    description: "Synergize reasoning and acting. Format: 'Thought: [reasoning] Action: [what to do] Observation: [result]' — repeat cycle."
+    authors: "Shunyu Yao et al."
+    paper: "ReAct: Synergizing Reasoning and Acting in Language Models"
+    arxiv: "https://arxiv.org/abs/2210.03629"
+    year: "2022"
+    categories: ["Reasoning", "General"]
+  program_aided:
+    name: "Program-Aided Language Models"
+    description: "Use algorithmic thinking and pseudocode. Ask to write algorithm first, then execute it mentally to get answer."
+    authors: "Luyu Gao et al."
+    paper: "PAL: Program-aided Language Models"
+    arxiv: "https://arxiv.org/abs/2211.10435"
+    year: "2022"
+    categories: ["Coding", "Reasoning"]
+  self_critique:
+    name: "Self-Critique Prompting"
+    description: "Critically evaluate own answer. After response, ask: 'Now critique this. What's wrong? How to improve?' Then revise."
+    authors: "William Saunders et al."
+    paper: "Self-critiquing models for assisting human evaluators"
+    arxiv: "https://arxiv.org/abs/2206.05802"
+    year: "2022"
+    categories: ["General", "Reasoning", "Coding", "Creative Writing"]
+  reflection:
+    name: "Reflection Prompting"
+    description: "Analyze own thought process after answering. Ask: 'Reflect on your reasoning. What assumptions? What could be better?'"
+    authors: "Noah Shinn et al."
+    paper: "Reflexion: Language Agents with Verbal Reinforcement Learning"
+    arxiv: "https://arxiv.org/abs/2303.11366"
+    year: "2023"
+    categories: ["Reasoning", "General"]
+  refinement:
+    name: "Iterative Refinement"
+    description: "Gradually improve through iterations. Generate → Get feedback → Improve → Repeat: 'Now make it better.'"
+    authors: "Aman Madaan et al."
+    paper: "Self-Refine: Iterative Refinement with Self-Feedback"
+    arxiv: "https://arxiv.org/abs/2303.17651"
+    year: "2023"
+    categories: ["General", "Creative Writing", "Coding"]
+  metacognitive:
+    name: "Metacognitive Prompting"
+    description: "Reflect on thinking process before responding. Ask: 'What type of problem? What strategy? What could go wrong?'"
+    authors: "Adian Liusie et al."
+    paper: "Metacognitive Prompting Improves Understanding in Large Language Models"
+    arxiv: "https://arxiv.org/abs/2308.05342"
+    year: "2023"
+    categories: ["Reasoning", "General"]
+  self_consistency:
+    name: "Self-Consistency Decoding"
+    description: "Solve problem multiple ways to check consistency. Generate 3+ solutions, compare — majority vote = final answer."
+    authors: "Xuezhi Wang et al."
+    paper: "Self-Consistency Improves Chain of Thought Reasoning in Language Models"
+    arxiv: "https://arxiv.org/abs/2203.11171"
+    year: "2022"
+    categories: ["Reasoning", "General"]
+  progressive_hint:
+    name: "Progressive-Hint Prompting"
+    description: "Use previous answers as hints for improvement. Solve once, use as hint for next attempt, repeat until convergence."
+    authors: "Chuanyang Zheng et al."
+    paper: "Progressive-Hint Prompting Improves Reasoning in Large Language Models"
+    arxiv: "https://arxiv.org/abs/2304.09797"
+    year: "2023"
+    categories: ["Reasoning"]
+  analogical_prompting:
+    name: "Analogical Prompting"
+    description: "Generate relevant examples via analogies. Ask: 'Think of similar problems. How were they solved? Apply that here.'"
+    authors: "Michihiro Yasunaga et al."
+    paper: "Large Language Models as Analogical Reasoners"
+    arxiv: "https://arxiv.org/abs/2310.01714"
+    year: "2023"
+    categories: ["Reasoning", "General"]
+  skeleton_of_thought:
+    name: "Skeleton-of-Thought"
+    description: "First create answer skeleton, then expand. Ask: 'List main points' → 'Now expand each in detail.'"
+    authors: "Xuefei Ning et al."
+    paper: "Skeleton-of-Thought: Prompting LLMs for Efficient Parallel Generation"
+    arxiv: "https://arxiv.org/abs/2307.15337"
+    year: "2023"
+    categories: ["General", "Creative Writing"]
+  chain_of_density:
+    name: "Chain of Density"
+    description: "Iteratively create denser summaries. Summarize → 'Rewrite adding more facts, same length' → Repeat. Denser each time."
+    authors: "Griffin Adams et al."
+    paper: "From Sparse to Dense: GPT-4 Summarization with Chain of Density Prompting"
+    arxiv: "https://arxiv.org/abs/2309.04269"
+    year: "2023"
+    categories: ["Summarization"]
+  tree_of_thoughts:
+    name: "Tree of Thoughts"
+    description: "Consider multiple solution paths like a tree. Explore branches A, B, C — evaluate each, pick best and continue."
+    authors: "Shunyu Yao et al."
+    paper: "Tree of Thoughts: Deliberate Problem Solving with Large Language Models"
+    arxiv: "https://arxiv.org/abs/2305.10601"
+    year: "2023"
+    categories: ["Reasoning", "Coding"]
+  graph_of_thoughts:
+    name: "Graph of Thoughts"
+    description: "Model reasoning as graph with thoughts as nodes, dependencies as edges. Combine/transform nodes to reach solution."
+    authors: "Maciej Besta et al."
+    paper: "Graph of Thoughts: Solving Elaborate Problems with Large Language Models"
+    arxiv: "https://arxiv.org/abs/2308.09687"
+    year: "2023"
+    categories: ["Reasoning", "Coding"]
+  thought_propagation:
+    name: "Thought Propagation"
+    description: "Use analogous problems and solutions. Find similar solved problems, extract strategies, apply combined approach."
+    authors: "Junchi Yu et al."
+    paper: "Thought Propagation: An Analogical Approach to Complex Reasoning with Large Language Models"
+    arxiv: "https://arxiv.org/abs/2310.03965"
+    year: "2023"
+    categories: ["Reasoning"]
+  visual_cot:
+    name: "Visual Chain-of-Thought"
+    description: "Chain of thought for multimodal tasks. For image+text: 'Describe what you see. Reason step by step about visuals.'"
+    authors: "Hao Shao et al."
+    paper: "Visual CoT: Advancing Multi-Modal Language Models with Chain-of-Thought Reasoning"
+    arxiv: "https://arxiv.org/abs/2403.16999"
+    year: "2024"
+    categories: ["Reasoning", "Data Extraction"]
+  self_harmonized:
+    name: "Self-Harmonized Chain of Thought"
+    description: "Unify diverse solution paths. Generate 3+ reasoning paths, then: 'Harmonize these into one consistent answer.'"
+    authors: "Ziqi Jin et al."
+    paper: "Self-Harmonized Chain of Thought"
+    arxiv: "https://arxiv.org/abs/2409.04057"
+    year: "2024"
+    categories: ["Reasoning"]
+  meta_prompting:
+    name: "Meta-Prompting"
+    description: "One LM as conductor managing expert queries. Delegate to Expert A, B, C — collect answers, synthesize response."
+    authors: "Mirac Suzgun, Adam Tauman Kalai"
+    paper: "Meta-Prompting: Enhancing Language Models with Task-Agnostic Scaffolding"
+    arxiv: "https://arxiv.org/abs/2401.12954"
+    year: "2024"
+    categories: ["General", "Reasoning"]
+  prompt_engineering_pe2:
+    name: "Prompt Engineering a Prompt Engineer"
+    description: "Meta-prompting for automatic prompt optimization. Give task + examples, ask: 'Design optimal prompt, then execute.'"
+    authors: "Qinyuan Ye et al."
+    paper: "Prompt Engineering a Prompt Engineer"
+    arxiv: "https://arxiv.org/abs/2311.05661"
+    year: "2024"
+    categories: ["General"]
+  textgrad:
+    name: "TextGrad Optimization"
+    description: "Automatic differentiation via text feedback. Generate → Evaluate → 'What to improve?' → Apply feedback → Repeat."
+    authors: "Mert Yuksekgonul et al."
+    paper: "TextGrad: Automatic Differentiation via Text"
+    arxiv: "https://arxiv.org/abs/2406.07496"
+    year: "2024"
+    categories: ["General"]
+  system_prompt_optimization:
+    name: "System Prompt Optimization"
+    description: "Two-level optimization of system prompts. Level 1: Optimize task framing. Level 2: Execute with optimized frame."
+    authors: "Yumin Choi et al."
+    paper: "System Prompt Optimization with Meta-Learning"
+    arxiv: "https://arxiv.org/abs/2505.09666"
+    year: "2025"
+    categories: ["General"]
+
+  chain_of_draft:
+    name: "Chain of Draft (CoD)"
+    description: "Minimalistic reasoning with essential steps only. 'Write only key reasoning, no verbose explanations.' 7.6% tokens, same accuracy."
+    authors: "Silei Xu et al."
+    paper: "Chain of Draft: Thinking Faster by Writing Less"
+    arxiv: "https://arxiv.org/abs/2502.18600"
+    year: "2025"
+    categories: ["Reasoning", "General", "Coding"]
+
+  chain_of_verification:
+    name: "Chain-of-Verification (CoVe)"
+    description: "Four-step verification to reduce hallucinations. Answer → List verification questions → Answer independently → Revise."
+    authors: "Shehzaad Dhuliawala et al."
+    paper: "Chain-of-Verification Reduces Hallucination in Large Language Models"
+    arxiv: "https://arxiv.org/abs/2309.11495"
+    year: "2023"
+    categories: ["General", "Reasoning"]
+
+  program_of_thoughts:
+    name: "Program of Thoughts (PoT)"
+    description: "Delegate computation to Python interpreter. 'Write Python code to solve this.' Offload math/logic to actual code."
+    authors: "Wenhu Chen et al."
+    paper: "Program of Thoughts Prompting"
+    arxiv: "https://arxiv.org/abs/2211.12588"
+    year: "2022"
+    categories: ["Coding", "Reasoning"]
+
+  chain_of_table:
+    name: "Chain-of-Table"
+    description: "Tabular reasoning via SQL/DataFrame operations. For tables: 'Apply SELECT/FILTER/GROUP step by step.'"
+    authors: "Zilong Wang et al."
+    paper: "Chain-of-Table: Evolving Tables in the Reasoning Chain for Table Understanding"
+    arxiv: "https://arxiv.org/abs/2401.04398"
+    year: "2024"
+    categories: ["Data Extraction", "Reasoning"]
+
+  thread_of_thought:
+    name: "Thread of Thought (ThoT)"
+    description: "Segment chaotic contexts into manageable parts. 'Divide into segments, analyze each, synthesize findings.'"
+    authors: "Yizhou Zhou et al."
+    paper: "Thread of Thought Unraveling Chaotic Contexts"
+    arxiv: "https://arxiv.org/abs/2311.08734"
+    year: "2023"
+    categories: ["Reasoning", "Summarization"]
+
+  system2_attention:
+    name: "System 2 Attention (S2A)"
+    description: "Selectively attend to relevant portions. 'Rewrite context keeping ONLY relevant facts, remove noise.' Then answer."
+    authors: "Jason Weston, Sainbayar Sukhbaatar"
+    paper: "System 2 Attention (is something you might need too)"
+    arxiv: "https://arxiv.org/abs/2311.11829"
+    year: "2023"
+    categories: ["Reasoning", "General"]
+
+  chain_of_code:
+    name: "Chain-of-Code (CoC)"
+    description: "Format reasoning as flexible pseudocode. Write solution as code — LM emulates execution for semantic tasks."
+    authors: "Chengshu Li et al."
+    paper: "Chain of Code: Reasoning with a Language Model-Augmented Code Emulator"
+    arxiv: "https://arxiv.org/abs/2312.04474"
+    year: "2023"
+    categories: ["Coding", "Reasoning"]
+
+  active_prompting:
+    name: "Active Prompting"
+    description: "Select uncertain examples for annotation via active learning. Identify uncertainty, focus effort there."
+    authors: "Shizhe Diao et al."
+    paper: "Active Prompting with Chain-of-Thought for Large Language Models"
+    arxiv: "https://arxiv.org/abs/2302.12246"
+    year: "2023"
+    categories: ["Reasoning", "General"]
+
+meta_prompt: |
+  You are an expert in prompt engineering. Your task is to refine a user's initial query into a more effective prompt using a specific technique.
+  User's Initial Query: "{user_input}"
+  Prompting Technique: "{technique_name}"
+  Technique Description: "{technique_description}"
+  Based on this, generate a new, improved prompt that incorporates the specified technique to achieve the user's goal.
+  The generated prompt should be ready to be used directly with a large language model. Respond ONLY with the generated prompt itself, without any preamble, introduction, or explanation.

@@ -1,0 +1,26 @@
+models:
+  default: gemini
+
+  gemini:
+    model_name: gemini-2.5-flash-preview-04-17
+    max_tokens: 4096
+    temperature: 0.7
+
+  ollama:
+    base_url: http://localhost:11434
+    model_name: llama3:8b
+    max_tokens: 4096
+    temperature: 0.7
+
+  openai:
+    model_name: gpt-4o
+    max_tokens: 4096
+    temperature: 0.7
+
+rate_limits:
+  requests_per_minute: 50
+  tokens_per_minute: 100000
+
+cache:
+  enabled: true
+  ttl_seconds: 3600

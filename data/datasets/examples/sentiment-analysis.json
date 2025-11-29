@@ -1,0 +1,21 @@
+{
+  "id": "sentiment-analysis",
+  "name": "Sentiment Analysis",
+  "description": "Определение тональности текста (positive/negative/neutral)",
+  "category": "classification",
+  "size": 12,
+  "data": [
+    {"input": "I love this product! It's amazing!", "output": "positive"},
+    {"input": "This is the worst experience ever.", "output": "negative"},
+    {"input": "The weather is okay today.", "output": "neutral"},
+    {"input": "Absolutely fantastic service!", "output": "positive"},
+    {"input": "I'm very disappointed with the quality.", "output": "negative"},
+    {"input": "It works as expected.", "output": "neutral"},
+    {"input": "Best purchase I've ever made!", "output": "positive"},
+    {"input": "Terrible customer support.", "output": "negative"},
+    {"input": "The product arrived on time.", "output": "neutral"},
+    {"input": "I'm so happy with this!", "output": "positive"},
+    {"input": "Complete waste of money.", "output": "negative"},
+    {"input": "It's an average product.", "output": "neutral"}
+  ]
+}

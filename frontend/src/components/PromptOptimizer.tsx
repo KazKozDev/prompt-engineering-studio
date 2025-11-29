@@ -1,0 +1,434 @@
+import { useState, useEffect, useMemo } from 'react';
+import { api } from '../services/api';
+import { savePromptToLibrary } from './PromptLibrary';
+import { loadAllDatasets, getDatasetById, type Dataset } from './Datasets';
+
+interface PromptOptimizerProps {
+    settings: {
+        provider: string;
+        model: string;
+    };
+}
+
+export function PromptOptimizer({ settings }: PromptOptimizerProps) {
+    const [basePrompt, setBasePrompt] = useState('');
+    const [datasetText, setDatasetText] = useState<string>('');
+    const [results, setResults] = useState<any>(null);
+    const [isRunning, setIsRunning] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [savedToLibrary, setSavedToLibrary] = useState(false);
+
+    // Dataset selection
+    const [datasets, setDatasets] = useState<Dataset[]>([]);
+    const [selectedDatasetId, setSelectedDatasetId] = useState<string>('');
+    const [datasetMode, setDatasetMode] = useState<'select' | 'manual'>('select');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [showResultsPanel, setShowResultsPanel] = useState(false);
+
+    useEffect(() => {
+        loadAllDatasets().then(setDatasets);
+    }, []);
+
+    const handleDatasetSelect = async (datasetId: string) => {
+        setSelectedDatasetId(datasetId);
+        if (datasetId) {
+            const dataset = await getDatasetById(datasetId);
+            if (dataset?.data) {
+                setDatasetText(JSON.stringify(dataset.data, null, 2));
+            }
+        } else {
+            setDatasetText('');
+        }
+    };
+
+    const handleRun = async () => {
+        if (!basePrompt) return;
+
+        setError(null);
+        setIsRunning(true);
+        setResults(null);
+        setShowResultsPanel(true);
+
+        try {
+            let dataset;
+            try {
+                dataset = JSON.parse(datasetText);
+                if (!Array.isArray(dataset)) throw new Error("Dataset must be an array");
+            } catch (e) {
+                throw new Error("Invalid JSON in dataset");
+            }
+
+            const data = await api.optimizePrompt({
+                base_prompt: basePrompt,
+                dataset,
+                provider: settings.provider,
+                model: settings.model
+            });
+
+            setResults(data);
+            setSavedToLibrary(false);
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setIsRunning(false);
+        }
+    };
+
+    const handleSaveToLibrary = () => {
+        if (!results) return;
+
+        savePromptToLibrary({
+            name: `Optimized: ${basePrompt.substring(0, 30)}...`,
+            text: results.best_prompt,
+            technique: 'optimizer',
+            techniqueName: 'Auto-Optimized',
+            status: 'testing',
+            category: 'General',
+            tags: ['optimized', 'auto-generated'],
+            description: `Optimized from: "${basePrompt.substring(0, 100)}..." Score: ${(results.best_score * 100).toFixed(1)}%`,
+            sourceType: 'optimized',
+            evaluation: {
+                qualityScore: Math.round(results.best_score * 100),
+                robustnessScore: 0,
+                consistencyScore: 0,
+                overallScore: Math.round(results.best_score * 100),
+                lastTested: new Date().toISOString()
+            }
+        });
+        setSavedToLibrary(true);
+    };
+
+    const filteredDatasets = useMemo(() => {
+        if (!searchQuery) return datasets;
+        return datasets.filter(d =>
+            d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            d.description?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [datasets, searchQuery]);
+
+    return (
+        <div className="h-full flex">
+            {/* Main content */}
+            <div className={`flex-1 flex flex-col p-4 transition-all duration-300 ${showResultsPanel ? 'pr-0' : ''}`}>
+                {/* Top bar: Input + Actions */}
+                <div className="flex gap-3 mb-3 shrink-0">
+                    <textarea
+                        value={basePrompt}
+                        onChange={(e) => setBasePrompt(e.target.value)}
+                        rows={2}
+                        className="flex-1 bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white/90 placeholder:text-white/30 resize-none focus:outline-none focus:border-white/20 text-sm"
+                        placeholder="Enter your starting prompt to optimize..."
+                    />
+                    <div className="flex flex-col gap-2 shrink-0">
+                        <button
+                            onClick={handleRun}
+                            disabled={isRunning || !basePrompt || !datasetText}
+                            className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${isRunning || !basePrompt || !datasetText ? 'bg-white/5 text-white/30 cursor-not-allowed' : 'bg-[#007AFF] hover:bg-[#0071E3] text-white'}`}
+                        >
+                            {isRunning ? 'Optimizing...' : 'Optimize'}
+                        </button>
+                        {results && !showResultsPanel && (
+                            <button
+                                onClick={() => setShowResultsPanel(true)}
+                                className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-white/60 transition-all"
+                            >
+                                Results
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Main area: Datasets + Workflow */}
+                <div className="flex-1 flex gap-4 min-h-0">
+                    {/* Left: Datasets */}
+                    <div className="flex-1 flex flex-col min-h-0 bg-black/20 border border-white/10 rounded-lg overflow-hidden">
+                        {/* Toolbar */}
+                        <div className="p-3 border-b border-white/5 space-y-2">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-[11px] font-bold text-white/30 uppercase tracking-widest">Evaluation Dataset</h3>
+                                <div className="flex gap-1 bg-black/20 rounded p-0.5 border border-white/5">
+                                    <button
+                                        onClick={() => setDatasetMode('select')}
+                                        className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all ${datasetMode === 'select' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/70'}`}
+                                    >
+                                        Select
+                                    </button>
+                                    <button
+                                        onClick={() => setDatasetMode('manual')}
+                                        className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all ${datasetMode === 'manual' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/70'}`}
+                                    >
+                                        Manual
+                                    </button>
+                                </div>
+                            </div>
+                            {datasetMode === 'select' && (
+                                <div className="relative">
+                                    <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                                    <input
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="w-full bg-black/30 border border-white/5 rounded-md pl-8 pr-3 py-1.5 text-xs text-white/90 placeholder:text-white/20 focus:outline-none focus:border-white/10"
+                                        placeholder="Search datasets..."
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 overflow-y-auto p-3 custom-scrollbar">
+                            {datasetMode === 'select' ? (
+                                <div className="space-y-1">
+                                    {filteredDatasets.length === 0 ? (
+                                        <div className="text-center py-8 text-white/30">
+                                            <p className="text-xs">No datasets found</p>
+                                        </div>
+                                    ) : (
+                                        filteredDatasets.map(ds => (
+                                            <div
+                                                key={ds.id}
+                                                onClick={() => handleDatasetSelect(ds.id)}
+                                                className={`
+                                                    flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-all
+                                                    ${selectedDatasetId === ds.id
+                                                        ? 'bg-[#007AFF]/15 text-white'
+                                                        : 'hover:bg-white/5 text-white/70 hover:text-white/90'
+                                                    }
+                                                `}
+                                            >
+                                                <div className={`
+                                                    w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all
+                                                    ${selectedDatasetId === ds.id
+                                                        ? 'bg-[#007AFF] border-[#007AFF]'
+                                                        : 'border-white/20'
+                                                    }
+                                                `}>
+                                                    {selectedDatasetId === ds.id && <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-sm font-medium truncate">{ds.name}</div>
+                                                    <div className="text-[11px] text-white/40 truncate">{ds.size} items</div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            ) : (
+                                <textarea
+                                    value={datasetText}
+                                    onChange={(e) => { setDatasetText(e.target.value); setSelectedDatasetId(''); }}
+                                    className="w-full h-full bg-transparent text-white/90 placeholder:text-white/20 resize-none focus:outline-none text-xs font-mono leading-relaxed"
+                                    placeholder={`[\n  {"input": "...", "output": "..."},\n  {"input": "...", "output": "..."}\n]`}
+                                />
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Right: Workflow Guide */}
+                    <div className="flex-1 flex flex-col min-h-0 bg-gradient-to-b from-black/20 to-transparent border border-white/5 rounded-lg overflow-hidden">
+                        <div className="px-5 py-4 border-b border-white/5 flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#007AFF]/20 to-[#007AFF]/5 flex items-center justify-center">
+                                <svg className="w-4 h-4 text-[#007AFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                            </div>
+                            <div>
+                                <h2 className="text-sm font-semibold text-white/90">Optimizer Workflow</h2>
+                                <p className="text-[10px] text-white/40">Production-grade optimization guide</p>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                            {/* 1. The Process */}
+                            <div>
+                                <div className="flex items-center gap-2 mb-3">
+                                    <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">01. The Process</span>
+                                </div>
+                                <div className="relative pl-4 border-l border-white/10 space-y-4">
+                                    <div className="relative">
+                                        <div className="absolute -left-[21px] w-3 h-3 rounded-full bg-[#007AFF] border-2 border-[#0a0a0a]"></div>
+                                        <p className="text-xs text-white/85 font-medium">Define Baseline</p>
+                                        <p className="text-[11px] text-white/45">Start with a draft prompt or existing production version.</p>
+                                    </div>
+                                    <div className="relative">
+                                        <div className="absolute -left-[21px] w-3 h-3 rounded-full bg-[#007AFF] border-2 border-[#0a0a0a] opacity-80"></div>
+                                        <p className="text-xs text-white/85 font-medium">Curate Dataset</p>
+                                        <p className="text-[11px] text-white/45">Select 20-50 high-quality input/output pairs. <span className="text-emerald-400/60">Quality &gt; Quantity.</span></p>
+                                    </div>
+                                    <div className="relative">
+                                        <div className="absolute -left-[21px] w-3 h-3 rounded-full bg-[#007AFF] border-2 border-[#0a0a0a] opacity-65"></div>
+                                        <p className="text-xs text-white/85 font-medium">Run Optimization</p>
+                                        <p className="text-[11px] text-white/45">System generates variants using evolutionary strategies.</p>
+                                    </div>
+                                    <div className="relative">
+                                        <div className="absolute -left-[21px] w-3 h-3 rounded-full bg-[#007AFF] border-2 border-[#0a0a0a] opacity-50"></div>
+                                        <p className="text-xs text-white/85 font-medium">Evaluate & Deploy</p>
+                                        <p className="text-[11px] text-white/45">Select best performer → Save to Library → Evaluation Lab.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 2. Production Scenarios */}
+                            <div>
+                                <div className="flex items-center gap-2 mb-3">
+                                    <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">02. Production Scenarios</span>
+                                </div>
+                                <div className="grid grid-cols-1 gap-2">
+                                    <div className="bg-white/[0.03] border border-white/5 rounded-lg p-3 hover:bg-white/[0.05] transition-colors">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <svg className="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                                            <span className="text-xs font-medium text-white/80">Cold Start / New Feature</span>
+                                        </div>
+                                        <p className="text-[11px] text-white/50 leading-relaxed">
+                                            When launching a new feature without historical data. Create a synthetic dataset of expected inputs to establish a strong baseline performance.
+                                        </p>
+                                    </div>
+
+                                    <div className="bg-white/[0.03] border border-white/5 rounded-lg p-3 hover:bg-white/[0.05] transition-colors">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <svg className="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+                                            <span className="text-xs font-medium text-white/80">Model Migration</span>
+                                        </div>
+                                        <p className="text-[11px] text-white/50 leading-relaxed">
+                                            Adapting prompts when switching models (e.g., GPT-4 → Llama 3). Optimizer acts as a "translator" to adjust prompt structure for the new model's biases.
+                                        </p>
+                                    </div>
+
+                                    <div className="bg-white/[0.03] border border-white/5 rounded-lg p-3 hover:bg-white/[0.05] transition-colors">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                            <span className="text-xs font-medium text-white/80">Continuous Tuning (MLOps)</span>
+                                        </div>
+                                        <p className="text-[11px] text-white/50 leading-relaxed">
+                                            Regularly re-optimize using fresh production logs (edge cases, failures) to prevent drift and handle new user behaviors.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 3. Pro Tips */}
+                            <div className="bg-[#007AFF]/5 border border-[#007AFF]/10 rounded-lg p-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <svg className="w-3.5 h-3.5 text-[#007AFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    <span className="text-[11px] font-semibold text-[#007AFF] uppercase tracking-wide">Pro Tips</span>
+                                </div>
+                                <ul className="text-[11px] text-white/60 space-y-1.5">
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-[#007AFF]/60">•</span>
+                                        <span>Don't optimize for <span className="text-white/80">1-2 examples</span>. It's noise.</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-[#007AFF]/60">•</span>
+                                        <span>Use <span className="text-white/80">Evaluation Lab</span> for final sign-off (Robustness).</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-[#007AFF]/60">•</span>
+                                        <span>Review "Candidates" — sometimes the 2nd best is <span className="text-white/80">more robust</span>.</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Results Panel - Slide in from right */}
+            {showResultsPanel && (
+                <div className="w-[420px] bg-[#0a0a0a] border-l border-white/10 flex flex-col shrink-0">
+                    <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+                        <div className="flex items-center gap-3">
+                            <h2 className="text-sm font-semibold text-white/80">Optimization Results</h2>
+                            {results && (
+                                <span className="text-xs text-emerald-400/80 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                                    {(results.best_score * 100).toFixed(0)}% best
+                                </span>
+                            )}
+                        </div>
+                        <button
+                            onClick={() => setShowResultsPanel(false)}
+                            className="p-1.5 rounded-md hover:bg-white/10 text-white/30 hover:text-white/60 transition-colors"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        {isRunning ? (
+                            <div className="flex flex-col items-center justify-center py-16 text-white/40">
+                                <svg className="animate-spin h-8 w-8 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span className="text-sm">Optimizing prompt...</span>
+                                <span className="text-xs text-white/20 mt-1">This may take 1-2 minutes</span>
+                            </div>
+                        ) : error ? (
+                            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm flex items-start gap-2">
+                                <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                <span>{error}</span>
+                            </div>
+                        ) : !results ? (
+                            <div className="flex flex-col items-center justify-center py-16 text-white/30">
+                                <svg className="w-10 h-10 mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                                <span className="text-sm">Ready to optimize</span>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {/* Best Result Card */}
+                                <div className="border border-emerald-500/20 rounded-xl p-4 bg-emerald-500/5">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                                                <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                            </div>
+                                            <span className="text-sm font-medium text-emerald-400">Best Prompt</span>
+                                        </div>
+                                        <span className="text-lg font-bold text-emerald-400">{(results.best_score * 100).toFixed(0)}%</span>
+                                    </div>
+                                    <div className="text-[13px] text-white/80 whitespace-pre-wrap font-mono bg-black/30 p-3 rounded-lg border border-white/5 leading-relaxed max-h-[300px] overflow-y-auto">
+                                        {results.best_prompt}
+                                    </div>
+                                    {results.improvement > 0 && (
+                                        <div className="mt-2 text-xs text-emerald-400/70 flex items-center gap-1.5">
+                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                                            +{(results.improvement * 100).toFixed(1)}% improvement
+                                        </div>
+                                    )}
+                                    <button
+                                        onClick={handleSaveToLibrary}
+                                        disabled={savedToLibrary}
+                                        className={`mt-3 w-full py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${savedToLibrary
+                                            ? 'bg-white/5 text-emerald-400 border border-emerald-500/20'
+                                            : 'bg-white/10 hover:bg-white/15 text-white border border-white/10'
+                                            }`}
+                                    >
+                                        {savedToLibrary ? (
+                                            <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> Saved to Library</>
+                                        ) : (
+                                            <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg> Save to Library</>
+                                        )}
+                                    </button>
+                                </div>
+
+                                {/* Candidates */}
+                                {results.candidates && results.candidates.length > 0 && (
+                                    <div className="space-y-2">
+                                        <h4 className="text-[10px] font-bold text-white/30 uppercase tracking-widest px-1">All Candidates</h4>
+                                        {results.candidates.map((candidate: any, idx: number) => (
+                                            <div key={idx} className="border border-white/10 rounded-lg p-3 bg-white/5 hover:bg-white/[0.07] transition-all">
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <span className="text-[10px] font-mono text-white/40 bg-black/30 px-2 py-0.5 rounded">#{idx + 1}</span>
+                                                    <span className={`text-sm font-bold ${candidate.score > 0.8 ? 'text-emerald-400' : candidate.score > 0.5 ? 'text-yellow-400' : 'text-white/50'}`}>
+                                                        {(candidate.score * 100).toFixed(0)}%
+                                                    </span>
+                                                </div>
+                                                <div className="text-xs text-white/50 line-clamp-2">{candidate.prompt}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}

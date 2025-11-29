@@ -1,0 +1,33 @@
+{
+  "id": "code-generation",
+  "name": "Code Generation",
+  "description": "Генерация простого Python кода",
+  "category": "code",
+  "size": 6,
+  "data": [
+    {
+      "input": "Write a function that adds two numbers",
+      "output": "def add(a, b):\n    return a + b"
+    },
+    {
+      "input": "Write a function that returns the square of a number",
+      "output": "def square(n):\n    return n * n"
+    },
+    {
+      "input": "Write a function that checks if a number is even",
+      "output": "def is_even(n):\n    return n % 2 == 0"
+    },
+    {
+      "input": "Write a function that returns the maximum of two numbers",
+      "output": "def max_of_two(a, b):\n    return a if a > b else b"
+    },
+    {
+      "input": "Write a function that reverses a string",
+      "output": "def reverse_string(s):\n    return s[::-1]"
+    },
+    {
+      "input": "Write a function that calculates factorial",
+      "output": "def factorial(n):\n    if n <= 1:\n        return 1\n    return n * factorial(n - 1)"
+    }
+  ]
+}

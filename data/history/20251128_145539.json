@@ -1,0 +1,33 @@
+{
+  "id": "20251128_145539",
+  "timestamp": "2025-11-28T14:55:39.193261",
+  "prompt": "напиши код игры змейка в питоне",
+  "provider": "ollama",
+  "model": "llama3:8b",
+  "techniques": [
+    "zero_shot"
+  ],
+  "results": [
+    {
+      "technique": {
+        "name": "Zero-Shot Prompting",
+        "description": "Direct query without examples, the model responds based on its knowledge.",
+        "authors": "Tom B. Brown et al.",
+        "paper": "Language Models are Few-Shot Learners",
+        "arxiv": "https://arxiv.org/abs/2005.14165",
+        "year": "2020",
+        "categories": [
+          "General",
+          "Reasoning",
+          "Coding",
+          "Summarization",
+          "Creative Writing",
+          "Data Extraction"
+        ]
+      },
+      "response": "Write the code for a Snake game in Python, generating a comprehensive and functional implementation using standard libraries.",
+      "tokens": 31
+    }
+  ],
+  "total_tokens": 31
+}

@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-studio-bg text-slate-100 font-sans antialiased;
+}
+
+/* Custom checkbox styles - dirty yellow */
+input[type="checkbox"]:checked {
+  background-color: #a16207;
+  border-color: #a16207;
+}
+
+input[type="checkbox"]:checked:hover {
+  background-color: #92400e;
+  border-color: #92400e;
+}
+
+input[type="checkbox"]:focus {
+  outline-color: #a16207;
+}

@@ -1,0 +1,33 @@
+{
+  "id": "20251128_215112",
+  "timestamp": "2025-11-28T21:51:12.202389",
+  "prompt": "напиши стих про воробья",
+  "provider": "ollama",
+  "model": "llama3:8b",
+  "techniques": [
+    "zero_shot"
+  ],
+  "results": [
+    {
+      "technique": {
+        "name": "Zero-Shot Prompting",
+        "description": "Direct query without examples, the model responds based on its knowledge.",
+        "authors": "Tom B. Brown et al.",
+        "paper": "Language Models are Few-Shot Learners",
+        "arxiv": "https://arxiv.org/abs/2005.14165",
+        "year": "2020",
+        "categories": [
+          "General",
+          "Reasoning",
+          "Coding",
+          "Summarization",
+          "Creative Writing",
+          "Data Extraction"
+        ]
+      },
+      "response": "Воробей, воробей, с серой спиной,\nНа кусте сидит, не дремает и не синя.\nОн пел, он пел, как мелодичный певец,\nИ его песня звучала, как звонок в лесу.\n\nЕму нужна только свобода и небо,\nИ он живет, как хотят все другие.\nВоробей, воробей, с серой спиной,\nОн знает, что он маленький, но он не виноват.\n\nОн собирается кормиться и брать солнце,\nОн не заботится о том, что может случиться.\nОн живет в каждый момент, как есть,\nИ его жизнь - это мелодия, которая звучит.\n\nВоробей, воробей, с серой спиной,\nОн не знает, что он герой для людей.\nНо для него самого важны только день,\nИ наслаждение жизнью, а не забота о будущем.",
+      "tokens": 154
+    }
+  ],
+  "total_tokens": 154
+}

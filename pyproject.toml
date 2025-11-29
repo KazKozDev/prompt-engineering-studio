@@ -1,0 +1,28 @@
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "F",      # pyflakes
+    "I",      # isort
+    "UP",     # pyupgrade
+    "B",      # flake8-bugbear
+    "D",      # pydocstyle (docstrings)
+    "ANN",    # flake8-annotations (type hints)
+]
+ignore = [
+    "E501",   # line length handled by black
+    "D100",   # missing docstring in public module
+    "D104",   # missing docstring in public package
+    "ANN101", # missing type annotation for self
+    "ANN102", # missing type annotation for cls
+    "ANN401", # Dynamically typed expressions (typing.Any) are disallowed
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"

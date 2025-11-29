@@ -1,0 +1,71 @@
+{
+  "id": "20251129_085011",
+  "timestamp": "2025-11-29T08:50:11.648668",
+  "prompt": "напиши о подарке от онлайн казино и новых ставках на спорт",
+  "provider": "ollama",
+  "model": "gemini-3-pro-preview:latest",
+  "techniques": [
+    "step_back",
+    "zero_shot",
+    "role_prompting"
+  ],
+  "results": [
+    {
+      "technique": {
+        "name": "Step-Back Prompting",
+        "description": "First analyze general principles, then apply to specific task. Ask 'What are the key concepts?' before solving.",
+        "authors": "Huaixiu Steven Zheng et al.",
+        "paper": "Take a Step Back: Evoking Reasoning via Abstraction in Large Language Models",
+        "arxiv": "https://arxiv.org/abs/2310.06117",
+        "year": "2023",
+        "categories": [
+          "Reasoning",
+          "General"
+        ]
+      },
+      "response": "Error: Ollama API error: 403 Client Error: Forbidden for url: http://localhost:11434/api/generate",
+      "tokens": 0,
+      "error": true
+    },
+    {
+      "technique": {
+        "name": "Zero-Shot Prompting",
+        "description": "Direct query without examples. Just ask directly — pure question to the model.",
+        "authors": "Tom B. Brown et al.",
+        "paper": "Language Models are Few-Shot Learners",
+        "arxiv": "https://arxiv.org/abs/2005.14165",
+        "year": "2020",
+        "categories": [
+          "General",
+          "Reasoning",
+          "Coding",
+          "Summarization",
+          "Creative Writing",
+          "Data Extraction"
+        ]
+      },
+      "response": "Error: Ollama API error: 403 Client Error: Forbidden for url: http://localhost:11434/api/generate",
+      "tokens": 0,
+      "error": true
+    },
+    {
+      "technique": {
+        "name": "Role Prompting",
+        "description": "Assign expert role to the model. Start with 'You are an expert [role]...' — model adopts expertise and tone.",
+        "authors": "Chenglei Si et al.",
+        "paper": "Prompting GPT-3 To Be Reliable",
+        "arxiv": "https://arxiv.org/abs/2210.09150",
+        "year": "2022",
+        "categories": [
+          "General",
+          "Coding",
+          "Creative Writing"
+        ]
+      },
+      "response": "Error: Ollama API error: 403 Client Error: Forbidden for url: http://localhost:11434/api/generate",
+      "tokens": 0,
+      "error": true
+    }
+  ],
+  "total_tokens": 0
+}

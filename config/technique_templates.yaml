@@ -1,0 +1,610 @@
+# Technique-specific prompt templates based on arXiv papers
+# Each template transforms user input into an academic prompt following the paper methodology
+
+templates:
+  zero_shot:
+    # Based on: "Language Models are Few-Shot Learners" (Brown et al., 2020)
+    # arXiv:2005.14165 - Direct query without examples
+    template: |
+      {user_input}
+
+  few_shot:
+    # Based on: "Language Models are Few-Shot Learners" (Brown et al., 2020)
+    # arXiv:2005.14165 - Provide examples before the main query
+    template: |
+      Here are some examples of how to approach similar tasks:
+
+      Example 1:
+      Input: [Example input]
+      Output: [Example output]
+
+      Example 2:
+      Input: [Example input]
+      Output: [Example output]
+
+      Now, please solve the following:
+      {user_input}
+
+  role_prompting:
+    # Based on: "Prompting GPT-3 To Be Reliable" (Si et al., 2022)
+    # arXiv:2210.09150 - Assign expert role to the model
+    template: |
+      You are an expert specialist with deep knowledge and years of experience in this field.
+      
+      As an expert, please address the following:
+      {user_input}
+      
+      Provide a comprehensive, professional response based on your expertise.
+
+  step_back:
+    # Based on: "Take a Step Back" (Zheng et al., 2023)
+    # arXiv:2310.06117 - First analyze general principles, then apply
+    template: |
+      Before addressing the specific question, let's step back and consider the broader context.
+
+      Step 1: Identify the general principles and concepts relevant to this topic.
+      Step 2: Apply these principles to the specific question.
+
+      Question: {user_input}
+
+      First, what are the fundamental principles involved? Then, apply them to answer the question.
+
+  chain_of_thought:
+    # Based on: "Chain-of-Thought Prompting" (Wei et al., 2022)
+    # arXiv:2201.11903 - Step-by-step reasoning
+    template: |
+      {user_input}
+
+      Let's think step by step:
+      1. First, I will analyze the problem
+      2. Then, I will break it down into smaller parts
+      3. Finally, I will solve each part and combine the results
+
+      Please provide detailed reasoning for each step.
+
+  least_to_most:
+    # Based on: "Least-to-Most Prompting" (Zhou et al., 2022)
+    # arXiv:2205.10625 - Break down into simpler subproblems
+    template: |
+      To solve this problem, let's decompose it from the simplest to the most complex parts.
+
+      Problem: {user_input}
+
+      Step 1: Identify the simplest subproblem that needs to be solved first.
+      Step 2: Solve that subproblem.
+      Step 3: Use that solution to tackle the next more complex subproblem.
+      Step 4: Continue until the full problem is solved.
+
+      Begin with the simplest component and build up to the complete solution.
+
+  complexity_based:
+    # Based on: "Complexity-Based Prompting" (Fu et al., 2022)
+    # arXiv:2210.00720 - Use complex examples with many reasoning steps
+    template: |
+      This problem requires careful, multi-step reasoning. Consider the complexity of the task.
+
+      Problem: {user_input}
+
+      Approach this with the depth it deserves:
+      - Consider all relevant factors
+      - Use detailed reasoning chains
+      - Verify each step before proceeding
+      - Provide thorough explanations for complex parts
+
+  structured_cot:
+    # Based on: "Structured Chain-of-Thought" (Li et al., 2023)
+    # arXiv:2305.06599 - Use programming structures in reasoning
+    template: |
+      Let's solve this using structured thinking with program-like logic.
+
+      Problem: {user_input}
+
+      Structure your solution using:
+      - SEQUENCE: Steps that must be done in order
+      - CONDITION: If-then-else decisions
+      - LOOP: Repeated operations until a condition is met
+
+      Provide the solution in this structured format.
+
+  reaction:
+    # Based on: "ReAct: Synergizing Reasoning and Acting" (Yao et al., 2022)
+    # arXiv:2210.03629 - Thought -> Action -> Observation cycle
+    template: |
+      Use the ReAct framework to solve this problem.
+
+      Task: {user_input}
+
+      For each step, follow this format:
+      Thought: [Your reasoning about what to do next]
+      Action: [The action you would take]
+      Observation: [What you would observe from that action]
+
+      Continue this cycle until you reach a final answer.
+
+  program_aided:
+    # Based on: "PAL: Program-aided Language Models" (Gao et al., 2022)
+    # arXiv:2211.10435 - Use algorithmic thinking and pseudocode
+    template: |
+      Solve this problem using algorithmic thinking.
+
+      Problem: {user_input}
+
+      Approach:
+      1. Define the problem in terms of inputs and outputs
+      2. Write pseudocode or step-by-step algorithm
+      3. Execute the algorithm mentally
+      4. Provide the result
+
+      If applicable, include code or pseudocode to illustrate your solution.
+
+  self_critique:
+    # Based on: "Self-critiquing models" (Saunders et al., 2022)
+    # arXiv:2206.05802 - Critically evaluate own answer
+    template: |
+      {user_input}
+
+      After providing your initial answer, critically evaluate it:
+      
+      1. Initial Answer: [Your first response]
+      2. Critique: What are the potential weaknesses or errors in this answer?
+      3. Improvements: How can the answer be improved?
+      4. Final Answer: Provide an improved version based on your critique.
+
+  reflection:
+    # Based on: "Reflexion" (Shinn et al., 2023)
+    # arXiv:2303.11366 - Analyze own thought process
+    template: |
+      {user_input}
+
+      After answering, reflect on your reasoning process:
+      
+      1. Answer: [Your response]
+      2. Reflection: 
+         - What assumptions did I make?
+         - What could I have done differently?
+         - What did I learn from this problem?
+      3. Refined Answer: Based on reflection, provide an improved answer if needed.
+
+  refinement:
+    # Based on: "Self-Refine" (Madaan et al., 2023)
+    # arXiv:2303.17651 - Iteratively improve the answer
+    template: |
+      {user_input}
+
+      Use iterative refinement:
+      
+      Iteration 1: Provide initial answer
+      Feedback 1: What could be better?
+      Iteration 2: Improve based on feedback
+      Feedback 2: Any remaining issues?
+      Final Answer: The polished, refined response
+
+  metacognitive:
+    # Based on: "Metacognitive Prompting" (Liusie et al., 2023)
+    # arXiv:2308.05342 - Reflect on thinking process before responding
+    template: |
+      Before answering, engage in metacognitive reflection.
+
+      Question: {user_input}
+
+      Metacognitive Process:
+      1. What type of problem is this?
+      2. What knowledge and strategies do I need?
+      3. How confident am I in my approach?
+      4. What could go wrong?
+
+      Now provide your answer with this awareness.
+
+  self_consistency:
+    # Based on: "Self-Consistency" (Wang et al., 2022)
+    # arXiv:2203.11171 - Solve in multiple ways, check consistency
+    template: |
+      Solve this problem using multiple approaches to ensure consistency.
+
+      Problem: {user_input}
+
+      Approach 1: [First method of solving]
+      Result 1: [Answer from first approach]
+
+      Approach 2: [Alternative method]
+      Result 2: [Answer from second approach]
+
+      Approach 3: [Third method if applicable]
+      Result 3: [Answer from third approach]
+
+      Consistency Check: Do the results agree? What is the most reliable answer?
+
+  progressive_hint:
+    # Based on: "Progressive-Hint Prompting" (Zheng et al., 2023)
+    # arXiv:2304.09797 - Use previous answers as hints
+    template: |
+      Let's solve this progressively, using each answer as a hint for improvement.
+
+      Problem: {user_input}
+
+      Attempt 1: [Initial answer]
+      Hint from Attempt 1: What insight does this give us?
+
+      Attempt 2: [Improved answer using the hint]
+      Hint from Attempt 2: What further insight?
+
+      Final Answer: [Best answer incorporating all hints]
+
+  analogical_prompting:
+    # Based on: "Large Language Models as Analogical Reasoners" (Yasunaga et al., 2023)
+    # arXiv:2310.01714 - Generate relevant examples based on analogies
+    template: |
+      Use analogical reasoning to solve this problem.
+
+      Problem: {user_input}
+
+      Step 1: Think of similar problems you know how to solve
+      Step 2: Identify the analogy - what makes them similar?
+      Step 3: Apply the solution method from the analogous problem
+      Step 4: Adapt the solution to the current problem
+
+  skeleton_of_thought:
+    # Based on: "Skeleton-of-Thought" (Ning et al., 2023)
+    # arXiv:2307.15337 - First create structure, then fill in details
+    template: |
+      First, create a skeleton outline, then fill in the details.
+
+      Task: {user_input}
+
+      SKELETON (main points):
+      1. [Point 1]
+      2. [Point 2]
+      3. [Point 3]
+
+      DETAILED EXPANSION:
+      Now expand each point with full details and explanations.
+
+  chain_of_density:
+    # Based on: "Chain of Density Prompting" (Adams et al., 2023)
+    # arXiv:2309.04269 - Iteratively create denser summaries
+    template: |
+      Create increasingly dense and informative responses.
+
+      Task: {user_input}
+
+      Version 1 (Basic): A simple, straightforward response
+      Version 2 (More Dense): Add more important details without increasing length
+      Version 3 (Most Dense): Maximum information density, keeping length similar
+      
+      Final Version: The most informative yet concise response.
+
+  tree_of_thoughts:
+    # Based on: "Tree of Thoughts" (Yao et al., 2023)
+    # arXiv:2305.10601 - Consider multiple solution paths
+    template: |
+      Explore multiple solution paths like a tree structure.
+
+      Problem: {user_input}
+
+      Root: Initial understanding of the problem
+
+      Branch A: [First approach]
+        - Evaluation: How promising is this path?
+        - Continue or abandon?
+
+      Branch B: [Second approach]
+        - Evaluation: How promising is this path?
+        - Continue or abandon?
+
+      Branch C: [Third approach]
+        - Evaluation: How promising is this path?
+        - Continue or abandon?
+
+      Select the most promising branch and develop the solution.
+
+  graph_of_thoughts:
+    # Based on: "Graph of Thoughts" (Besta et al., 2023)
+    # arXiv:2308.09687 - Model as graph with thoughts as nodes
+    template: |
+      Model your reasoning as a graph of interconnected thoughts.
+
+      Problem: {user_input}
+
+      Thought Nodes:
+      - Node 1: [Initial thought]
+      - Node 2: [Related thought]
+      - Node 3: [Another perspective]
+
+      Connections:
+      - Node 1 → Node 2: [How they connect]
+      - Node 2 → Node 3: [Relationship]
+      - Node 1 → Node 3: [Direct connection if any]
+
+      Synthesis: Combine insights from the graph to form the answer.
+
+  thought_propagation:
+    # Based on: "Thought Propagation" (Yu et al., 2023)
+    # arXiv:2310.03965 - Use analogous problems and solutions
+    template: |
+      Propagate insights from similar solved problems.
+
+      Current Problem: {user_input}
+
+      Step 1: Identify analogous problems that have been solved before
+      Step 2: Extract the key insights and methods from those solutions
+      Step 3: Propagate these insights to the current problem
+      Step 4: Adapt and apply to generate the solution
+
+  visual_cot:
+    # Based on: "Visual CoT" (Shao et al., 2024)
+    # arXiv:2403.16999 - Chain of thought with visual elements
+    template: |
+      Use visual and structured thinking to solve this problem.
+
+      Task: {user_input}
+
+      Visual Representation:
+      - Describe the problem visually or diagrammatically
+      - Identify key visual elements or relationships
+      
+      Step-by-step Visual Reasoning:
+      1. [First visual insight]
+      2. [Second visual insight]
+      3. [Conclusion from visual analysis]
+
+  self_harmonized:
+    # Based on: "Self-Harmonized Chain of Thought" (Jin et al., 2024)
+    # arXiv:2409.04057 - Unify diverse solution paths
+    template: |
+      Generate multiple solution approaches and harmonize them.
+
+      Problem: {user_input}
+
+      Solution Path 1: [First approach]
+      Solution Path 2: [Second approach]
+      Solution Path 3: [Third approach]
+
+      Harmonization:
+      - What do these paths have in common?
+      - Where do they differ?
+      - How can we unify them into a consistent solution?
+
+      Harmonized Answer: [Unified solution]
+
+  meta_prompting:
+    # Based on: "Meta-Prompting" (Suzgun & Kalai, 2024)
+    # arXiv:2401.12954 - Use one LM as conductor for multiple experts
+    template: |
+      Act as a conductor coordinating multiple expert perspectives.
+
+      Task: {user_input}
+
+      Expert 1 (Domain Specialist): What does this expert say?
+      Expert 2 (Critical Analyst): What concerns or critiques arise?
+      Expert 3 (Creative Thinker): What innovative solutions exist?
+
+      Conductor's Synthesis: Integrate all expert opinions into a coherent response.
+
+  prompt_engineering_pe2:
+    # Based on: "Prompt Engineering a Prompt Engineer" (Ye et al., 2024)
+    # arXiv:2311.05661 - Meta-prompting for automatic prompt engineering
+    template: |
+      As a prompt engineering expert, optimize the following task.
+
+      Original Task: {user_input}
+
+      Analysis:
+      1. What is the core objective?
+      2. What makes this task challenging?
+      3. What prompt structure would work best?
+
+      Optimized Prompt: [Rewritten, improved version]
+      
+      Execution: Now execute the optimized prompt.
+
+  textgrad:
+    # Based on: "TextGrad" (Yuksekgonul et al., 2024)
+    # arXiv:2406.07496 - Automatic differentiation via text feedback
+    template: |
+      Use iterative text-based feedback to optimize the response.
+
+      Task: {user_input}
+
+      Initial Response: [First attempt]
+      
+      Feedback Round 1:
+      - What works well?
+      - What needs improvement?
+      - Gradient: Direction of improvement
+      
+      Updated Response: [Improved based on feedback]
+      
+      Feedback Round 2: [If needed]
+      
+      Final Optimized Response:
+
+  system_prompt_optimization:
+    # Based on: "System Prompt Optimization" (Choi et al., 2025)
+    # arXiv:2505.09666 - Two-level optimization of system prompts
+    template: |
+      Apply two-level optimization to this task.
+
+      Task: {user_input}
+
+      Level 1 - Meta-Level Analysis:
+      - What is the optimal way to frame this problem?
+      - What context would help most?
+
+      Level 2 - Execution Level:
+      - Apply the optimized framing
+      - Generate the response
+
+      Optimized Output:
+
+  chain_of_draft:
+    # Based on: "Chain of Draft" (Xu et al., 2025)
+    # arXiv:2502.18600 - Minimalistic reasoning with only essential information
+    template: |
+      Solve this using minimal, draft-style reasoning. Write only the essential intermediate steps.
+
+      Problem: {user_input}
+
+      Draft reasoning (keep each step concise - just key numbers/facts):
+      Step 1: [minimal draft]
+      Step 2: [minimal draft]
+      Step 3: [minimal draft]
+
+      Final Answer:
+
+  chain_of_verification:
+    # Based on: "Chain-of-Verification" (Dhuliawala et al., 2023)
+    # arXiv:2309.11495 - Four-step verification to reduce hallucinations
+    template: |
+      Use Chain-of-Verification to ensure accuracy.
+
+      Task: {user_input}
+
+      Step 1 - Baseline Response:
+      [Generate initial answer]
+
+      Step 2 - Plan Verification Questions:
+      - Q1: [Question to verify a key claim]
+      - Q2: [Question to verify another claim]
+      - Q3: [Question to check for errors]
+
+      Step 3 - Answer Verification Questions Independently:
+      - A1: [Answer Q1 without looking at baseline]
+      - A2: [Answer Q2 independently]
+      - A3: [Answer Q3 independently]
+
+      Step 4 - Final Verified Response:
+      [Revised answer incorporating verification results]
+
+  program_of_thoughts:
+    # Based on: "Program of Thoughts" (Chen et al., 2022)
+    # arXiv:2211.12588 - Use Python for computation steps
+    template: |
+      Solve this problem by writing Python code for the computation steps.
+
+      Problem: {user_input}
+
+      # Python solution:
+      ```python
+      # Step 1: Define the problem variables
+      
+      # Step 2: Implement the computation logic
+      
+      # Step 3: Calculate the result
+      
+      # Step 4: Print the answer
+      print(f"Answer: {{result}}")
+      ```
+
+      Explanation of the code and final answer:
+
+  chain_of_table:
+    # Based on: "Chain-of-Table" (Wang et al., 2024)
+    # arXiv:2401.04398 - Tabular reasoning with SQL operations
+    template: |
+      Use Chain-of-Table reasoning to solve this problem with structured data operations.
+
+      Task: {user_input}
+
+      Step 1 - Identify the relevant table structure:
+      | Column1 | Column2 | Column3 |
+      |---------|---------|---------|
+      | ...     | ...     | ...     |
+
+      Step 2 - Plan SQL/DataFrame operations:
+      - Operation 1: [SELECT/FILTER/GROUP BY...]
+      - Operation 2: [JOIN/AGGREGATE...]
+
+      Step 3 - Execute operations step by step:
+      [Show intermediate table results]
+
+      Step 4 - Final Answer:
+
+  thread_of_thought:
+    # Based on: "Thread of Thought" (Zhou et al., 2023)
+    # arXiv:2311.08734 - Segment and analyze chaotic contexts
+    template: |
+      Use Thread of Thought to analyze this systematically.
+
+      Task: {user_input}
+
+      Phase 1 - Segment the context into manageable parts:
+      - Segment A: [First part summary]
+      - Segment B: [Second part summary]
+      - Segment C: [Third part summary]
+
+      Phase 2 - Analyze each segment:
+      - Analysis A: [Key insights from Segment A]
+      - Analysis B: [Key insights from Segment B]
+      - Analysis C: [Key insights from Segment C]
+
+      Phase 3 - Synthesize and respond:
+      [Combine insights into final answer]
+
+  system2_attention:
+    # Based on: "System 2 Attention" (Weston & Sukhbaatar, 2023)
+    # arXiv:2311.11829 - Selective attention by regenerating context
+    template: |
+      Use System 2 Attention to focus on what's truly relevant.
+
+      Original Task: {user_input}
+
+      Step 1 - Context Regeneration:
+      Rewrite the input, keeping ONLY the information that is directly relevant to answering the question. Remove any irrelevant, biasing, or distracting information.
+
+      Relevant Context: [Filtered, essential information only]
+
+      Step 2 - Response Generation:
+      Based on the refined context, provide your answer:
+
+  chain_of_code:
+    # Based on: "Chain-of-Code" (Li et al., 2023)
+    # arXiv:2312.04474 - Think in code with LMulator for semantic tasks
+    template: |
+      Use Chain-of-Code to solve this by thinking in code.
+
+      Problem: {user_input}
+
+      ```python
+      # Pseudocode solution that can handle both logic AND semantic reasoning
+      
+      def solve():
+          # Step 1: Parse the problem
+          problem = "..."
+          
+          # Step 2: For logical/numeric parts, use actual code
+          # For semantic parts, use natural language as "pseudocode"
+          
+          # Step 3: Combine results
+          result = ...
+          
+          return result
+      
+      # Execute and explain
+      answer = solve()
+      ```
+
+      Explanation and Final Answer:
+
+  active_prompting:
+    # Based on: "Active Prompting" (Diao et al., 2023)
+    # arXiv:2302.12246 - Select examples based on uncertainty
+    template: |
+      Use Active Prompting to identify and address uncertainties.
+
+      Task: {user_input}
+
+      Step 1 - Generate initial response:
+      [First attempt at answering]
+
+      Step 2 - Identify uncertain parts:
+      - Uncertainty 1: [What am I unsure about?]
+      - Uncertainty 2: [What needs clarification?]
+      - Uncertainty 3: [What could be wrong?]
+
+      Step 3 - Address each uncertainty:
+      - Resolution 1: [How to resolve uncertainty 1]
+      - Resolution 2: [How to resolve uncertainty 2]
+      - Resolution 3: [How to resolve uncertainty 3]
+
+      Step 4 - Final confident response:
+      [Answer with uncertainties resolved]
