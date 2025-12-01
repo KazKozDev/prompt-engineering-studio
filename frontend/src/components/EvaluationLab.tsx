@@ -4,6 +4,8 @@ import { api } from '../services/api';
 import { QualityTab, type QualityMode } from './evaluation/QualityTab';
 import { ConsistencyTab, type ConsistencyMode } from './evaluation/ConsistencyTab';
 import { RobustnessLab } from './evaluation/RobustnessLab';
+import { PerformanceTab, type PerformanceMode } from './evaluation/PerformanceTab';
+import { HumanEvalTab, type HumanEvalMode } from './evaluation/HumanEvalTab';
 import { OverviewTab } from './evaluation/OverviewTab';
 import { type LibraryPrompt } from './PromptLibrary';
 import { MethodologyIcon } from './icons/MethodologyIcon';
@@ -22,7 +24,7 @@ interface EvaluationLabProps {
   promptToEvaluate?: LibraryPrompt | null;
 }
 
-type TabType = 'quality' | 'consistency' | 'robustness' | 'overview';
+type TabType = 'quality' | 'consistency' | 'robustness' | 'performance' | 'human' | 'overview';
 type RobustnessTestType = 'format' | 'length' | 'adversarial';
 
 export function EvaluationLab({ settings, promptToEvaluate }: EvaluationLabProps) {
@@ -31,6 +33,8 @@ export function EvaluationLab({ settings, promptToEvaluate }: EvaluationLabProps
   const [qualityMode, setQualityMode] = useState<QualityMode>('reference');
   const [consistencyMode, setConsistencyMode] = useState<ConsistencyMode>('self');
   const [robustnessTestType, setRobustnessTestType] = useState<RobustnessTestType>('format');
+  const [performanceMode, setPerformanceMode] = useState<PerformanceMode>('latency');
+  const [humanEvalMode, setHumanEvalMode] = useState<HumanEvalMode>('rating');
   const [guideOpen, setGuideOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
@@ -83,6 +87,20 @@ export function EvaluationLab({ settings, promptToEvaluate }: EvaluationLabProps
       color: 'text-orange-400'
     },
     {
+      id: 'performance' as TabType,
+      label: 'Performance',
+      description: 'Latency, Cost, Reliability',
+      icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+      color: 'text-green-400'
+    },
+    {
+      id: 'human' as TabType,
+      label: 'Human Eval',
+      description: 'Rating, Ranking, A/B',
+      icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>,
+      color: 'text-pink-400'
+    },
+    {
       id: 'overview' as TabType,
       label: 'Overview',
       description: 'Aggregated report',
@@ -100,6 +118,12 @@ export function EvaluationLab({ settings, promptToEvaluate }: EvaluationLabProps
       case 'robustness':
         return robustnessTestType === 'format' ? 'Format Sensitivity' :
                robustnessTestType === 'length' ? 'Context Length' : 'Adversarial Tests';
+      case 'performance':
+        return performanceMode === 'latency' ? 'Latency Testing' :
+               performanceMode === 'cost' ? 'Cost Analysis' : 'Reliability Testing';
+      case 'human':
+        return humanEvalMode === 'rating' ? 'Rating Scale Evaluation' :
+               humanEvalMode === 'ranking' ? 'Ranking Evaluation' : 'A/B Testing';
       case 'overview':
         return 'Evaluation Overview';
       default:
@@ -328,6 +352,81 @@ export function EvaluationLab({ settings, promptToEvaluate }: EvaluationLabProps
         </>
       )}
 
+      {/* Performance Tab Guide */}
+      {activeTab === 'performance' && (
+        <>
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">What It Measures</span>
+            </div>
+            <div className="bg-white/[0.03] border border-white/5 rounded-lg p-3">
+              {performanceMode === 'latency' && (
+                <p className="text-[11px] text-white/50 leading-relaxed">
+                  Measures <span className="text-white/80 font-medium">response time</span> across multiple runs. Reports avg, P50, P95, P99 latencies.
+                </p>
+              )}
+              {performanceMode === 'cost' && (
+                <p className="text-[11px] text-white/50 leading-relaxed">
+                  Estimates <span className="text-white/80 font-medium">token usage and cost</span> per request. Critical for budget planning.
+                </p>
+              )}
+              {performanceMode === 'reliability' && (
+                <p className="text-[11px] text-white/50 leading-relaxed">
+                  Tracks <span className="text-white/80 font-medium">failure rate</span> and error types. Essential for production monitoring.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-white/5 border border-white/10 rounded-lg p-3">
+            <div className="text-[11px] font-semibold text-white/70 uppercase tracking-wide mb-2">Use Cases</div>
+            <ul className="text-[11px] text-white/60 space-y-1.5">
+              <li>• <span className="text-white/80">SLA Compliance:</span> Verify response times meet requirements</li>
+              <li>• <span className="text-white/80">Cost Optimization:</span> Compare prompt efficiency</li>
+              <li>• <span className="text-white/80">Capacity Planning:</span> Estimate infrastructure needs</li>
+            </ul>
+          </div>
+        </>
+      )}
+
+      {/* Human Eval Tab Guide */}
+      {activeTab === 'human' && (
+        <>
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">What It Does</span>
+            </div>
+            <div className="bg-white/[0.03] border border-white/5 rounded-lg p-3">
+              {humanEvalMode === 'rating' && (
+                <p className="text-[11px] text-white/50 leading-relaxed">
+                  <span className="text-white/80 font-medium">Likert scale scoring</span> (1-5) across multiple criteria: relevance, accuracy, coherence, completeness, tone.
+                </p>
+              )}
+              {humanEvalMode === 'ranking' && (
+                <p className="text-[11px] text-white/50 leading-relaxed">
+                  <span className="text-white/80 font-medium">Order responses by preference</span>. Best for comparing multiple variants.
+                </p>
+              )}
+              {humanEvalMode === 'ab' && (
+                <p className="text-[11px] text-white/50 leading-relaxed">
+                  <span className="text-white/80 font-medium">Side-by-side comparison</span> of two prompt/response variants. Pick a winner.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-white/5 border border-white/10 rounded-lg p-3">
+            <div className="text-[11px] font-semibold text-white/70 uppercase tracking-wide mb-2">Best Practices</div>
+            <ul className="text-[11px] text-white/60 space-y-1.5">
+              <li>• Use <span className="text-white/80">multiple evaluators</span> for reliability</li>
+              <li>• Define <span className="text-white/80">clear criteria</span> before evaluation</li>
+              <li>• <span className="text-white/80">Blind testing</span> reduces bias</li>
+              <li>• Export results for <span className="text-white/80">stakeholder review</span></li>
+            </ul>
+          </div>
+        </>
+      )}
+
       {/* Overview Tab Guide */}
       {activeTab === 'overview' && (
         <>
@@ -383,7 +482,7 @@ export function EvaluationLab({ settings, promptToEvaluate }: EvaluationLabProps
         <div className="w-64 flex flex-col shrink-0 gap-4">
           <div>
             <h2 className="text-[11px] font-bold text-white/30 uppercase tracking-widest mb-1">EVALUATION LAB</h2>
-            <p className="text-xs text-white/40 mb-4 mt-1">Test your prompts across 3 dimensions</p>
+            <p className="text-xs text-white/40 mb-4 mt-1">Test your prompts across 5 dimensions</p>
           </div>
 
           <div className="flex flex-col gap-2">
@@ -449,6 +548,18 @@ export function EvaluationLab({ settings, promptToEvaluate }: EvaluationLabProps
                 datasets={datasets}
                 onTestTypeChange={setRobustnessTestType}
                 onDatasetCreated={loadDatasets}
+              />
+            )}
+            {activeTab === 'performance' && (
+              <PerformanceTab
+                settings={settings}
+                onModeChange={setPerformanceMode}
+              />
+            )}
+            {activeTab === 'human' && (
+              <HumanEvalTab
+                settings={settings}
+                onModeChange={setHumanEvalMode}
               />
             )}
             {activeTab === 'overview' && (
