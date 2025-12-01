@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { PromptSelector } from './PromptSelector';
 import { Button } from '../ui/Button';
@@ -14,6 +14,35 @@ interface PerformanceTabProps {
 
 export type PerformanceMode = 'latency' | 'cost' | 'reliability';
 
+// Icons
+const Icons = {
+    clock: () => (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+    ),
+    dollar: () => (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+    ),
+    shield: () => (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+    ),
+    library: () => (
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+        </svg>
+    ),
+    plus: () => (
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        </svg>
+    ),
+};
+
 export function PerformanceTab({ settings, onModeChange }: PerformanceTabProps) {
     const [mode, setMode] = useState<PerformanceMode>('latency');
     const [prompt, setPrompt] = useState('');
@@ -23,10 +52,13 @@ export function PerformanceTab({ settings, onModeChange }: PerformanceTabProps) 
     const [loading, setLoading] = useState(false);
     const [showSelector, setShowSelector] = useState(false);
 
+    useEffect(() => {
+        onModeChange?.(mode);
+    }, [mode, onModeChange]);
+
     const handleModeChange = (newMode: PerformanceMode) => {
         setMode(newMode);
         setResults(null);
-        onModeChange?.(newMode);
     };
 
     const runTest = async () => {
@@ -57,11 +89,9 @@ export function PerformanceTab({ settings, onModeChange }: PerformanceTabProps) 
                     const runEnd = Date.now();
                     latencies.push(runEnd - runStart);
                     
-                    // Get first result
                     const firstResult = res.results?.[0];
                     const responseText = firstResult?.response || '';
                     
-                    // Estimate tokens (rough approximation)
                     const inputTokens = Math.ceil(fullPrompt.length / 4);
                     const outputTokens = firstResult?.tokens || Math.ceil(responseText.length / 4);
                     tokenCounts.push({ input: inputTokens, output: outputTokens });
@@ -73,7 +103,6 @@ export function PerformanceTab({ settings, onModeChange }: PerformanceTabProps) 
 
             const totalTime = Date.now() - startTime;
             
-            // Calculate statistics
             const avgLatency = latencies.length > 0 
                 ? latencies.reduce((a, b) => a + b, 0) / latencies.length 
                 : 0;
@@ -88,9 +117,8 @@ export function PerformanceTab({ settings, onModeChange }: PerformanceTabProps) 
             const avgInputTokens = tokenCounts.length > 0 ? totalInputTokens / tokenCounts.length : 0;
             const avgOutputTokens = tokenCounts.length > 0 ? totalOutputTokens / tokenCounts.length : 0;
 
-            // Estimate cost (rough, based on GPT-4 pricing as reference)
-            const inputCostPer1k = 0.03; // $0.03 per 1K input tokens
-            const outputCostPer1k = 0.06; // $0.06 per 1K output tokens
+            const inputCostPer1k = 0.03;
+            const outputCostPer1k = 0.06;
             const estimatedCost = (totalInputTokens / 1000 * inputCostPer1k) + 
                                   (totalOutputTokens / 1000 * outputCostPer1k);
 
@@ -101,31 +129,11 @@ export function PerformanceTab({ settings, onModeChange }: PerformanceTabProps) 
                 nRuns,
                 successfulRuns: nRuns - failures.length,
                 totalTime,
-                latency: {
-                    avg: avgLatency,
-                    min: minLatency,
-                    max: maxLatency,
-                    p50,
-                    p95,
-                    p99,
-                    all: latencies
-                },
-                tokens: {
-                    totalInput: totalInputTokens,
-                    totalOutput: totalOutputTokens,
-                    avgInput: avgInputTokens,
-                    avgOutput: avgOutputTokens
-                },
-                cost: {
-                    estimated: estimatedCost,
-                    perRequest: estimatedCost / (nRuns - failures.length || 1)
-                },
-                reliability: {
-                    failureRate,
-                    failures,
-                    successRate: 1 - failureRate
-                },
-                responses: responses.slice(0, 3) // Sample responses
+                latency: { avg: avgLatency, min: minLatency, max: maxLatency, p50, p95, p99, all: latencies },
+                tokens: { totalInput: totalInputTokens, totalOutput: totalOutputTokens, avgInput: avgInputTokens, avgOutput: avgOutputTokens },
+                cost: { estimated: estimatedCost, perRequest: estimatedCost / (nRuns - failures.length || 1) },
+                reliability: { failureRate, failures, successRate: 1 - failureRate },
+                responses: responses.slice(0, 3)
             });
         } catch (error) {
             console.error(error);
@@ -139,6 +147,18 @@ export function PerformanceTab({ settings, onModeChange }: PerformanceTabProps) 
         const sorted = [...arr].sort((a, b) => a - b);
         const index = Math.ceil((p / 100) * sorted.length) - 1;
         return sorted[Math.max(0, index)];
+    };
+
+    const getScoreColor = (score: number) => {
+        if (score >= 95) return 'text-green-400';
+        if (score >= 80) return 'text-yellow-400';
+        return 'text-red-400';
+    };
+
+    const getScoreBg = (score: number) => {
+        if (score >= 95) return 'bg-green-500/20 border-green-500/30';
+        if (score >= 80) return 'bg-yellow-500/20 border-yellow-500/30';
+        return 'bg-red-500/20 border-red-500/30';
     };
 
     return (
@@ -158,9 +178,7 @@ export function PerformanceTab({ settings, onModeChange }: PerformanceTabProps) 
                         }`}
                     >
                         <div className="flex items-center justify-center gap-2">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
+                            <Icons.clock />
                             Latency
                         </div>
                         <div className="text-[10px] text-white/40 mt-1">Response time</div>
@@ -174,9 +192,7 @@ export function PerformanceTab({ settings, onModeChange }: PerformanceTabProps) 
                         }`}
                     >
                         <div className="flex items-center justify-center gap-2">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
+                            <Icons.dollar />
                             Cost
                         </div>
                         <div className="text-[10px] text-white/40 mt-1">Token usage</div>
@@ -190,9 +206,7 @@ export function PerformanceTab({ settings, onModeChange }: PerformanceTabProps) 
                         }`}
                     >
                         <div className="flex items-center justify-center gap-2">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
+                            <Icons.shield />
                             Reliability
                         </div>
                         <div className="text-[10px] text-white/40 mt-1">Failure rate</div>
@@ -206,8 +220,9 @@ export function PerformanceTab({ settings, onModeChange }: PerformanceTabProps) 
                     <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Prompt</span>
                     <button
                         onClick={() => setShowSelector(true)}
-                        className="text-[10px] text-white/40 hover:text-white/70"
+                        className="text-[10px] text-white/40 hover:text-white/70 flex items-center gap-1"
                     >
+                        <Icons.library />
                         From Library
                     </button>
                 </div>
@@ -222,7 +237,8 @@ export function PerformanceTab({ settings, onModeChange }: PerformanceTabProps) 
             {/* Test Input */}
             <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Test Input (Optional)</span>
+                    <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Test Input</span>
+                    <span className="text-[10px] text-white/30">Optional</span>
                 </div>
                 <textarea
                     value={testInput}
@@ -234,9 +250,9 @@ export function PerformanceTab({ settings, onModeChange }: PerformanceTabProps) 
 
             {/* Number of Runs */}
             <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-2">
                     <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Number of Runs</span>
-                    <span className="text-xs text-white/60">{nRuns} requests</span>
+                    <span className="text-xs text-white/60 font-medium">{nRuns} requests</span>
                 </div>
                 <input
                     type="range"
@@ -244,7 +260,7 @@ export function PerformanceTab({ settings, onModeChange }: PerformanceTabProps) 
                     max={50}
                     value={nRuns}
                     onChange={e => setNRuns(Number(e.target.value))}
-                    className="w-full mt-2 accent-white/50"
+                    className="w-full accent-white/50"
                 />
                 <div className="flex justify-between text-[10px] text-white/30 mt-1">
                     <span>5 (quick)</span>
@@ -253,11 +269,7 @@ export function PerformanceTab({ settings, onModeChange }: PerformanceTabProps) 
             </div>
 
             {/* Run Button */}
-            <Button
-                onClick={runTest}
-                disabled={loading}
-                className="w-full"
-            >
+            <Button onClick={runTest} disabled={loading} className="w-full">
                 {loading ? `Running ${nRuns} requests...` : 'Run Performance Test'}
             </Button>
 
@@ -266,54 +278,36 @@ export function PerformanceTab({ settings, onModeChange }: PerformanceTabProps) 
                 <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-4">
                         <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Results</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/30">
                             {results.successfulRuns}/{results.nRuns} successful
                         </span>
                     </div>
 
                     {/* Latency Results */}
-                    {(mode === 'latency' || !mode) && (
+                    {mode === 'latency' && (
                         <div className="space-y-4">
                             <div className="grid grid-cols-3 gap-3">
-                                <div className="bg-white/5 rounded-lg p-3 text-center">
-                                    <div className="text-lg font-semibold text-white">
-                                        {results.latency.avg.toFixed(0)}ms
-                                    </div>
-                                    <div className="text-[10px] text-white/50 uppercase">Avg Latency</div>
+                                <div className="bg-white/[0.03] border border-white/5 rounded-lg p-3 text-center">
+                                    <div className="text-xl font-semibold text-white">{results.latency.avg.toFixed(0)}ms</div>
+                                    <div className="text-[10px] text-white/40 uppercase mt-1">Avg Latency</div>
                                 </div>
-                                <div className="bg-white/5 rounded-lg p-3 text-center">
-                                    <div className="text-lg font-semibold text-white">
-                                        {results.latency.p95.toFixed(0)}ms
-                                    </div>
-                                    <div className="text-[10px] text-white/50 uppercase">P95</div>
+                                <div className="bg-white/[0.03] border border-white/5 rounded-lg p-3 text-center">
+                                    <div className="text-xl font-semibold text-white">{results.latency.p95.toFixed(0)}ms</div>
+                                    <div className="text-[10px] text-white/40 uppercase mt-1">P95</div>
                                 </div>
-                                <div className="bg-white/5 rounded-lg p-3 text-center">
-                                    <div className="text-lg font-semibold text-white">
-                                        {results.latency.p99.toFixed(0)}ms
-                                    </div>
-                                    <div className="text-[10px] text-white/50 uppercase">P99</div>
+                                <div className="bg-white/[0.03] border border-white/5 rounded-lg p-3 text-center">
+                                    <div className="text-xl font-semibold text-white">{results.latency.p99.toFixed(0)}ms</div>
+                                    <div className="text-[10px] text-white/40 uppercase mt-1">P99</div>
                                 </div>
                             </div>
 
-                            <div className="bg-white/[0.03] rounded-lg p-3">
+                            <div className="bg-white/[0.03] border border-white/5 rounded-lg p-3">
                                 <div className="text-[10px] font-bold text-white/30 uppercase mb-2">Distribution</div>
                                 <div className="grid grid-cols-4 gap-2 text-xs">
-                                    <div>
-                                        <span className="text-white/50">Min:</span>
-                                        <span className="text-white/80 ml-1">{results.latency.min}ms</span>
-                                    </div>
-                                    <div>
-                                        <span className="text-white/50">P50:</span>
-                                        <span className="text-white/80 ml-1">{results.latency.p50}ms</span>
-                                    </div>
-                                    <div>
-                                        <span className="text-white/50">Max:</span>
-                                        <span className="text-white/80 ml-1">{results.latency.max}ms</span>
-                                    </div>
-                                    <div>
-                                        <span className="text-white/50">Total:</span>
-                                        <span className="text-white/80 ml-1">{(results.totalTime / 1000).toFixed(1)}s</span>
-                                    </div>
+                                    <div><span className="text-white/40">Min:</span> <span className="text-white/80">{results.latency.min}ms</span></div>
+                                    <div><span className="text-white/40">P50:</span> <span className="text-white/80">{results.latency.p50}ms</span></div>
+                                    <div><span className="text-white/40">Max:</span> <span className="text-white/80">{results.latency.max}ms</span></div>
+                                    <div><span className="text-white/40">Total:</span> <span className="text-white/80">{(results.totalTime / 1000).toFixed(1)}s</span></div>
                                 </div>
                             </div>
                         </div>
@@ -323,34 +317,26 @@ export function PerformanceTab({ settings, onModeChange }: PerformanceTabProps) 
                     {mode === 'cost' && (
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-3">
-                                <div className="bg-white/5 rounded-lg p-3 text-center">
-                                    <div className="text-lg font-semibold text-white">
-                                        ${results.cost.estimated.toFixed(4)}
-                                    </div>
-                                    <div className="text-[10px] text-white/50 uppercase">Total Cost</div>
+                                <div className="bg-white/[0.03] border border-white/5 rounded-lg p-3 text-center">
+                                    <div className="text-xl font-semibold text-white">${results.cost.estimated.toFixed(4)}</div>
+                                    <div className="text-[10px] text-white/40 uppercase mt-1">Total Cost</div>
                                 </div>
-                                <div className="bg-white/5 rounded-lg p-3 text-center">
-                                    <div className="text-lg font-semibold text-white">
-                                        ${results.cost.perRequest.toFixed(5)}
-                                    </div>
-                                    <div className="text-[10px] text-white/50 uppercase">Per Request</div>
+                                <div className="bg-white/[0.03] border border-white/5 rounded-lg p-3 text-center">
+                                    <div className="text-xl font-semibold text-white">${results.cost.perRequest.toFixed(5)}</div>
+                                    <div className="text-[10px] text-white/40 uppercase mt-1">Per Request</div>
                                 </div>
                             </div>
 
-                            <div className="bg-white/[0.03] rounded-lg p-3">
+                            <div className="bg-white/[0.03] border border-white/5 rounded-lg p-3">
                                 <div className="text-[10px] font-bold text-white/30 uppercase mb-2">Token Usage</div>
                                 <div className="grid grid-cols-2 gap-4 text-xs">
                                     <div>
-                                        <div className="text-white/50 mb-1">Input Tokens</div>
-                                        <div className="text-white/80">
-                                            Total: {results.tokens.totalInput} | Avg: {results.tokens.avgInput.toFixed(0)}
-                                        </div>
+                                        <div className="text-white/40 mb-1">Input Tokens</div>
+                                        <div className="text-white/80">Total: {results.tokens.totalInput} | Avg: {results.tokens.avgInput.toFixed(0)}</div>
                                     </div>
                                     <div>
-                                        <div className="text-white/50 mb-1">Output Tokens</div>
-                                        <div className="text-white/80">
-                                            Total: {results.tokens.totalOutput} | Avg: {results.tokens.avgOutput.toFixed(0)}
-                                        </div>
+                                        <div className="text-white/40 mb-1">Output Tokens</div>
+                                        <div className="text-white/80">Total: {results.tokens.totalOutput} | Avg: {results.tokens.avgOutput.toFixed(0)}</div>
                                     </div>
                                 </div>
                             </div>
@@ -370,41 +356,17 @@ export function PerformanceTab({ settings, onModeChange }: PerformanceTabProps) 
                     {mode === 'reliability' && (
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-3">
-                                <div className={`rounded-lg p-3 text-center ${
-                                    results.reliability.successRate >= 0.95 
-                                        ? 'bg-green-500/10 border border-green-500/20' 
-                                        : results.reliability.successRate >= 0.8
-                                            ? 'bg-yellow-500/10 border border-yellow-500/20'
-                                            : 'bg-red-500/10 border border-red-500/20'
-                                }`}>
-                                    <div className={`text-lg font-semibold ${
-                                        results.reliability.successRate >= 0.95 
-                                            ? 'text-green-400' 
-                                            : results.reliability.successRate >= 0.8
-                                                ? 'text-yellow-400'
-                                                : 'text-red-400'
-                                    }`}>
+                                <div className={`rounded-lg p-3 text-center border ${getScoreBg(results.reliability.successRate * 100)}`}>
+                                    <div className={`text-xl font-semibold ${getScoreColor(results.reliability.successRate * 100)}`}>
                                         {(results.reliability.successRate * 100).toFixed(1)}%
                                     </div>
-                                    <div className="text-[10px] text-white/50 uppercase">Success Rate</div>
+                                    <div className="text-[10px] text-white/40 uppercase mt-1">Success Rate</div>
                                 </div>
-                                <div className={`rounded-lg p-3 text-center ${
-                                    results.reliability.failureRate <= 0.05 
-                                        ? 'bg-green-500/10 border border-green-500/20' 
-                                        : results.reliability.failureRate <= 0.2
-                                            ? 'bg-yellow-500/10 border border-yellow-500/20'
-                                            : 'bg-red-500/10 border border-red-500/20'
-                                }`}>
-                                    <div className={`text-lg font-semibold ${
-                                        results.reliability.failureRate <= 0.05 
-                                            ? 'text-green-400' 
-                                            : results.reliability.failureRate <= 0.2
-                                                ? 'text-yellow-400'
-                                                : 'text-red-400'
-                                    }`}>
+                                <div className={`rounded-lg p-3 text-center border ${getScoreBg(100 - results.reliability.failureRate * 100)}`}>
+                                    <div className={`text-xl font-semibold ${results.reliability.failureRate <= 0.05 ? 'text-green-400' : results.reliability.failureRate <= 0.2 ? 'text-yellow-400' : 'text-red-400'}`}>
                                         {(results.reliability.failureRate * 100).toFixed(1)}%
                                     </div>
-                                    <div className="text-[10px] text-white/50 uppercase">Failure Rate</div>
+                                    <div className="text-[10px] text-white/40 uppercase mt-1">Failure Rate</div>
                                 </div>
                             </div>
 
@@ -428,10 +390,7 @@ export function PerformanceTab({ settings, onModeChange }: PerformanceTabProps) 
             {/* Prompt Selector Modal */}
             {showSelector && (
                 <PromptSelector
-                    onSelect={(text) => {
-                        setPrompt(text);
-                        setShowSelector(false);
-                    }}
+                    onSelect={(text) => { setPrompt(text); setShowSelector(false); }}
                     onClose={() => setShowSelector(false)}
                 />
             )}
