@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { api, type Technique } from '../services/api';
 import { savePromptToLibrary } from './PromptLibrary';
+import { Button } from './ui/Button';
 
 const TASK_TYPES = [
     { label: 'General', value: 'General' },
@@ -86,13 +87,13 @@ export function Studio({ settings }: StudioProps) {
     const [userPrompt, setUserPrompt] = useState('');
     const [techniques, setTechniques] = useState<Record<string, Technique>>({});
     const [selectedTechniques, setSelectedTechniques] = useState<string[]>([]);
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchQuery] = useState('');
     const [activeTaskType, setActiveTaskType] = useState<TaskType | 'All Categories'>('Reasoning');
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedResults, setGeneratedResults] = useState<GeneratedPromptResult[]>([]);
     const [showSaveSuccess, setShowSaveSuccess] = useState(false);
     const [previewTechniqueKey, setPreviewTechniqueKey] = useState<string | null>(null);
-    const [uploadError, setUploadError] = useState<string | null>(null);
+    const [uploadError] = useState<string | null>(null);
     const [editingIdx, setEditingIdx] = useState<number | null>(null);
     const [editText, setEditText] = useState('');
 
@@ -168,19 +169,35 @@ export function Studio({ settings }: StudioProps) {
         });
     };
 
-    const handleSaveToLibrary = (index: number) => {
+    const handleSaveToLibrary = async (index: number) => {
         const result = generatedResults[index];
         if (result.saved) return;
 
+        // Generate title using local model (fast, no API needed)
+        let title = userPrompt.length > 50 ? `${userPrompt.substring(0, 50)}...` : userPrompt;
+        try {
+            const response = await api.generateTitle({
+                prompt_text: result.text,
+                provider: 'local',
+                model: 'google/flan-t5-small',
+            });
+            if (response.title) {
+                // Remove trailing period from title
+                title = response.title.replace(/\.+$/, '');
+            }
+        } catch (error) {
+            console.error('Failed to generate title, using fallback:', error);
+        }
+
         savePromptToLibrary({
-            name: `${result.techniqueName} - ${userPrompt.substring(0, 30)}...`,
+            name: title,
             text: result.text,
             technique: result.technique,
             techniqueName: result.techniqueName,
             status: 'draft',
             category: activeTaskType === 'All Categories' ? 'General' : activeTaskType,
             tags: [result.technique, (activeTaskType === 'All Categories' ? 'General' : activeTaskType).toLowerCase()],
-            description: `Generated from: "${userPrompt.substring(0, 100)}..."`,
+            description: `Generated using ${result.techniqueName}`,
             sourceType: 'generated'
         });
 
@@ -289,26 +306,26 @@ export function Studio({ settings }: StudioProps) {
                 <div className="flex-1 bg-black/20 border border-white/5 rounded-2xl overflow-hidden flex flex-col">
                     <div className="p-3 border-b border-white/5 space-y-2">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-x-2 gap-y-3">
-                            <button
+                            <Button
                                 onClick={() => setActiveTaskType('All Categories')}
-                                className={`inline-flex items-center justify-center w-full px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap border transition-all ${activeTaskType === 'All Categories'
-                                    ? 'bg-white/10 text-white border-white/20 shadow-sm'
-                                    : 'text-white/50 border-white/10 hover:text-white/80 hover:border-white/20'
-                                    }`}
+                                variant={activeTaskType === 'All Categories' ? 'secondary' : 'outline'}
+                                size="xs"
+                                fullWidth
+                                className="px-3 py-1.5 text-xs font-medium whitespace-nowrap"
                             >
                                 All
-                            </button>
+                            </Button>
                             {TASK_TYPES.map(({ label, value }) => (
-                                <button
+                                <Button
                                     key={value}
                                     onClick={() => setActiveTaskType(value)}
-                                    className={`inline-flex items-center justify-center w-full px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap border transition-all ${value === activeTaskType
-                                        ? 'bg-white/10 text-white border-white/20 shadow-sm'
-                                        : 'text-white/50 border-white/10 hover:text-white/80 hover:border-white/20'
-                                        }`}
+                                    variant={value === activeTaskType ? 'secondary' : 'outline'}
+                                    size="xs"
+                                    fullWidth
+                                    className="px-3 py-1.5 text-xs font-medium whitespace-nowrap"
                                 >
                                     {label}
-                                </button>
+                                </Button>
                             ))}
                         </div>
                         {/* Search hidden for compact layout */}
@@ -331,9 +348,9 @@ export function Studio({ settings }: StudioProps) {
                                                 <div
                                                     key={key}
                                                     onClick={() => toggleTechnique(key)}
-                                                    className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-all ${isSelected ? 'bg-[#007AFF]/20 text-white font-semibold border border-[#007AFF]/40' : 'hover:bg-white/5 text-white/70 hover:text-white/90'}`}
+                                                    className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-all ${isSelected ? 'bg-white/10 text-white font-semibold border border-white/20' : 'hover:bg-white/5 text-white/70 hover:text-white/90'}`}
                                                 >
-                                                    <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all ${isSelected ? 'bg-[#007AFF] border-[#007AFF]' : 'border-white/20'}`}>
+                                                    <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all ${isSelected ? 'bg-pro-btn border-pro-border-light' : 'border-white/20'}`}>
                                                         {isSelected && <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
@@ -388,10 +405,19 @@ export function Studio({ settings }: StudioProps) {
                                 {uploadError}
                             </div>
                         )}
-                        <div className="flex items-center justify-between text-[11px] text-white/40">
-                            <span className="text-white/50 font-mono">{Math.max(userPrompt.trim().split(/\s+/).filter(Boolean).length, userPrompt ? 1 : 0)} tokens (approx)</span>
+                        <div className="flex items-center text-[11px] text-white/40">
                             <div className="flex items-center gap-2">
-                                <label className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-lg cursor-pointer border border-white/10 bg-white/10 hover:bg-white/15 text-white">
+                                <Button
+                                    onClick={handleGenerate}
+                                    disabled={isGenerating || !userPrompt || selectedTechniques.length === 0}
+                                    variant="primary"
+                                    size="sm"
+                                    className={`min-w-[140px] ${isGenerating || !userPrompt || selectedTechniques.length === 0 ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                >
+                                    {isGenerating ? 'Generating...' : 'Generate'}
+                                </Button>
+                                {/* Upload temporarily disabled per request
+                                <label className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer border border-white/20 bg-transparent hover:bg-white/10 text-white">
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                                     <span className="text-[12px]">Upload</span>
                                     <input
@@ -414,17 +440,9 @@ export function Studio({ settings }: StudioProps) {
                                         }}
                                     />
                                 </label>
-                                <button
-                                    onClick={handleGenerate}
-                                    disabled={isGenerating || !userPrompt || selectedTechniques.length === 0}
-                                    className={`px-6 py-2 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-blue-500/10 ${isGenerating || !userPrompt || selectedTechniques.length === 0
-                                        ? 'bg-[#2563EB]/50 text-white/50 cursor-not-allowed'
-                                        : 'bg-[#2563EB] hover:bg-[#1d4fd8] text-white'
-                                        }`}
-                                >
-                                    {isGenerating ? 'Generating...' : 'Generate (⌘/Ctrl + Enter)'}
-                                </button>
+                                */}
                             </div>
+                            <span className="ml-auto text-white/50 font-mono">{Math.max(userPrompt.trim().split(/\s+/).filter(Boolean).length, userPrompt ? 1 : 0)} tokens (approx)</span>
                         </div>
                     </div>
                 </div>
@@ -438,12 +456,14 @@ export function Studio({ settings }: StudioProps) {
                         <span className="text-xs text-white/30 bg-white/5 px-2 py-0.5 rounded-full">{generatedResults.length}</span>
                     </div>
                     {generatedResults.length > 0 && !generatedResults.every(r => r.saved) && (
-                        <button
+                        <Button
                             onClick={handleSaveAllToLibrary}
-                            className="text-xs text-white/50 hover:text-white/80 transition-colors px-3 py-1 rounded-md border border-white/10 bg-white/[0.04]"
+                            variant="secondary"
+                            size="xs"
+                            className="text-xs text-white/70 px-3 py-1 bg-white/[0.08]"
                         >
                             Save All
-                        </button>
+                        </Button>
                     )}
                 </div>
 
@@ -515,20 +535,24 @@ ${getTechniqueHints(previewTechniqueKey, techniques[previewTechniqueKey], techni
                                         <div className="text-[11px] text-white/60 font-mono">{tokens} tokens — {ratio}x</div>
                                     </div>
                                     <div className="flex items-center gap-2 px-4 py-2 border-b border-white/10 text-[11px] text-white/60">
-                                        <button
+                                        <Button
                                             onClick={() => navigator.clipboard.writeText(result.text)}
-                                            className="px-2 py-1 rounded-md border border-white/10 hover:bg-white/10 transition-colors"
+                                            variant="secondary"
+                                            size="xs"
+                                            className="px-2 py-1"
                                         >
                                             Copy
-                                        </button>
-                                        <button
+                                        </Button>
+                                        <Button
                                             onClick={() => handleSaveToLibrary(idx)}
                                             disabled={result.saved}
-                                            className={`px-2 py-1 rounded-md border border-white/10 transition-colors ${result.saved ? 'text-emerald-400 border-emerald-500/30' : 'hover:bg-white/10 text-white/70 hover:text-white'}`}
+                                            variant="secondary"
+                                            size="xs"
+                                            className={`px-2 py-1 ${result.saved ? 'bg-white/5 text-white/70 border-emerald-500/30' : ''}`}
                                         >
                                             {result.saved ? 'Saved' : 'Save'}
-                                        </button>
-                                        <button 
+                                        </Button>
+                                        <Button
                                             onClick={() => {
                                                 if (editingIdx === idx) {
                                                     // Save edit
@@ -542,24 +566,28 @@ ${getTechniqueHints(previewTechniqueKey, techniques[previewTechniqueKey], techni
                                                     setEditText(result.text);
                                                 }
                                             }}
-                                            className={`px-2 py-1 rounded-md border transition-colors ${editingIdx === idx ? 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10' : 'border-white/10 hover:bg-white/10'}`}
+                                            variant="secondary"
+                                            size="xs"
+                                            className={`px-2 py-1 ${editingIdx === idx ? 'border-white/30 text-white hover:bg-white/10' : ''}`}
                                         >
                                             {editingIdx === idx ? 'Save' : 'Edit'}
-                                        </button>
+                                        </Button>
                                         {editingIdx === idx && (
-                                            <button 
+                                            <Button
                                                 onClick={() => setEditingIdx(null)}
-                                                className="px-2 py-1 rounded-md border border-white/10 hover:bg-white/10 transition-colors text-white/50"
+                                                variant="ghost"
+                                                size="xs"
+                                                className="px-2 py-1 text-white/60 hover:text-white"
                                             >
                                                 Cancel
-                                            </button>
+                                            </Button>
                                         )}
                                     </div>
                                     {editingIdx === idx ? (
                                         <textarea
                                             value={editText}
                                             onChange={(e) => setEditText(e.target.value)}
-                                            className="w-full p-4 text-[13px] text-white/80 font-mono bg-black/40 leading-relaxed min-h-[200px] max-h-[420px] resize-y border-none focus:outline-none focus:ring-1 focus:ring-[#007AFF]/30"
+                                            className="w-full p-4 text-[13px] text-white/80 font-mono bg-black/40 leading-relaxed min-h-[200px] max-h-[420px] resize-y border-none focus:outline-none focus:ring-1 focus:ring-white/20"
                                         />
                                     ) : (
                                         <div className="p-4 text-[13px] text-white/80 whitespace-pre-wrap font-mono bg-black/40 leading-relaxed max-h-[420px] overflow-y-auto">

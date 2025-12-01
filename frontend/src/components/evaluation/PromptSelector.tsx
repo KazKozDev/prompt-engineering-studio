@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { type LibraryPrompt } from '../PromptLibrary';
+import { Button } from '../ui/Button';
 
 interface PromptSelectorProps {
     onSelect: (text: string) => void;
@@ -54,26 +55,30 @@ export function PromptSelector({ onSelect, onClose }: PromptSelectorProps) {
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
                     <h3 className="text-lg font-semibold text-white/90">Select Prompt</h3>
-                    <button onClick={onClose} className="text-white/40 hover:text-white transition-colors">
+                    <Button onClick={onClose} variant="ghost" size="icon" className="text-white/60 hover:text-white transition-colors">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
+                    </Button>
                 </div>
 
                 {/* Tabs & Search */}
                 <div className="p-4 border-b border-white/5 space-y-4">
                     <div className="flex p-1 bg-black/40 rounded-lg border border-white/5">
-                        <button
+                        <Button
                             onClick={() => setActiveSource('library')}
-                            className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${activeSource === 'library' ? 'bg-white/10 text-white shadow-sm' : 'text-white/40 hover:text-white/60'}`}
+                            variant={activeSource === 'library' ? 'secondary' : 'ghost'}
+                            size="xs"
+                            className="flex-1 py-1.5 text-xs font-medium rounded-md"
                         >
                             Prompt Library
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                             onClick={() => setActiveSource('history')}
-                            className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${activeSource === 'history' ? 'bg-white/10 text-white shadow-sm' : 'text-white/40 hover:text-white/60'}`}
+                            variant={activeSource === 'history' ? 'secondary' : 'ghost'}
+                            size="xs"
+                            className="flex-1 py-1.5 text-xs font-medium rounded-md"
                         >
                             History
-                        </button>
+                        </Button>
                     </div>
 
                     <div className="relative">
@@ -83,7 +88,7 @@ export function PromptSelector({ onSelect, onClose }: PromptSelectorProps) {
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Search prompts..."
-                            className="w-full bg-black/20 border border-white/5 rounded-lg pl-9 pr-3 py-2 text-sm text-white/80 placeholder:text-white/20 focus:outline-none focus:border-[#007AFF]/50 transition-all"
+                            className="w-full bg-black/20 border border-white/5 rounded-lg pl-9 pr-3 py-2 text-sm text-white/80 placeholder:text-white/20 focus:outline-none focus:border-white/20 transition-all"
                         />
                     </div>
                 </div>
@@ -102,11 +107,11 @@ export function PromptSelector({ onSelect, onClose }: PromptSelectorProps) {
                                     onClick={() => onSelect(p.text)}
                                     className="w-full text-left p-3 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/10 transition-all group"
                                 >
-                                    <div className="flex justify-between items-start mb-1">
-                                        <span className="text-sm font-medium text-white/90 group-hover:text-[#007AFF] transition-colors">{p.name}</span>
-                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/40 border border-white/5">{p.category}</span>
+                                    <div className="flex justify-between items-start gap-2 mb-1">
+                                        <span className="text-sm font-medium text-white/90 group-hover:text-white transition-colors truncate">{p.name}</span>
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/40 border border-white/5 shrink-0">{p.category}</span>
                                     </div>
-                                    <p className="text-xs text-white/50 line-clamp-2 font-mono">{p.text}</p>
+                                    <p className="text-xs text-white/50 line-clamp-2 font-mono text-left">{p.text}</p>
                                 </button>
                             ))
                         )
@@ -120,15 +125,11 @@ export function PromptSelector({ onSelect, onClose }: PromptSelectorProps) {
                                     onClick={() => onSelect(h.prompt)}
                                     className="w-full text-left p-3 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/10 transition-all group"
                                 >
-                                    <div className="flex justify-between items-start mb-1">
-                                        <span className="text-xs font-medium text-white/60">{new Date(h.timestamp).toLocaleString()}</span>
-                                        <div className="flex gap-1">
-                                            {h.techniques.map((t: string) => (
-                                                <span key={t} className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/30">{t}</span>
-                                            ))}
-                                        </div>
+                                    <div className="flex justify-between items-start gap-2 mb-1">
+                                        <span className="text-xs font-medium text-white/60 shrink-0">{new Date(h.timestamp).toLocaleString()}</span>
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/30 shrink-0">{h.techniques?.[0] || ''}</span>
                                     </div>
-                                    <p className="text-xs text-white/50 line-clamp-2 font-mono group-hover:text-white/70 transition-colors">{h.prompt}</p>
+                                    <p className="text-xs text-white/50 line-clamp-2 font-mono text-left group-hover:text-white/70 transition-colors">{h.prompt}</p>
                                 </button>
                             ))
                         )

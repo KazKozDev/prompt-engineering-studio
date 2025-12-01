@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { PromptSelector } from './PromptSelector';
 import { api } from '../../services/api';
 import { DatasetGenerator } from '../DatasetGenerator';
+import { Button } from '../ui/Button';
 
 interface ComparisonViewProps {
     settings: {
@@ -148,18 +149,20 @@ export function ComparisonView({ settings, datasets, onDatasetCreated }: Compari
                                     {datasetSize} items
                                 </span>
                             )}
-                            <button
+                            <Button
                                 onClick={() => setShowGenerator(true)}
-                                className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-[#2563EB]/10 border border-[#2563EB]/20 text-[#60a5fa] hover:bg-[#2563EB]/20 transition-colors"
+                                variant="secondary"
+                                size="xs"
+                                className="px-3 py-1.5 text-[11px] font-medium"
                             >
                                 Generate
-                            </button>
+                            </Button>
                         </div>
                     </div>
                     <select
                         value={selectedDataset}
                         onChange={(e) => setSelectedDataset(e.target.value)}
-                        className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-3 text-sm text-white/90 focus:outline-none focus:border-[#007AFF]/40"
+                        className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-3 text-sm text-white/90 focus:outline-none focus:border-white/20"
                     >
                         {datasets.map(d => (
                             <option key={d.id} value={d.id}>{d.name} ({d.size} items)</option>
@@ -183,21 +186,25 @@ export function ComparisonView({ settings, datasets, onDatasetCreated }: Compari
                                         </h4>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <button
+                                        <Button
                                             onClick={() => handleOpenSelector(idx)}
-                                            className="inline-flex items-center gap-1 text-[11px] px-2 py-1.5 rounded-lg border border-white/10 text-white/60 hover:text-white hover:border-[#007AFF]/50 transition-colors"
+                                            variant="secondary"
+                                            size="xs"
+                                            className="inline-flex items-center gap-1 text-[11px]"
                                         >
                                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                                             Library
-                                        </button>
+                                        </Button>
                                         {prompts.length > 2 && (
-                                            <button
+                                            <Button
                                                 onClick={() => removePrompt(idx)}
-                                                className="text-white/30 hover:text-red-400 transition-colors"
+                                                variant="ghost"
+                                                size="icon"
+                                                className="text-white/40 hover:text-red-400 transition-colors"
                                                 title="Remove variant"
                                             >
                                                 ✕
-                                            </button>
+                                            </Button>
                                         )}
                                     </div>
                                 </div>
@@ -206,18 +213,21 @@ export function ComparisonView({ settings, datasets, onDatasetCreated }: Compari
                                     value={p}
                                     onChange={(e) => updatePrompt(idx, e.target.value)}
                                     placeholder="Prompt variant..."
-                                    className="w-full min-h-[160px] bg-black/60 border border-white/10 rounded-lg px-3 py-3 text-sm text-white/90 font-mono resize-none focus:outline-none focus:border-[#007AFF]/40"
+                                    className="w-full min-h-[160px] bg-black/60 border border-white/10 rounded-lg px-3 py-3 text-sm text-white/90 font-mono resize-none focus:outline-none focus:border-white/20"
                                 />
                             </div>
                         ))}
 
-                        <button
+                        <Button
                             onClick={addPrompt}
-                            className="border-2 border-dashed border-white/10 rounded-xl h-full min-h-[180px] flex flex-col items-center justify-center gap-2 text-white/50 hover:border-[#007AFF]/50 hover:text-white transition-colors"
+                            variant="outline"
+                            size="md"
+                            fullWidth
+                            className="border-2 border-dashed border-white/10 rounded-xl h-full min-h-[180px] flex flex-col items-center justify-center gap-2 text-white/70 hover:border-white/20 hover:text-white transition-colors"
                         >
                             <span className="text-lg">+ Add Variant to Compare</span>
-                            <p className="text-xs text-white/40">Add another candidate prompt for side-by-side.</p>
-                        </button>
+                            <p className="text-xs text-white/50">Add another candidate prompt for side-by-side.</p>
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -231,7 +241,7 @@ export function ComparisonView({ settings, datasets, onDatasetCreated }: Compari
                             <div key={idx} className="bg-white/[0.02] p-3 rounded-lg border border-white/5">
                                 <div className="flex justify-between items-start mb-2">
                                     <span className="text-sm font-medium text-white/80">Prompt #{idx + 1}</span>
-                                    <span className="text-sm font-mono text-[#007AFF]">{prompt.score.toFixed(3)}</span>
+                                    <span className="text-sm font-mono text-white/70">{prompt.score.toFixed(3)}</span>
                                 </div>
                                 <div className="text-xs text-white/40 font-mono bg-black/20 p-2 rounded truncate">
                                     {prompt.text.substring(0, 100)}...
@@ -250,19 +260,21 @@ export function ComparisonView({ settings, datasets, onDatasetCreated }: Compari
             )}
 
             <div className="sticky bottom-0 z-10">
-                <div className="flex items-center justify-between gap-4 bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3 shadow-lg shadow-black/30 backdrop-blur">
-                    <div className="flex items-center gap-3 text-xs text-white/60 flex-wrap">
-                        <div className="px-2 py-1 rounded-lg bg-white/[0.02] border border-white/5">
-                            Dataset: {datasetName}
+                    <div className="flex items-center justify-between gap-4 bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3 shadow-lg shadow-black/30 backdrop-blur">
+                        <div className="flex items-center gap-3 text-xs text-white/60 flex-wrap">
+                            <div className="px-2 py-1 rounded-lg bg-white/[0.02] border border-white/5">
+                                Dataset: {datasetName}
+                            </div>
+                            <div className="px-2 py-1 rounded-lg bg-white/[0.02] border border-white/5">
+                                Variants: {prompts.length}
+                            </div>
                         </div>
-                        <div className="px-2 py-1 rounded-lg bg-white/[0.02] border border-white/5">
-                            Variants: {prompts.length}
-                        </div>
-                    </div>
-                    <button
+                    <Button
                         onClick={runComparison}
                         disabled={loading}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-[#4F46E5] to-[#007AFF] text-sm font-semibold text-white shadow-[0_10px_30px_-12px_rgba(0,122,255,0.8)] hover:opacity-95 disabled:opacity-50 transition-all"
+                        variant="primary"
+                        size="md"
+                        className={loading ? 'opacity-60 cursor-not-allowed' : ''}
                     >
                         {loading ? (
                             <>
@@ -275,7 +287,7 @@ export function ComparisonView({ settings, datasets, onDatasetCreated }: Compari
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" /></svg>
                             </>
                         )}
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

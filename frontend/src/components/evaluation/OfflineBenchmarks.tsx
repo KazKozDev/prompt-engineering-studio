@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { PromptSelector } from './PromptSelector';
 import { DatasetGenerator } from '../DatasetGenerator';
+import { Button } from '../ui/Button';
 
 interface OfflineBenchmarksProps {
     settings: {
@@ -196,29 +197,31 @@ export function OfflineBenchmarks({ settings, datasets, onDatasetCreated }: Offl
 
                 <div className="space-y-6">
                     <div className="bg-white/[0.02] border border-white/5 rounded-lg p-4">
-                            <div className="flex items-center justify-between gap-3 mb-3">
-                                <div>
-                                    <p className="text-[11px] uppercase tracking-[0.18em] text-white/30 font-semibold">Dataset</p>
-                                    <p className="text-sm text-white/70">Pick a labeled set to benchmark against ground truth.</p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    {selectedDataset && (
-                                        <span className="px-3 py-1 rounded-full text-[11px] bg-white/[0.06] border border-white/10 text-white/70">
-                                            {datasetSize} items
-                                        </span>
-                                    )}
-                                    <button
-                                        onClick={() => setShowGenerator(true)}
-                                        className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-[#2563EB]/10 border border-[#2563EB]/20 text-[#60a5fa] hover:bg-[#2563EB]/20 transition-colors"
-                                    >
-                                        Generate
-                                    </button>
-                                </div>
+                        <div className="flex items-center justify-between gap-3 mb-3">
+                            <div>
+                                <p className="text-[11px] uppercase tracking-[0.18em] text-white/30 font-semibold">Dataset</p>
+                                <p className="text-sm text-white/70">Pick a labeled set to benchmark against ground truth.</p>
                             </div>
-                            <select
-                                value={selectedDataset}
-                                onChange={(e) => setSelectedDataset(e.target.value)}
-                                className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-3 text-sm text-white/90 focus:outline-none focus:border-[#007AFF]/40"
+                            <div className="flex items-center gap-2">
+                            {selectedDataset && (
+                                <span className="px-3 py-1 rounded-full text-[11px] bg-white/[0.06] border border-white/10 text-white/70">
+                                    {datasetSize} items
+                                </span>
+                            )}
+                                <Button
+                                    onClick={() => setShowGenerator(true)}
+                                    variant="secondary"
+                                    size="xs"
+                                    className="px-3 py-1.5 text-[11px] font-medium"
+                                >
+                                    Generate
+                                </Button>
+                            </div>
+                        </div>
+                        <select
+                            value={selectedDataset}
+                            onChange={(e) => setSelectedDataset(e.target.value)}
+                            className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-3 text-sm text-white/90 focus:outline-none focus:border-white/20"
                         >
                             {datasets.map(d => {
                                 const sizeLabel = typeof d.size === 'number' ? `${d.size} items` : '';
@@ -237,13 +240,15 @@ export function OfflineBenchmarks({ settings, datasets, onDatasetCreated }: Offl
                                 <p className="text-[11px] uppercase tracking-[0.18em] text-white/30 font-semibold">Prompt Variants</p>
                                 <p className="text-sm text-white/70">Set up a baseline and challengers side by side.</p>
                             </div>
-                            <button
+                            <Button
                                 onClick={addPrompt}
-                                className="inline-flex items-center gap-2 text-xs px-3 py-2 rounded-lg border border-dashed border-white/15 text-white/70 hover:text-white hover:border-white/40 transition-colors"
+                                variant="outline"
+                                size="xs"
+                                className="inline-flex items-center gap-2 text-xs px-3 py-2 border-dashed border-white/15 text-white/70 hover:text-white hover:border-white/40 transition-colors"
                             >
-                                <span className="text-[#7cb5ff] text-base leading-none">+</span>
+                                <span className="text-white/60 text-base leading-none">+</span>
                                 Add Variant
-                            </button>
+                            </Button>
                         </div>
 
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -259,21 +264,25 @@ export function OfflineBenchmarks({ settings, datasets, onDatasetCreated }: Offl
                                             </h4>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <button
+                                            <Button
                                                 onClick={() => handleOpenSelector(idx)}
-                                                className="inline-flex items-center gap-1 text-[11px] px-2 py-1.5 rounded-lg border border-white/10 text-white/60 hover:text-white hover:border-[#007AFF]/50 transition-colors"
+                                                variant="secondary"
+                                                size="xs"
+                                                className="inline-flex items-center gap-1 text-[11px]"
                                             >
                                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                                                 Library
-                                            </button>
+                                            </Button>
                                             {prompts.length > 1 && (
-                                                <button
+                                                <Button
                                                     onClick={() => removePrompt(idx)}
-                                                    className="text-white/30 hover:text-red-400 transition-colors"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="text-white/40 hover:text-red-400 transition-colors"
                                                     title="Remove variant"
                                                 >
                                                     ✕
-                                                </button>
+                                                </Button>
                                             )}
                                         </div>
                                     </div>
@@ -282,7 +291,7 @@ export function OfflineBenchmarks({ settings, datasets, onDatasetCreated }: Offl
                                         value={p}
                                         onChange={(e) => updatePrompt(idx, e.target.value)}
                                         placeholder={idx === 0 ? 'Baseline system prompt...' : 'Compare against your baseline...'}
-                                        className="w-full min-h-[160px] bg-black/60 border border-white/10 rounded-lg px-3 py-3 text-sm text-white/90 font-mono resize-none focus:outline-none focus:border-[#007AFF]/40"
+                                        className="w-full min-h-[160px] bg-black/60 border border-white/10 rounded-lg px-3 py-3 text-sm text-white/90 font-mono resize-none focus:outline-none focus:border-white/20"
                                     />
 
                                     <div className="flex flex-wrap items-center gap-3">
@@ -292,7 +301,7 @@ export function OfflineBenchmarks({ settings, datasets, onDatasetCreated }: Offl
                                                 value={variantModels[idx] || ''}
                                                 onChange={(e) => updateVariantModel(idx, e.target.value)}
                                                 placeholder={settings.model || 'Enter model id'}
-                                                className="bg-black/60 border border-white/10 rounded-lg px-3 py-2 text-xs text-white/80 focus:outline-none focus:border-[#007AFF]/40 font-mono"
+                                                className="bg-black/60 border border-white/10 rounded-lg px-3 py-2 text-xs text-white/80 focus:outline-none focus:border-white/20 font-mono"
                                             />
                                         </div>
                                         <div className="text-[11px] text-white/40">
@@ -302,34 +311,39 @@ export function OfflineBenchmarks({ settings, datasets, onDatasetCreated }: Offl
                                 </div>
                             ))}
 
-                            <button
+                            <Button
                                 onClick={addPrompt}
-                                className="border-2 border-dashed border-white/10 rounded-xl h-full min-h-[180px] flex flex-col items-center justify-center gap-2 text-white/50 hover:border-[#007AFF]/50 hover:text-white transition-colors"
+                                variant="outline"
+                                size="md"
+                                fullWidth
+                                className="border-2 border-dashed border-white/10 rounded-xl h-full min-h-[180px] flex flex-col items-center justify-center gap-2 text-white/70 hover:border-white/20 hover:text-white transition-colors"
                             >
                                 <span className="text-lg">+ Add Variant to Compare</span>
-                                <p className="text-xs text-white/40">Drop in another prompt to visualize the head-to-head run.</p>
-                            </button>
+                                <p className="text-xs text-white/50">Drop in another prompt to visualize the head-to-head run.</p>
+                            </Button>
                         </div>
                     </div>
 
                     <div className="sticky bottom-0 left-0 right-0">
-                            <div className="flex items-center justify-between gap-4 bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3 shadow-lg shadow-black/30 backdrop-blur">
-                                <div className="flex items-center gap-3 text-xs text-white/60">
-                                    <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-white/[0.02] border border-white/5">
-                                        <span className="w-2 h-2 rounded-full bg-emerald-400/80" />
-                                        <span>Estimated: ~{Math.max(1, Math.ceil(((datasetSize || 10) * Math.max(prompts.length, 1)) / 40))} mins</span>
-                                    </div>
-                                    <div className="px-2 py-1 rounded-lg bg-white/[0.02] border border-white/5">
-                                        Variants: {prompts.length}
-                                    </div>
-                                    <div className="px-2 py-1 rounded-lg bg-white/[0.02] border border-white/5">
-                                        Dataset: {datasetName}
-                                    </div>
+                        <div className="flex items-center justify-between gap-4 bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3 shadow-lg shadow-black/30 backdrop-blur">
+                            <div className="flex items-center gap-3 text-xs text-white/60">
+                                <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-white/[0.02] border border-white/5">
+                                    <span className="w-2 h-2 rounded-full bg-white/60" />
+                                    <span>Estimated: ~{Math.max(1, Math.ceil(((datasetSize || 10) * Math.max(prompts.length, 1)) / 40))} mins</span>
                                 </div>
-                            <button
+                                <div className="px-2 py-1 rounded-lg bg-white/[0.02] border border-white/5">
+                                    Variants: {prompts.length}
+                                </div>
+                                <div className="px-2 py-1 rounded-lg bg-white/[0.02] border border-white/5">
+                                    Dataset: {datasetName}
+                                </div>
+                            </div>
+                            <Button
                                 onClick={runTest}
                                 disabled={loading}
-                                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-[#4F46E5] to-[#007AFF] text-sm font-semibold text-white shadow-[0_10px_30px_-12px_rgba(0,122,255,0.8)] hover:opacity-95 disabled:opacity-50 transition-all"
+                                variant="primary"
+                                size="md"
+                                className={loading ? 'opacity-60 cursor-not-allowed' : ''}
                             >
                                 {loading ? (
                                     <>
@@ -342,7 +356,7 @@ export function OfflineBenchmarks({ settings, datasets, onDatasetCreated }: Offl
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" /></svg>
                                     </>
                                 )}
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -359,7 +373,7 @@ export function OfflineBenchmarks({ settings, datasets, onDatasetCreated }: Offl
                         <div className="grid grid-cols-4 gap-4">
                             <div className="bg-white/[0.03] border border-white/5 p-3 rounded-lg">
                                 <div className="text-[10px] text-white/40">Median Score</div>
-                                <div className="text-lg font-mono text-[#007AFF]">{results.aggregates.median.toFixed(3)}</div>
+                                <div className="text-lg font-mono text-white/70">{results.aggregates.median.toFixed(3)}</div>
                             </div>
                             <div className="bg-white/[0.03] border border-white/5 p-3 rounded-lg">
                                 <div className="text-[10px] text-white/40">5th Percentile</div>
@@ -367,7 +381,7 @@ export function OfflineBenchmarks({ settings, datasets, onDatasetCreated }: Offl
                             </div>
                             <div className="bg-white/[0.03] border border-white/5 p-3 rounded-lg">
                                 <div className="text-[10px] text-white/40">95th Percentile</div>
-                                <div className="text-lg font-mono text-emerald-400">{results.aggregates.quantiles.q95.toFixed(3)}</div>
+                                <div className="text-lg font-mono text-white/70">{results.aggregates.quantiles.q95.toFixed(3)}</div>
                             </div>
                             <div className="bg-white/[0.03] border border-white/5 p-3 rounded-lg">
                                 <div className="text-[10px] text-white/40">Worst 10%</div>
@@ -384,7 +398,7 @@ export function OfflineBenchmarks({ settings, datasets, onDatasetCreated }: Offl
                                 <div key={idx} className="bg-white/[0.02] p-3 rounded-lg border border-white/5">
                                     <div className="flex justify-between items-start mb-2">
                                         <span className="text-sm font-medium text-white/80">Prompt #{idx + 1}</span>
-                                        <span className="text-sm font-mono text-[#007AFF]">{prompt.score.toFixed(3)}</span>
+                                        <span className="text-sm font-mono text-white/70">{prompt.score.toFixed(3)}</span>
                                     </div>
                                     <div className="text-xs text-white/40 font-mono bg-black/20 p-2 rounded truncate">
                                         {prompt.text.substring(0, 100)}...
@@ -423,7 +437,7 @@ export function OfflineBenchmarks({ settings, datasets, onDatasetCreated }: Offl
             )}
 
             {logs.length > 0 && (
-                <div className="bg-black/30 p-3 rounded-lg border border-white/5 font-mono text-xs text-emerald-400">
+                <div className="bg-black/30 p-3 rounded-lg border border-white/5 font-mono text-xs text-white/70">
                     {logs.map((l, i) => <div key={i}>{l}</div>)}
                 </div>
             )}

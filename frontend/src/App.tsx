@@ -8,9 +8,10 @@ import { PromptLibrary, type LibraryPrompt } from './components/PromptLibrary';
 import { Datasets } from './components/Datasets';
 import { Settings } from './components/Settings';
 import { EvaluationLab } from './components/EvaluationLab';
-import { ProductionMetrics } from './components/ProductionMetrics';
+// import { ProductionMetrics } from './components/ProductionMetrics'; // Hidden for now
 import { PromptOptimizer } from './components/PromptOptimizer';
 import { Help } from './components/Help';
+import { Button } from './components/ui/Button';
 
 // Navigation structure with groups - logical pipeline
 const NAV_GROUPS = [
@@ -32,7 +33,6 @@ const NAV_GROUPS = [
     label: 'Deploy',
     items: [
       { id: 'Prompt Library', label: 'Library' },
-      { id: 'Production Metrics', label: 'Metrics' },
       { id: 'History', label: 'History' },
     ]
   },
@@ -41,7 +41,7 @@ const NAV_GROUPS = [
 type SectionId =
   | 'Prompt Generator' | 'Prompt Optimizer'
   | 'Prompt Library' | 'Datasets'
-  | 'Evaluation Lab' | 'Production Metrics' | 'History'
+  | 'Evaluation Lab' | 'History'
   | 'Settings'
   | 'Help';
 
@@ -121,7 +121,7 @@ function App() {
           <div className="flex items-center gap-6">
             {/* Logo with pulse animation */}
             <div className="relative">
-              <div className="absolute inset-0 bg-[#007AFF] opacity-20 blur-[100px] rounded-full animate-pulse"></div>
+              <div className="absolute inset-0 bg-white/50 opacity-20 blur-[100px] rounded-full animate-pulse"></div>
               <img
                 src="/logo.png"
                 alt="Prompt Engineering Studio"
@@ -132,7 +132,7 @@ function App() {
             {/* Spinner */}
             <div className="relative w-12 h-12 animate-slide-up" style={{ animationDelay: '0.2s' }}>
               <div className="absolute inset-0 border-4 border-white/10 rounded-full"></div>
-              <div className="absolute inset-0 border-4 border-transparent border-t-[#007AFF] rounded-full animate-spin"></div>
+              <div className="absolute inset-0 border-4 border-transparent border-t-white/60 rounded-full animate-spin"></div>
             </div>
           </div>
         </div>
@@ -181,38 +181,44 @@ function App() {
               {groupIdx > 0 && <div className="w-px h-4 bg-white/10 mr-4" />}
               <span className="text-[9px] uppercase tracking-widest text-white/20 font-semibold mr-2">{group.label}</span>
               {group.items.map((item) => (
-                <button
+                <Button
                   key={item.id}
                   onClick={() => setActiveSection(item.id as SectionId)}
+                  variant="ghost"
+                  size="sm"
                   className={
-                    'px-2 py-1 text-[13px] transition-all duration-200 whitespace-nowrap ' +
+                    'px-2 py-1 text-[13px] whitespace-nowrap hover:bg-transparent ' +
                     (item.id === activeSection
-                      ? 'text-white font-semibold'
-                      : 'text-white/40 hover:text-white/80 font-medium')
+                      ? 'text-white font-bold'
+                      : 'text-white/50 hover:text-white hover:font-bold font-medium')
                   }
                 >
                   {item.label}
-                </button>
+                </Button>
               ))}
             </div>
           ))}
         </nav>
 
         <div className="flex items-center gap-4">
-          <button
+          <Button
             onClick={() => setActiveSection('Help')}
+            variant="ghost"
+            size="sm"
             className={
-              'px-2 py-1 text-[13px] transition-all ' +
+              'px-2 py-1 text-[13px] hover:bg-transparent ' +
               (activeSection === 'Help'
-                ? 'text-white font-semibold'
-                : 'text-white/50 font-medium hover:text-white/80')
+                ? 'text-white font-bold'
+                : 'text-white/50 font-medium hover:text-white hover:font-bold')
             }
             title="Help"
           >
             Help
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => setActiveSection('Settings')}
+            variant="ghost"
+            size="icon"
             className={
               'transition-all ' +
               (activeSection === 'Settings'
@@ -225,7 +231,7 @@ function App() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-          </button>
+          </Button>
           <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-white/30 font-semibold">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]" />
             <span>v2.0</span>
@@ -241,9 +247,11 @@ function App() {
         <div style={{ display: activeSection === 'Evaluation Lab' ? 'block' : 'none', height: '100%' }}>
           <EvaluationLab settings={settings} promptToEvaluate={promptToEvaluate} />
         </div>
+{/* Production Metrics hidden for now
         <div style={{ display: activeSection === 'Production Metrics' ? 'block' : 'none', height: '100%' }}>
           <ProductionMetrics />
         </div>
+*/}
         <div style={{ display: activeSection === 'Prompt Optimizer' ? 'block' : 'none', height: '100%' }}>
           <PromptOptimizer settings={settings} />
         </div>

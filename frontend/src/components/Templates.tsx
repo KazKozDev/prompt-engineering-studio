@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Button } from './ui/Button';
 
 interface Template {
     id: string;
@@ -260,36 +261,42 @@ export function Templates() {
 
                 {/* Tabs */}
                 <div className="flex gap-2 border-b border-gray-700">
-                    <button
+                    <Button
                         onClick={() => setActiveTab('examples')}
-                        className={`px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'examples'
-                                ? 'text-white border-b-2 border-purple-500'
-                                : 'text-slate-400 hover:text-slate-200'
+                        variant="ghost"
+                        size="sm"
+                        className={`rounded-none px-4 py-2 text-sm font-medium border-b-2 ${activeTab === 'examples'
+                            ? 'text-white border-white/40'
+                            : 'text-slate-400 border-transparent hover:text-slate-200 hover:border-white/20'
                             }`}
                     >
                         Example Templates ({EXAMPLE_TEMPLATES.length})
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         onClick={() => setActiveTab('my-templates')}
-                        className={`px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'my-templates'
-                                ? 'text-white border-b-2 border-purple-500'
-                                : 'text-slate-400 hover:text-slate-200'
+                        variant="ghost"
+                        size="sm"
+                        className={`rounded-none px-4 py-2 text-sm font-medium border-b-2 ${activeTab === 'my-templates'
+                            ? 'text-white border-white/40'
+                            : 'text-slate-400 border-transparent hover:text-slate-200 hover:border-white/20'
                             }`}
                     >
                         My Templates ({templates.length})
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         onClick={() => {
                             setActiveTab('create');
                             setShowCreateForm(true);
                         }}
-                        className={`px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'create'
-                                ? 'text-white border-b-2 border-purple-500'
-                                : 'text-slate-400 hover:text-slate-200'
+                        variant="ghost"
+                        size="sm"
+                        className={`rounded-none px-4 py-2 text-sm font-medium border-b-2 ${activeTab === 'create'
+                            ? 'text-white border-white/40'
+                            : 'text-slate-400 border-transparent hover:text-slate-200 hover:border-white/20'
                             }`}
                     >
                         Create New
-                    </button>
+                    </Button>
                 </div>
             </div>
 
@@ -304,24 +311,29 @@ export function Templates() {
                             >
                                 <div className="flex justify-between items-start mb-2">
                                     <h3 className="text-lg font-semibold text-slate-100">{template.name}</h3>
-                                    <span className="text-xs bg-purple-900/50 text-purple-300 px-2 py-1 rounded">
+                                    <span className="text-xs bg-white/10 text-white/70 px-2 py-1 rounded">
                                         {template.category}
                                     </span>
                                 </div>
                                 <p className="text-sm text-slate-400 mb-3 line-clamp-2">{template.description}</p>
                                 <div className="flex gap-2">
-                                    <button
+                                    <Button
                                         onClick={() => setSelectedTemplate(template)}
-                                        className="flex-1 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded"
+                                        variant="secondary"
+                                        size="sm"
+                                        fullWidth
+                                        className="bg-gray-700 hover:bg-gray-600 text-white"
                                     >
                                         Preview
-                                    </button>
-                                    <button
+                                    </Button>
+                                    <Button
                                         onClick={() => handleImportExample(template)}
-                                        className="px-3 py-1.5 bg-purple-900/50 hover:bg-purple-900/70 text-purple-300 text-sm rounded"
+                                        variant="primary"
+                                        size="sm"
+                                        className="px-3"
                                     >
                                         Import
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                         ))}
@@ -335,21 +347,24 @@ export function Templates() {
                             <div className="text-center py-12 bg-gray-800/30 rounded-lg border border-gray-700">
                                 <p className="text-slate-400 mb-4">No templates yet. Create or import one!</p>
                                 <div className="flex gap-3 justify-center">
-                                    <button
+                                    <Button
                                         onClick={() => {
                                             setActiveTab('create');
                                             setShowCreateForm(true);
                                         }}
-                                        className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-md text-sm font-medium"
+                                        variant="primary"
+                                        size="sm"
                                     >
                                         Create Template
-                                    </button>
-                                    <button
+                                    </Button>
+                                    <Button
                                         onClick={() => setActiveTab('examples')}
-                                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md text-sm font-medium"
+                                        variant="secondary"
+                                        size="sm"
+                                        className="bg-gray-700 hover:bg-gray-600 text-white"
                                     >
                                         Browse Examples
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                         ) : (
@@ -361,7 +376,7 @@ export function Templates() {
                                     >
                                         <div className="flex justify-between items-start mb-2">
                                             <h3 className="text-lg font-semibold text-slate-100">{template.name}</h3>
-                                            <span className="text-xs bg-blue-900/50 text-blue-300 px-2 py-1 rounded">
+                                            <span className="text-xs bg-white/10 text-white/70 px-2 py-1 rounded">
                                                 {template.category}
                                             </span>
                                         </div>
@@ -369,24 +384,31 @@ export function Templates() {
                                             <p className="text-sm text-slate-400 mb-3 line-clamp-2">{template.description}</p>
                                         )}
                                         <div className="flex gap-2">
-                                            <button
+                                            <Button
                                                 onClick={() => setSelectedTemplate(template)}
-                                                className="flex-1 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded"
+                                                variant="secondary"
+                                                size="sm"
+                                                fullWidth
+                                                className="bg-gray-700 hover:bg-gray-600 text-white"
                                             >
                                                 View
-                                            </button>
-                                            <button
+                                            </Button>
+                                            <Button
                                                 onClick={() => handleCopyToClipboard(template.prompt)}
-                                                className="px-3 py-1.5 bg-green-900/50 hover:bg-green-900/70 text-green-300 text-sm rounded"
+                                                variant="secondary"
+                                                size="sm"
+                                                className="px-3"
                                             >
                                                 Copy
-                                            </button>
-                                            <button
+                                            </Button>
+                                            <Button
                                                 onClick={() => handleDeleteTemplate(template.id)}
-                                                className="px-3 py-1.5 bg-red-900/50 hover:bg-red-900/70 text-red-300 text-sm rounded"
+                                                variant="danger"
+                                                size="sm"
+                                                className="px-3 text-red-200"
                                             >
                                                 Delete
-                                            </button>
+                                            </Button>
                                         </div>
                                     </div>
                                 ))}
@@ -460,21 +482,24 @@ export function Templates() {
                                 </div>
 
                                 <div className="flex gap-3 pt-4">
-                                    <button
+                                    <Button
                                         onClick={handleCreateTemplate}
-                                        className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-md text-sm font-medium"
+                                        variant="primary"
+                                        size="sm"
+                                        fullWidth
                                     >
                                         Create Template
-                                    </button>
-                                    <button
+                                    </Button>
+                                    <Button
                                         onClick={() => {
                                             setShowCreateForm(false);
                                             setActiveTab('my-templates');
                                         }}
-                                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md text-sm font-medium"
+                                        variant="secondary"
+                                        size="sm"
                                     >
                                         Cancel
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                         </div>
@@ -494,29 +519,33 @@ export function Templates() {
                                         <p className="text-sm text-slate-400 mt-1">{selectedTemplate.description}</p>
                                     )}
                                     <div className="flex gap-2 mt-2">
-                                        <span className="text-xs bg-purple-900/50 text-purple-300 px-2 py-1 rounded">
+                                        <span className="text-xs bg-white/10 text-white/70 px-2 py-1 rounded">
                                             {selectedTemplate.category}
                                         </span>
                                     </div>
                                 </div>
-                                <button
+                                <Button
                                     onClick={() => setSelectedTemplate(null)}
+                                    variant="ghost"
+                                    size="icon"
                                     className="text-slate-400 hover:text-slate-200"
                                 >
                                     ✕
-                                </button>
+                                </Button>
                             </div>
                         </div>
                         <div className="p-6 overflow-y-auto flex-1">
                             <div className="bg-gray-900/50 p-4 rounded border border-gray-700">
                                 <div className="flex justify-between items-center mb-2">
                                     <div className="text-xs text-slate-400">Prompt Template:</div>
-                                    <button
+                                    <Button
                                         onClick={() => handleCopyToClipboard(selectedTemplate.prompt)}
-                                        className="text-xs text-green-400 hover:text-green-300"
+                                        variant="ghost"
+                                        size="xs"
+                                        className="text-xs text-white/70 hover:text-green-300 px-0"
                                     >
                                         Copy to Clipboard
-                                    </button>
+                                    </Button>
                                 </div>
                                 <pre className="text-sm text-slate-200 whitespace-pre-wrap font-mono">
                                     {selectedTemplate.prompt}

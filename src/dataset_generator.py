@@ -220,20 +220,15 @@ Generate {config.count} edge cases now:"""
         response = response.strip()
         
         # Remove markdown code blocks if present
-        if response.startswith("```"):
-            # Find the end of code block
-            lines = response.split("\n")
-            json_lines = []
-            in_block = False
-            for line in lines:
-                if line.startswith("```") and not in_block:
-                    in_block = True
-                    continue
-                elif line.startswith("```") and in_block:
-                    break
-                elif in_block:
-                    json_lines.append(line)
-            response = "\n".join(json_lines)
+        if "```" in response:
+            # Extract content from code blocks
+            code_block_pattern = r'```(?:json)?\s*([\s\S]*?)```'
+            matches = re.findall(code_block_pattern, response)
+            if matches:
+                response = matches[0].strip()
+            else:
+                # Fallback: remove ``` markers
+                response = response.replace("```json", "").replace("```", "").strip()
         
         # Try direct parse
         try:
@@ -243,7 +238,7 @@ Generate {config.count} edge cases now:"""
         except json.JSONDecodeError:
             pass
         
-        # Try to find array in response
+        # Try to find array in response (greedy match for nested structures)
         match = re.search(r'\[[\s\S]*\]', response)
         if match:
             try:
@@ -252,6 +247,43 @@ Generate {config.count} edge cases now:"""
                     return self._validate_items(data)
             except json.JSONDecodeError:
                 pass
+        
+        # Try to fix common JSON issues and parse again
+        try:
+            # Find the array bounds
+            start_idx = response.find('[')
+            end_idx = response.rfind(']')
+            if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+                json_str = response[start_idx:end_idx + 1]
+                
+                # Fix common issues:
+                # 1. Trailing commas before ]
+                json_str = re.sub(r',\s*\]', ']', json_str)
+                # 2. Trailing commas before }
+                json_str = re.sub(r',\s*\}', '}', json_str)
+                # 3. Single quotes to double quotes (careful with apostrophes)
+                # Only replace single quotes that look like JSON delimiters
+                json_str = re.sub(r"(?<=[{,\[:])\s*'([^']*?)'\s*(?=[,}\]:])", r'"\1"', json_str)
+                
+                data = json.loads(json_str)
+                if isinstance(data, list):
+                    return self._validate_items(data)
+        except (json.JSONDecodeError, Exception):
+            pass
+        
+        # Last resort: try to extract individual objects
+        try:
+            items = []
+            obj_pattern = r'\{\s*"input"\s*:\s*"([^"]*(?:\\.[^"]*)*)"\s*,\s*"output"\s*:\s*"([^"]*(?:\\.[^"]*)*)"\s*\}'
+            for match in re.finditer(obj_pattern, response):
+                items.append({
+                    'input': match.group(1).replace('\\"', '"'),
+                    'output': match.group(2).replace('\\"', '"')
+                })
+            if items:
+                return items
+        except Exception:
+            pass
         
         raise ValueError("Could not parse LLM response as JSON array")
     

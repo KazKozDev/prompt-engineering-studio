@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { api } from '../services/api';
 import { MethodologyIcon } from './icons/MethodologyIcon';
 import { DatasetGenerator } from './DatasetGenerator';
+import { Button } from './ui/Button';
 
 export interface Dataset {
     id: string;
@@ -52,10 +53,11 @@ export function Datasets({ settings }: DatasetsProps) {
     const [datasets, setDatasets] = useState<Dataset[]>([]);
     const [examples, setExamples] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'my-datasets' | 'examples'>('my-datasets');
+    // Track which datasets are examples (by id)
     const [selectedDatasetId, setSelectedDatasetId] = useState<string | null>(null);
     const [isCreating, setIsCreating] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [editingDatasetId, setEditingDatasetId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
 
     // Create form state
@@ -68,7 +70,7 @@ export function Datasets({ settings }: DatasetsProps) {
     // Detailed dataset view state
     const [detailedDataset, setDetailedDataset] = useState<Dataset | null>(null);
     const [loadingDetail, setLoadingDetail] = useState(false);
-    const [uploadError, setUploadError] = useState<string | null>(null);
+    const [_uploadError, setUploadError] = useState<string | null>(null);
     const [showGuide, setShowGuide] = useState(false);
     const [isClient, setIsClient] = useState(false);
 
@@ -125,14 +127,21 @@ export function Datasets({ settings }: DatasetsProps) {
         }
     };
 
+    // Combine datasets and examples into a single list, marking examples
+    const allDatasets = useMemo(() => {
+        const markedExamples = examples.map(e => ({ ...e, isExample: true }));
+        const markedDatasets = datasets.map(d => ({ ...d, isExample: false }));
+        // User datasets first, then examples
+        return [...markedDatasets, ...markedExamples];
+    }, [datasets, examples]);
+
     const filteredList = useMemo(() => {
-        const list = activeTab === 'my-datasets' ? datasets : examples;
-        if (!searchQuery) return list;
-        return list.filter(d =>
+        if (!searchQuery) return allDatasets;
+        return allDatasets.filter(d =>
             d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             d.description?.toLowerCase().includes(searchQuery.toLowerCase())
         );
-    }, [activeTab, datasets, examples, searchQuery]);
+    }, [allDatasets, searchQuery]);
 
     const handleCreateDataset = async () => {
         if (!newDatasetName.trim()) {
@@ -147,29 +156,45 @@ export function Datasets({ settings }: DatasetsProps) {
         }
 
         try {
-            await api.createDataset({
-                name: newDatasetName,
-                description: newDatasetDescription,
-                category: 'custom',
-                data: validItems
-            });
+            if (editingDatasetId) {
+                // Update existing dataset
+                await api.updateDataset(editingDatasetId, {
+                    name: newDatasetName,
+                    description: newDatasetDescription,
+                    data: validItems
+                });
+            } else {
+                // Create new dataset
+                await api.createDataset({
+                    name: newDatasetName,
+                    description: newDatasetDescription,
+                    category: 'custom',
+                    data: validItems
+                });
+            }
 
             // Reset form
-            const createdName = newDatasetName;
+            const savedName = newDatasetName;
+            const wasEditing = !!editingDatasetId;
             setNewDatasetName('');
             setNewDatasetDescription('');
             setNewDatasetItems([{ input: '', output: '' }]);
+            setEditingDatasetId(null);
             setIsCreating(false);
-            setActiveTab('my-datasets');
 
             // Wait a moment for file system to sync, then reload
             await new Promise(resolve => setTimeout(resolve, 300));
             await loadData();
 
+            // Reload detail if we were editing
+            if (wasEditing && selectedDatasetId) {
+                await loadDatasetDetail(selectedDatasetId);
+            }
+
             // Show success message
-            alert(`Dataset "${createdName}" created successfully!`);
+            alert(`Dataset "${savedName}" ${wasEditing ? 'updated' : 'created'} successfully!`);
         } catch (error: any) {
-            alert(`Error creating dataset: ${error.message}`);
+            alert(`Error ${editingDatasetId ? 'updating' : 'creating'} dataset: ${error.message}`);
         }
     };
 
@@ -202,7 +227,6 @@ export function Datasets({ settings }: DatasetsProps) {
                 data: example.data
             });
 
-            setActiveTab('my-datasets');
             await loadData();
         } catch (error: any) {
             alert(`Error importing example: ${error.message}`);
@@ -251,7 +275,6 @@ export function Datasets({ settings }: DatasetsProps) {
             setNewDatasetItems(validData);
             setNewDatasetName(file.name.replace('.json', ''));
             setIsCreating(true);
-            setActiveTab('my-datasets'); // Switch to my datasets context for creation
         } catch (error) {
             alert('Error parsing file. Please ensure it\'s valid JSON.');
         }
@@ -312,80 +335,72 @@ export function Datasets({ settings }: DatasetsProps) {
                     </div>
                 </div>
 
-                {/* Tabs and Search */}
+                {/* Search */}
                 <div className="flex flex-col gap-4">
-                    {/* Tabs */}
-                    <div className="flex p-1 bg-black/40 rounded-lg border border-white/5">
-                        <button
-                            onClick={() => { setActiveTab('my-datasets'); setSelectedDatasetId(null); setIsCreating(false); }}
-                            className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${activeTab === 'my-datasets' ? 'bg-white/10 text-white shadow-sm' : 'text-white/40 hover:text-white/60'}`}
-                        >
-                            My Datasets
-                        </button>
-                        <button
-                            onClick={() => { setActiveTab('examples'); setSelectedDatasetId(null); setIsCreating(false); }}
-                            className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${activeTab === 'examples' ? 'bg-white/10 text-white shadow-sm' : 'text-white/40 hover:text-white/60'}`}
-                        >
-                            Examples
-                        </button>
-                    </div>
-
                     {/* Search */}
                     <div className="relative group">
-                        <svg className="absolute left-3 top-2.5 w-4 h-4 text-white/20 group-focus-within:text-[#007AFF] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                        <svg className="absolute left-3 top-2.5 w-4 h-4 text-white/20 group-focus-within:text-white/40 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                         <input
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Search datasets..."
-                            className="w-full bg-black/20 border border-white/5 rounded-lg pl-9 pr-3 py-2 text-sm text-white/80 placeholder:text-white/20 focus:outline-none focus:border-[#007AFF]/50 focus:bg-black/40 transition-all"
+                            className="w-full bg-black/20 border border-white/5 rounded-lg pl-9 pr-3 py-2 text-sm text-white/80 placeholder:text-white/20 focus:outline-none focus:border-white/20 focus:bg-black/40 transition-all"
                         />
                     </div>
                 </div>
 
                 {/* Action Buttons */}
                 <div className="flex gap-2">
-                    <button
-                        onClick={() => { setIsCreating(true); setIsGenerating(false); setSelectedDatasetId(null); }}
-                        className="flex-1 px-3 py-2 bg-[#2563EB] hover:bg-[#1d4fd8] text-white rounded-lg font-medium text-sm transition-all flex items-center justify-center shadow-lg shadow-blue-500/10"
+                    <Button
+                        onClick={() => { setIsCreating(true); setIsGenerating(false); setSelectedDatasetId(null); setEditingDatasetId(null); setNewDatasetName(''); setNewDatasetDescription(''); setNewDatasetItems([{ input: '', output: '' }]); }}
+                        variant="primary"
+                        size="sm"
+                        fullWidth
                     >
                         Create
-                    </button>
+                    </Button>
                     {settings && (
-                        <button
+                        <Button
                             onClick={() => { setIsGenerating(true); setIsCreating(false); setSelectedDatasetId(null); }}
-                            className="flex-1 px-3 py-2 bg-[#2563EB] hover:bg-[#1d4fd8] text-white rounded-lg font-medium text-sm transition-all flex items-center justify-center shadow-lg shadow-blue-500/10"
+                            variant="primary"
+                            size="sm"
+                            fullWidth
                         >
                             Generate
-                        </button>
+                        </Button>
                     )}
                 </div>
 
+                {/* Stats Summary */}
+                <div className="flex gap-2 text-[10px] text-white/40">
+                    <span>{datasets.length} datasets</span>
+                    <span>•</span>
+                    <span>{datasets.reduce((sum, d) => sum + (d.size || 0), 0).toLocaleString()} items</span>
+                    <span>•</span>
+                    <span>{examples.length} examples</span>
+                </div>
+
                 {/* List */}
-                <div className="flex-1 overflow-y-auto min-h-0 space-y-2 pr-2 custom-scrollbar">
-                    {filteredList.map(dataset => (
+                <div className="flex-1 overflow-y-auto min-h-0 space-y-1.5 custom-scrollbar">
+                    {filteredList.map((dataset: any) => (
                         <button
                             key={dataset.id}
                             onClick={() => { setSelectedDatasetId(dataset.id); setIsCreating(false); setIsGenerating(false); }}
-                            className={`w-full text-left p-3 rounded-xl transition-all group border ${selectedDatasetId === dataset.id
-                                ? 'bg-[#007AFF]/10 border-[#007AFF]/30'
-                                : 'bg-white/[0.02] border-white/5 hover:border-white/10'
+                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg border transition-all ${selectedDatasetId === dataset.id
+                                ? 'bg-white/10 border-white/20'
+                                : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.05] hover:border-white/10'
                                 }`}
                         >
-                            <div className="flex justify-between items-start mb-1">
-                                <span className={`text-sm font-medium truncate ${selectedDatasetId === dataset.id ? 'text-white' : 'text-white/80'}`}>
-                                    {dataset.name}
-                                </span>
-                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${selectedDatasetId === dataset.id
-                                    ? 'bg-[#007AFF]/20 text-[#007AFF] border-[#007AFF]/20'
-                                    : 'bg-white/5 text-white/30 border-white/5'
-                                    }`}>
-                                    {dataset.size}
-                                </span>
-                            </div>
-                            {dataset.description && (
-                                <p className="text-xs text-white/40 line-clamp-2">{dataset.description}</p>
-                            )}
+                            <span className={`text-[13px] font-medium truncate text-left ${selectedDatasetId === dataset.id ? 'text-white' : 'text-white/70'}`}>
+                                {dataset.name}
+                            </span>
+                            <span className={`text-[10px] min-w-[24px] h-5 px-1.5 rounded-md flex items-center justify-center shrink-0 font-mono ${selectedDatasetId === dataset.id
+                                ? 'bg-white/20 text-white'
+                                : 'bg-white/5 text-white/40'
+                                }`}>
+                                {dataset.size}
+                            </span>
                         </button>
                     ))}
 
@@ -398,17 +413,7 @@ export function Datasets({ settings }: DatasetsProps) {
             </div>
 
             {/* Middle Panel: Content (full width) */}
-            <div className="flex-1 min-w-0 bg-black/20 border border-white/5 rounded-2xl overflow-hidden flex flex-col relative">
-                {!isGenerating && (
-                    <div className="absolute top-3 right-3 z-10">
-                        <button
-                            onClick={() => setShowGuide(true)}
-                            className="group flex items-center gap-2 px-3 py-2 rounded-full bg-white/[0.04] border border-white/10 text-[11px] text-white/60 hover:border-[#007AFF]/40 hover:text-white transition-colors shadow-lg shadow-black/30"
-                        >
-                            <MethodologyIcon className="w-3.5 h-3.5 text-amber-300" />
-                        </button>
-                    </div>
-                )}
+            <div className="flex-1 min-w-0 bg-black/20 border border-white/5 rounded-2xl overflow-hidden flex flex-col">
                 {isGenerating && settings ? (
                     // Generator View
                     <DatasetGenerator
@@ -428,7 +433,6 @@ export function Datasets({ settings }: DatasetsProps) {
                                 });
                                 await loadData();
                                 setIsGenerating(false);
-                                setActiveTab('my-datasets');
                             } catch (error: any) {
                                 alert(`Error saving dataset: ${error.message}`);
                             }
@@ -460,7 +464,7 @@ export function Datasets({ settings }: DatasetsProps) {
                                         type="text"
                                         value={newDatasetName}
                                         onChange={(e) => setNewDatasetName(e.target.value)}
-                                        className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white/90 placeholder:text-white/20 focus:outline-none focus:border-[#007AFF]/30 transition-colors"
+                                        className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white/90 placeholder:text-white/20 focus:outline-none focus:border-white/20 transition-colors"
                                         placeholder="e.g., Customer Support FAQ"
                                     />
                                 </div>
@@ -470,7 +474,7 @@ export function Datasets({ settings }: DatasetsProps) {
                                         type="text"
                                         value={newDatasetDescription}
                                         onChange={(e) => setNewDatasetDescription(e.target.value)}
-                                        className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white/90 placeholder:text-white/20 focus:outline-none focus:border-[#007AFF]/30 transition-colors"
+                                        className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white/90 placeholder:text-white/20 focus:outline-none focus:border-white/20 transition-colors"
                                         placeholder="Brief description..."
                                     />
                                 </div>
@@ -479,7 +483,7 @@ export function Datasets({ settings }: DatasetsProps) {
                             <div>
                                 <div className="flex justify-between items-center mb-3">
                                     <label className="text-xs font-medium text-white/50">Input/Output Pairs ({newDatasetItems.length})</label>
-                                    <button onClick={addDatasetItem} className="text-xs text-[#007AFF] hover:text-[#0071E3] font-medium">+ Add Item</button>
+                                    <Button onClick={addDatasetItem} variant="ghost" size="xs" className="text-xs text-white/60 hover:text-white px-0">+ Add Item</Button>
                                 </div>
 
                                 <div className="space-y-3">
@@ -488,7 +492,14 @@ export function Datasets({ settings }: DatasetsProps) {
                                             <div className="flex justify-between items-center mb-3">
                                                 <span className="text-[10px] text-white/30 font-mono">#{index + 1}</span>
                                                 {newDatasetItems.length > 1 && (
-                                                    <button onClick={() => removeDatasetItem(index)} className="text-[10px] text-red-400/50 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all">Remove</button>
+                                                    <Button
+                                                        onClick={() => removeDatasetItem(index)}
+                                                        variant="ghost"
+                                                        size="xs"
+                                                        className="text-[10px] text-red-400/50 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all px-1"
+                                                    >
+                                                        Remove
+                                                    </Button>
                                                 )}
                                             </div>
                                             <div className="grid grid-cols-2 gap-4">
@@ -518,90 +529,119 @@ export function Datasets({ settings }: DatasetsProps) {
                         </div>
 
                         <div className="p-6 border-t border-white/5 bg-black/20 flex justify-end gap-3">
-                            <button
-                                onClick={() => setIsCreating(false)}
-                                className="px-4 py-2 text-sm font-medium text-white/60 hover:text-white transition-colors"
+                            <Button
+                                onClick={() => { setIsCreating(false); setEditingDatasetId(null); }}
+                                variant="ghost"
+                                size="sm"
+                                className="px-4 text-sm text-white/70 hover:text-white"
                             >
                                 Cancel
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                                 onClick={handleCreateDataset}
-                                className="px-6 py-2 bg-[#007AFF] hover:bg-[#0071E3] text-white rounded-lg text-sm font-semibold shadow-lg shadow-blue-500/20 transition-all"
+                                variant="primary"
+                                size="sm"
                             >
-                                Create Dataset
-                            </button>
+                                {editingDatasetId ? 'Save Changes' : 'Create Dataset'}
+                            </Button>
                         </div>
                     </div>
                 ) : detailedDataset ? (
                     // Detailed View
                     <div className="flex flex-col h-full">
-                        <div className="px-6 py-5 border-b border-white/5 bg-white/[0.02] flex justify-between items-start">
-                            <div className="flex flex-col gap-1">
-                                <div className="flex items-center gap-3">
-                                    <h2 className="text-2xl font-semibold text-white/90">{detailedDataset.name}</h2>
-                                    <span className="text-[10px] font-mono text-white/30 bg-white/5 px-2 py-0.5 rounded-full border border-white/5 capitalize">
+                        <div className="px-5 py-4 border-b border-white/5 flex items-start justify-between gap-4">
+                            <div className="flex-1 min-w-0 space-y-2">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <h2 className="text-lg font-semibold text-white truncate">
+                                        {detailedDataset.name}
+                                    </h2>
+                                    <span className="text-[11px] px-2 py-1 rounded-full bg-white/10 text-white/60 capitalize">
                                         {detailedDataset.category}
                                     </span>
+                                    <span className="text-[11px] px-2 py-1 rounded-full bg-white/5 text-white/40">
+                                        {detailedDataset.size} items
+                                    </span>
                                 </div>
-                                <p className="text-sm text-white/50">{detailedDataset.description || 'No description provided'}</p>
-                                <div className="text-[11px] text-white/40 flex gap-3">
-                                    <span>Created: {new Date(detailedDataset.createdAt).toLocaleDateString()}</span>
-                                    <span>Updated: {new Date(detailedDataset.updatedAt).toLocaleDateString()}</span>
-                                    <span>Items: {detailedDataset.size}</span>
+                                <div className="flex items-center gap-2 text-xs text-white/50 flex-wrap">
+                                    <span>{detailedDataset.description || 'No description'}</span>
+                                    <span>•</span>
+                                    <span>Updated {new Date(detailedDataset.updatedAt).toLocaleDateString()}</span>
                                 </div>
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex items-center gap-2 shrink-0">
                                 <button
                                     onClick={() => handleExportDataset(detailedDataset)}
-                                    className="px-3 py-2 bg-white/10 hover:bg-white/15 text-white border border-white/10 rounded-lg text-sm font-medium transition-all"
+                                    className="px-3 py-1.5 text-xs font-medium rounded-lg border border-white/10 bg-white/[0.04] text-white/70 hover:text-white hover:border-white/30 transition-all"
                                 >
                                     Export
                                 </button>
                                 <button
-                                    onClick={() => handleDuplicateDataset(detailedDataset)}
-                                    className="px-3 py-2 bg-white/10 hover:bg-white/15 text-white border border-white/10 rounded-lg text-sm font-medium transition-all"
+                                    onClick={() => examples.some(e => e.id === detailedDataset.id) ? handleImportExample(detailedDataset.id) : handleDuplicateDataset(detailedDataset)}
+                                    className="px-3 py-1.5 text-xs font-medium rounded-lg border border-white/10 bg-white/[0.04] text-white/70 hover:text-white hover:border-white/30 transition-all"
                                 >
                                     Duplicate
                                 </button>
-                                {activeTab === 'examples' ? (
-                                    <button
-                                        onClick={() => handleImportExample(detailedDataset.id)}
-                                        className="px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-lg text-sm font-medium transition-all"
-                                    >
-                                        Import
-                                    </button>
-                                ) : (
-                                    <button
-                                        onClick={() => handleDeleteDataset(detailedDataset.id)}
-                                        className="px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-lg text-sm font-medium transition-all"
-                                    >
-                                        Delete
-                                    </button>
-                                )}
+                                <button
+                                    onClick={() => {
+                                        setNewDatasetName(detailedDataset.name);
+                                        setNewDatasetDescription(detailedDataset.description || '');
+                                        setNewDatasetItems(detailedDataset.data || [{ input: '', output: '' }]);
+                                        setEditingDatasetId(detailedDataset.id);
+                                        setIsCreating(true);
+                                    }}
+                                    className="px-3 py-1.5 text-xs font-medium rounded-lg border border-white/10 bg-white/[0.04] text-white/70 hover:text-white hover:border-white/30 transition-all"
+                                >
+                                    Edit
+                                </button>
+                                <button
+                                    onClick={() => handleDeleteDataset(detailedDataset.id)}
+                                    className="px-2 py-1.5 rounded-lg border border-red-800/30 bg-red-900/20 text-red-300 hover:bg-red-900/30 transition-all"
+                                    title="Delete"
+                                >
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                </button>
+                                <button
+                                    onClick={() => setShowGuide(true)}
+                                    className="px-2 py-1.5 rounded-lg border border-amber-500/30 bg-amber-900/20 text-amber-300 hover:bg-amber-900/30 transition-all"
+                                    title="Guide"
+                                >
+                                    <MethodologyIcon className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                    onClick={() => setSelectedDatasetId(null)}
+                                    className="p-2 text-white/60 hover:text-white transition-all"
+                                    title="Close"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-6">
+                        <div className="flex-1 overflow-y-auto p-4">
                             {loadingDetail ? (
                                 <div className="flex items-center justify-center h-40 text-white/30">
                                     <svg className="animate-spin h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                                     Loading details...
                                 </div>
                             ) : (
-                                <div className="space-y-4">
+                                <div className="space-y-2">
                                     {detailedDataset.data?.map((item, index) => (
-                                        <div key={index} className="bg-white/[0.02] p-4 rounded-xl border border-white/5 hover:bg-white/[0.04] transition-colors">
-                                            <div className="text-[10px] text-white/20 font-mono mb-3">#{index + 1}</div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div key={index} className="bg-white/[0.02] rounded-lg border border-white/5 hover:bg-white/[0.04] transition-colors">
+                                            <div className="grid grid-cols-2 gap-3 p-3">
                                                 <div>
-                                                    <div className="text-[10px] text-white/40 uppercase tracking-wider mb-2 font-medium">Input</div>
-                                                    <div className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap font-mono bg-black/20 p-3 rounded-lg border border-white/5">
+                                                    <div className="text-[9px] text-white/30 uppercase tracking-wider mb-1 font-medium flex items-center gap-2">
+                                                        <span className="text-white/20 font-mono">#{index + 1}</span>
+                                                        Input
+                                                    </div>
+                                                    <div className="text-[12px] text-white/70 whitespace-pre-wrap font-mono bg-black/20 px-2.5 py-2 rounded-md border border-white/5 leading-relaxed">
                                                         {item.input}
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    <div className="text-[10px] text-emerald-400/40 uppercase tracking-wider mb-2 font-medium">Output</div>
-                                                    <div className="text-sm text-emerald-400/80 leading-relaxed whitespace-pre-wrap font-mono bg-emerald-900/10 p-3 rounded-lg border border-emerald-500/10">
+                                                    <div className="text-[9px] text-white/30 uppercase tracking-wider mb-1 font-medium">Output</div>
+                                                    <div className="text-[12px] text-white/70 whitespace-pre-wrap font-mono bg-white/5 px-2.5 py-2 rounded-md border border-white/10 leading-relaxed">
                                                         {item.output}
                                                     </div>
                                                 </div>
@@ -613,38 +653,14 @@ export function Datasets({ settings }: DatasetsProps) {
                         </div>
                     </div>
                 ) : (
-                    // Empty State (Actionable)
-                    <div className="flex flex-col items-center justify-center h-full text-white/20 gap-4 px-6">
-                        <div className="text-center space-y-2 max-w-xl">
-                            <h3 className="text-lg text-white/80 font-semibold">Get started with datasets</h3>
-                            <p className="text-sm text-white/50">
-                                Datasets are your exam questions for the model. They move you from manual spot-checks to objective, measurable engineering.
-                            </p>
-                            <button
-                                onClick={() => setShowGuide(true)}
-                                className="text-xs text-[#4da3ff] hover:text-[#70b6ff] underline underline-offset-4"
-                            >
-                                Why do I need datasets? Read the full guide →
-                            </button>
+                    // Empty State - minimal with icon
+                    <div className="flex flex-col items-center justify-center h-full">
+                        <div className="w-16 h-16 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-center mb-4 text-white/20">
+                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                            </svg>
                         </div>
-                        <div className="flex flex-col sm:flex-row gap-3">
-                            <button
-                                onClick={() => setIsCreating(true)}
-                                className="px-6 py-3 bg-[#2563EB] hover:bg-[#1d4fd8] text-white rounded-xl text-sm font-semibold shadow-lg shadow-blue-500/10"
-                            >
-                                Create New Dataset
-                            </button>
-                            <label className="px-6 py-3 rounded-xl text-sm font-semibold transition-all cursor-pointer border border-white/10 bg-white/10 hover:bg-white/15 text-white flex items-center gap-2">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                                Import Data
-                                <input type="file" accept=".json" onChange={handleFileUpload} className="hidden" />
-                            </label>
-                        </div>
-                        {uploadError && (
-                            <div className="text-[11px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-2 rounded-lg">
-                                {uploadError}
-                            </div>
-                        )}
+                        <p className="text-sm text-white/40">Select a dataset from the list</p>
                     </div>
                 )}
             </div>
@@ -660,12 +676,14 @@ export function Datasets({ settings }: DatasetsProps) {
                                 <p className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-semibold mb-1">Dataset Guide</p>
                                 <h3 className="text-lg font-semibold text-white/90">How datasets power evaluation</h3>
                             </div>
-                            <button
+                            <Button
                                 onClick={() => setShowGuide(false)}
-                                className="p-2 rounded-md hover:bg-white/10 text-white/60 hover:text-white"
+                                variant="ghost"
+                                size="icon"
+                                className="p-2 text-white/70 hover:text-white"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                            </button>
+                            </Button>
                         </div>
                         <div className="flex-1 overflow-y-auto p-5 space-y-4 text-sm text-white/80 leading-relaxed custom-scrollbar">
                             <p>Datasets turn prompt QA into a measurable, repeatable process. They are the gold set you run before shipping a prompt version.</p>
@@ -699,12 +717,14 @@ export function Datasets({ settings }: DatasetsProps) {
                             </ul>
                         </div>
                         <div className="px-5 py-3 border-t border-white/10 flex justify-end">
-                            <button
+                            <Button
                                 onClick={() => setShowGuide(false)}
-                                className="px-4 py-2 rounded-lg text-sm font-medium bg-white/10 hover:bg-white/15 text-white border border-white/10 transition-all"
+                                variant="secondary"
+                                size="sm"
+                                className="px-4"
                             >
                                 Close
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>,

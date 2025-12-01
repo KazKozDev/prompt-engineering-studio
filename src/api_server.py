@@ -177,6 +177,88 @@ async def generate_prompts(request: GenerateRequest):
     
     return {"results": results}
 
+
+class GenerateTitleRequest(BaseModel):
+    prompt_text: str
+    provider: str = "local"  # Default to local T5 model
+    model: str = "google/flan-t5-small"
+    api_key: Optional[str] = None
+
+
+# Cache for local model
+_title_generator = None
+
+def get_title_generator():
+    """Lazy load the title generation model."""
+    global _title_generator
+    if _title_generator is None:
+        try:
+            from transformers import pipeline
+            _title_generator = pipeline(
+                "text2text-generation",
+                model="google/flan-t5-small",
+                max_length=20
+            )
+            logger.info("Loaded local title generation model: flan-t5-small")
+        except Exception as e:
+            logger.error(f"Failed to load local model: {e}")
+            _title_generator = False  # Mark as failed
+    return _title_generator
+
+
+@app.post("/api/generate-title")
+async def generate_title(request: GenerateTitleRequest):
+    """Generate a short, descriptive title for a prompt."""
+    try:
+        # Try local model first (fastest)
+        if request.provider == "local":
+            generator = get_title_generator()
+            if generator:
+                prompt = f"Summarize in 3-5 words: {request.prompt_text[:200]}"
+                result = generator(prompt, max_length=12, do_sample=False)
+                title = result[0]['generated_text'].strip()
+                # Clean up common artifacts
+                title = title.replace('Title:', '').replace('Summary:', '').strip()
+                if title and len(title) > 3:
+                    return {"title": title.title()}  # Capitalize
+            # Fallback to extracting first meaningful words
+            words = request.prompt_text.split()[:5]
+            title = ' '.join(words)
+            if len(title) > 40:
+                title = title[:37] + "..."
+            return {"title": title}
+        
+        elif request.provider == "gemini":
+            if not request.api_key:
+                raise HTTPException(status_code=400, detail="API Key required for Gemini")
+            client = GeminiClient(config["models"]["gemini"], request.api_key)
+        elif request.provider == "ollama":
+            client = OllamaClient(config["models"]["ollama"])
+        else:
+            raise HTTPException(status_code=400, detail="Provider not supported")
+        
+        meta_prompt = f"""Generate a short, descriptive title (3-6 words) for this prompt. 
+The title should capture the main purpose or task of the prompt.
+Return ONLY the title, nothing else.
+
+Prompt:
+{request.prompt_text[:500]}
+
+Title:"""
+        
+        title = client.complete(meta_prompt, model=request.model).strip()
+        # Clean up the title - remove quotes and extra whitespace
+        title = title.strip('"\'').strip()
+        # Limit length
+        if len(title) > 60:
+            title = title[:57] + "..."
+        
+        return {"title": title}
+    except Exception as e:
+        logger.error(f"Error generating title: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/api/history")
 async def get_history(limit: Optional[int] = 50):
     """Get generation history.

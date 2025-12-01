@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { Button } from './ui/Button';
 
 type GenerationMode = 'from_task' | 'from_examples' | 'from_prompt' | 'edge_cases';
 type TaskType = 'classification' | 'extraction' | 'generation' | 'qa' | 'summarization' | 'translation' | 'custom';
@@ -121,7 +122,7 @@ const difficulties: { id: Difficulty; name: string }[] = [
 
 export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt, title, description, context = 'general' }: DatasetGeneratorProps) {
     const config = contextConfig[context];
-    
+
     // Generation config
     const [mode, setMode] = useState<GenerationMode>(config.defaultMode);
     const [taskType, setTaskType] = useState<TaskType>('custom');
@@ -232,20 +233,22 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
     return (
         <div className="flex flex-col h-full">
             {/* Header */}
-            <div className="px-6 py-4 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
+            <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
                 <div>
-                    <h2 className="text-lg font-semibold text-white/90">{title || 'Generate Dataset'}</h2>
-                    <p className="text-xs text-white/40">{description || 'Use AI to create test data for benchmarks and optimization'}</p>
+                    <h2 className="text-[11px] font-bold text-white/30 uppercase tracking-widest">{title || 'Generate Dataset'}</h2>
+                    <p className="text-xs text-white/50 mt-1">{description || 'Use AI to create test data for benchmarks and optimization'}</p>
                 </div>
                 {onClose && (
-                    <button
+                    <Button
                         onClick={onClose}
-                        className="p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+                        variant="ghost"
+                        size="icon"
+                        className="p-2 text-white/60 hover:text-white"
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
-                    </button>
+                    </Button>
                 )}
             </div>
 
@@ -253,8 +256,8 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
                 <div className="p-6 space-y-6">
                     {/* Context hint */}
                     {context !== 'general' && (
-                        <div className="bg-[#007AFF]/5 border border-[#007AFF]/10 rounded-xl p-3">
-                            <p className="text-xs text-[#60a5fa]">{config.hint}</p>
+                        <div className="bg-white/[0.03] border border-white/10 rounded-lg p-3">
+                            <p className="text-xs text-white/50">{config.hint}</p>
                         </div>
                     )}
 
@@ -263,23 +266,23 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
                         <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">
                             Generation Mode
                         </label>
-                        <div className={`grid gap-3 ${config.availableModes.length <= 2 ? 'grid-cols-2' : 'grid-cols-2'}`}>
+                        <div className={`grid gap-2 ${config.availableModes.length <= 2 ? 'grid-cols-2' : 'grid-cols-2'}`}>
                             {config.availableModes.map((m) => (
                                 <button
                                     key={m}
                                     onClick={() => setMode(m)}
-                                    className={`p-4 rounded-xl border text-left transition-all ${mode === m
-                                        ? 'bg-[#007AFF]/10 border-[#007AFF]/30'
-                                        : 'bg-white/[0.02] border-white/5 hover:border-white/10'
+                                    className={`w-full text-left p-3 rounded-lg border transition-all ${mode === m
+                                        ? 'bg-white/10 border-white/20'
+                                        : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.04] hover:border-white/10'
                                         }`}
                                 >
                                     <div className="flex items-center gap-2 mb-1">
-                                        <span className={`${mode === m ? 'text-[#007AFF]' : 'text-white/50'}`}>{ModeIcons[m]}</span>
-                                        <span className={`text-sm font-medium ${mode === m ? 'text-white' : 'text-white/70'}`}>
+                                        <span className={`${mode === m ? 'text-white/80' : 'text-white/40'}`}>{ModeIcons[m]}</span>
+                                        <span className={`text-[13px] font-medium ${mode === m ? 'text-white/90' : 'text-white/60'}`}>
                                             {modeInfo[m].title}
                                         </span>
                                     </div>
-                                    <p className="text-[11px] text-white/40 leading-relaxed">
+                                    <p className="text-[11px] text-white/40 leading-relaxed pl-7">
                                         {modeInfo[m].description}
                                     </p>
                                 </button>
@@ -297,7 +300,7 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
                                 value={taskDescription}
                                 onChange={(e) => setTaskDescription(e.target.value)}
                                 placeholder="Describe the task you want to generate data for. E.g., 'Classify customer support tickets into categories: billing, technical, general inquiry'"
-                                className="w-full min-h-[120px] bg-black/30 border border-white/5 rounded-xl px-4 py-3 text-sm text-white/90 placeholder:text-white/25 resize-none focus:outline-none focus:border-[#007AFF]/30"
+                                className="w-full min-h-[100px] bg-white/[0.02] border border-white/10 rounded-lg px-4 py-3 text-sm text-white/80 placeholder:text-white/30 resize-none focus:outline-none focus:border-white/20 transition-colors"
                             />
                         </div>
                     )}
@@ -310,14 +313,14 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
                                 </label>
                                 <button
                                     onClick={addSeedExample}
-                                    className="text-xs text-[#007AFF] hover:text-[#0071E3] font-medium"
+                                    className="text-xs text-white/50 hover:text-white/80 transition-colors"
                                 >
                                     + Add Example
                                 </button>
                             </div>
-                            <div className="space-y-3">
+                            <div className="space-y-2">
                                 {seedExamples.map((example, index) => (
-                                    <div key={index} className="bg-black/30 p-4 rounded-xl border border-white/5 group">
+                                    <div key={index} className="bg-white/[0.02] p-3 rounded-lg border border-white/5 group hover:border-white/10 transition-colors">
                                         <div className="flex justify-between items-center mb-2">
                                             <span className="text-[10px] text-white/30 font-mono">#{index + 1}</span>
                                             {seedExamples.length > 2 && (
@@ -335,7 +338,7 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
                                                 <textarea
                                                     value={example.input}
                                                     onChange={(e) => updateSeedExample(index, 'input', e.target.value)}
-                                                    className="w-full min-h-[60px] bg-black/40 border border-white/5 rounded-lg px-3 py-2 text-xs text-white/90 placeholder:text-white/20 resize-none focus:outline-none focus:border-white/20"
+                                                    className="w-full min-h-[60px] bg-white/[0.02] border border-white/10 rounded-lg px-3 py-2 text-xs text-white/80 placeholder:text-white/30 resize-none focus:outline-none focus:border-white/20 transition-colors"
                                                     placeholder="Example input..."
                                                 />
                                             </div>
@@ -344,7 +347,7 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
                                                 <textarea
                                                     value={example.output}
                                                     onChange={(e) => updateSeedExample(index, 'output', e.target.value)}
-                                                    className="w-full min-h-[60px] bg-black/40 border border-white/5 rounded-lg px-3 py-2 text-xs text-white/90 placeholder:text-white/20 resize-none focus:outline-none focus:border-white/20"
+                                                    className="w-full min-h-[60px] bg-white/[0.02] border border-white/10 rounded-lg px-3 py-2 text-xs text-white/80 placeholder:text-white/30 resize-none focus:outline-none focus:border-white/20 transition-colors"
                                                     placeholder="Expected output..."
                                                 />
                                             </div>
@@ -364,25 +367,24 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
                                 value={promptToTest}
                                 onChange={(e) => setPromptToTest(e.target.value)}
                                 placeholder="Paste the prompt you want to generate test cases for..."
-                                className="w-full min-h-[150px] bg-black/30 border border-white/5 rounded-xl px-4 py-3 text-sm text-white/90 placeholder:text-white/25 resize-none focus:outline-none focus:border-[#007AFF]/30 font-mono"
+                                className="w-full min-h-[120px] bg-white/[0.02] border border-white/10 rounded-lg px-4 py-3 text-sm text-white/80 placeholder:text-white/30 resize-none focus:outline-none focus:border-white/20 font-mono transition-colors"
                             />
                         </div>
                     )}
 
                     {mode === 'edge_cases' && (
-                        <div className="bg-amber-500/5 border border-amber-500/10 rounded-xl p-4">
+                        <div className="bg-white/[0.02] border border-white/10 rounded-lg p-4">
                             <div className="flex items-start gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
-                                    <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                                    <svg className="w-4 h-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                     </svg>
                                 </div>
                                 <div>
-                                    <p className="text-sm text-white/80 font-medium mb-1">Edge Case Generation</p>
-                                    <p className="text-xs text-white/50 leading-relaxed">
-                                        This mode generates adversarial inputs including: format variations, boundary cases,
-                                        special characters, ambiguous inputs, and potential prompt injection attempts.
-                                        Useful for robustness testing before production deployment.
+                                    <p className="text-[13px] text-white/70 font-medium mb-1">Edge Case Generation</p>
+                                    <p className="text-xs text-white/40 leading-relaxed">
+                                        Generates adversarial inputs: format variations, boundary cases,
+                                        special characters, ambiguous inputs, and prompt injection attempts.
                                     </p>
                                 </div>
                             </div>
@@ -400,7 +402,7 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
                                 <select
                                     value={taskType}
                                     onChange={(e) => setTaskType(e.target.value as TaskType)}
-                                    className="w-full bg-black/30 border border-white/5 rounded-lg px-3 py-2.5 text-sm text-white/90 appearance-none focus:outline-none focus:border-[#007AFF]/30"
+                                    className="w-full bg-white/[0.02] border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white/80 appearance-none focus:outline-none focus:border-white/20 transition-colors"
                                 >
                                     {taskTypes.map((t) => (
                                         <option key={t.id} value={t.id}>
@@ -425,7 +427,7 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
                                 max={100}
                                 value={count}
                                 onChange={(e) => setCount(Math.min(100, Math.max(5, parseInt(e.target.value) || 10)))}
-                                className="w-full bg-black/30 border border-white/5 rounded-lg px-3 py-2.5 text-sm text-white/90 focus:outline-none focus:border-[#007AFF]/30"
+                                className="w-full bg-white/[0.02] border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white/80 focus:outline-none focus:border-white/20 transition-colors"
                             />
                         </div>
 
@@ -434,15 +436,15 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
                             <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2">
                                 Difficulty
                             </label>
-                            <div className="flex gap-2">
+                            <div className="flex gap-1.5">
                                 {difficulties.map((d) => (
                                     <button
                                         key={d.id}
                                         onClick={() => setDifficulty(d.id)}
                                         className={`flex-1 py-2 text-xs font-medium rounded-lg border transition-all ${difficulty === d.id
-                                            ? 'bg-white/10 border-white/20 text-white'
-                                            : 'border-white/5 text-white/40 hover:border-white/10'
-                                            }`}
+                                            ? 'bg-white/10 border-white/20 text-white/90'
+                                            : 'bg-white/[0.02] border-white/5 text-white/50 hover:bg-white/[0.04] hover:border-white/10'
+                                        }`}
                                     >
                                         {d.name}
                                     </button>
@@ -460,7 +462,7 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
                                 value={domain}
                                 onChange={(e) => setDomain(e.target.value)}
                                 placeholder="e.g., Healthcare, Finance, E-commerce"
-                                className="w-full bg-black/30 border border-white/5 rounded-lg px-3 py-2.5 text-sm text-white/90 placeholder:text-white/25 focus:outline-none focus:border-[#007AFF]/30"
+                                className="w-full bg-white/[0.02] border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white/80 placeholder:text-white/30 focus:outline-none focus:border-white/20 transition-colors"
                             />
                         </div>
                     </div>
@@ -471,11 +473,11 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
                             <button
                                 type="button"
                                 onClick={() => setIncludeEdgeCases(!includeEdgeCases)}
-                                className={`w-10 h-6 rounded-full transition-colors ${includeEdgeCases ? 'bg-[#007AFF]' : 'bg-white/10'}`}
+                                className={`w-10 h-5 rounded-full transition-colors relative ${includeEdgeCases ? 'bg-white/20' : 'bg-white/10'}`}
                             >
-                                <div className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform mt-0.5 ${includeEdgeCases ? 'translate-x-4.5 ml-0.5' : 'translate-x-0.5'}`} />
+                                <div className={`w-4 h-4 rounded-full bg-white shadow-sm absolute top-0.5 transition-all ${includeEdgeCases ? 'left-5' : 'left-0.5'}`} />
                             </button>
-                            <span className="text-sm text-white/70 group-hover:text-white/90 transition-colors">
+                            <span className="text-[13px] text-white/50 group-hover:text-white/70 transition-colors">
                                 Include edge cases in generation
                             </span>
                         </label>
@@ -483,21 +485,20 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
 
                     {/* Generate Button */}
                     <div className="flex justify-end">
-                        <button
+                        <Button
                             onClick={handleGenerate}
                             disabled={isGenerating}
-                            className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-blue-500/10 ${isGenerating
-                                ? 'bg-[#2563EB]/50 text-white/50 cursor-not-allowed'
-                                : 'bg-[#2563EB] hover:bg-[#1d4fd8] text-white'
-                                }`}
+                            variant="primary"
+                            size="md"
+                            className={isGenerating ? 'opacity-70 cursor-not-allowed' : ''}
                         >
-                        {isGenerating ? 'Generating...' : `Generate ${count} Examples`}
-                        </button>
+                            {isGenerating ? 'Generating...' : `Generate ${count} Examples`}
+                        </Button>
                     </div>
 
                     {/* Error */}
                     {error && (
-                        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm flex items-start gap-2">
+                        <div className="p-3 bg-red-500/5 border border-red-500/10 rounded-lg text-red-300/80 text-sm flex items-start gap-2">
                             <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
@@ -508,17 +509,17 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
                     {/* Generated Results */}
                     {generatedData.length > 0 && (
                         <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-emerald-400">✓</span>
-                                    <span className="text-sm font-medium text-white/80">
-                                        Generated {generatedData.length} examples
-                                    </span>
-                                </div>
+                            <div className="flex items-center gap-2">
+                                <svg className="w-4 h-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                                <span className="text-[13px] font-medium text-white/70">
+                                    Generated {generatedData.length} examples
+                                </span>
                             </div>
 
                             {/* Save Options */}
-                            <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-4 space-y-3">
+                            <div className="bg-white/[0.02] border border-white/10 rounded-lg p-4 space-y-3">
                                 <div>
                                     <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2">
                                         Dataset Name
@@ -528,7 +529,7 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
                                         value={datasetName}
                                         onChange={(e) => setDatasetName(e.target.value)}
                                         placeholder="Name for the new dataset"
-                                        className="w-full bg-black/30 border border-white/5 rounded-lg px-3 py-2 text-sm text-white/90 placeholder:text-white/25 focus:outline-none focus:border-emerald-500/30"
+                                        className="w-full bg-white/[0.02] border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/30 focus:outline-none focus:border-white/20 transition-colors"
                                     />
                                 </div>
                                 <div>
@@ -540,18 +541,21 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
                                         value={datasetDescription}
                                         onChange={(e) => setDatasetDescription(e.target.value)}
                                         placeholder="Brief description..."
-                                        className="w-full bg-black/30 border border-white/5 rounded-lg px-3 py-2 text-sm text-white/90 placeholder:text-white/25 focus:outline-none focus:border-emerald-500/30"
+                                        className="w-full bg-white/[0.02] border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/30 focus:outline-none focus:border-white/20 transition-colors"
                                     />
                                 </div>
-                                <button
+                                <Button
                                     onClick={handleSave}
-                                    className="w-full py-2.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2"
+                                    variant="primary"
+                                    size="sm"
+                                    fullWidth
+                                    className="gap-2"
                                 >
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                     </svg>
                                     Use This Dataset
-                                </button>
+                                </Button>
                             </div>
 
                             {/* Preview */}
@@ -569,8 +573,8 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
                                                     <div className="text-xs text-white/70 line-clamp-3">{item.input}</div>
                                                 </div>
                                                 <div>
-                                                    <div className="text-[10px] text-emerald-400/40 uppercase tracking-wider mb-1">Output</div>
-                                                    <div className="text-xs text-emerald-400/70 line-clamp-3">{item.output}</div>
+                                                    <div className="text-[10px] text-white/40 uppercase tracking-wider mb-1">Output</div>
+                                                    <div className="text-xs text-white/60 line-clamp-3">{item.output}</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -588,8 +592,8 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
             </div>
 
             {/* Footer with model info */}
-            <div className="px-6 py-3 border-t border-white/5 bg-black/20">
-                <div className="flex items-center justify-between text-[11px] text-white/40">
+            <div className="px-6 py-3 border-t border-white/10">
+                <div className="flex items-center justify-between text-[11px] text-white/30">
                     <span>Using: {settings.provider} / {settings.model}</span>
                     <span>Max 100 examples per generation</span>
                 </div>

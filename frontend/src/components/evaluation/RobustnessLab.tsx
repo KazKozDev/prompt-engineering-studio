@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { PromptSelector } from './PromptSelector';
 import { DatasetGenerator } from '../DatasetGenerator';
+import { Button } from '../ui/Button';
 
 interface RobustnessLabProps {
     settings: {
@@ -137,24 +138,30 @@ export function RobustnessLab({ settings, datasets, onTestTypeChange, onDatasetC
             )}
 
             <div className="flex p-1 bg-black/40 rounded-lg border border-white/5 w-fit">
-                <button
+                <Button
                     onClick={() => setTestType('format')}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${testType === 'format' ? 'bg-white/10 text-white shadow-sm' : 'text-white/40 hover:text-white/60'}`}
+                    variant={testType === 'format' ? 'secondary' : 'ghost'}
+                    size="xs"
+                    className="px-3 py-1.5 text-xs font-medium rounded-md"
                 >
                     Format Sensitivity
-                </button>
-                <button
+                </Button>
+                <Button
                     onClick={() => setTestType('length')}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${testType === 'length' ? 'bg-white/10 text-white shadow-sm' : 'text-white/40 hover:text-white/60'}`}
+                    variant={testType === 'length' ? 'secondary' : 'ghost'}
+                    size="xs"
+                    className="px-3 py-1.5 text-xs font-medium rounded-md"
                 >
                     Context Length
-                </button>
-                <button
+                </Button>
+                <Button
                     onClick={() => setTestType('adversarial')}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${testType === 'adversarial' ? 'bg-white/10 text-white shadow-sm' : 'text-white/40 hover:text-white/60'}`}
+                    variant={testType === 'adversarial' ? 'secondary' : 'ghost'}
+                    size="xs"
+                    className="px-3 py-1.5 text-xs font-medium rounded-md"
                 >
                     Adversarial Tests
-                </button>
+                </Button>
             </div>
 
             <div className="bg-black/25 p-5 rounded-xl border border-white/5 shadow-lg shadow-black/30 space-y-6">
@@ -179,18 +186,20 @@ export function RobustnessLab({ settings, datasets, onTestTypeChange, onDatasetC
                                     {datasetSize} items
                                 </span>
                             )}
-                            <button
+                            <Button
                                 onClick={() => setShowGenerator(true)}
-                                className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-[#2563EB]/10 border border-[#2563EB]/20 text-[#60a5fa] hover:bg-[#2563EB]/20 transition-colors"
+                                variant="secondary"
+                                size="xs"
+                                className="px-3 py-1.5 text-[11px] font-medium"
                             >
                                 Generate
-                            </button>
+                            </Button>
                         </div>
                     </div>
                     <select
                         value={selectedDataset}
                         onChange={(e) => setSelectedDataset(e.target.value)}
-                        className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-3 text-sm text-white/90 focus:outline-none focus:border-[#007AFF]/40"
+                        className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-3 text-sm text-white/90 focus:outline-none focus:border-white/20"
                     >
                         {datasets.map(d => (
                             <option key={d.id} value={d.id}>{d.name}</option>
@@ -204,18 +213,20 @@ export function RobustnessLab({ settings, datasets, onTestTypeChange, onDatasetC
                             <p className="text-[11px] uppercase tracking-[0.16em] text-white/30 font-semibold">Base Prompt</p>
                             <h4 className="text-sm font-semibold text-white">Instruction to test</h4>
                         </div>
-                        <button
+                        <Button
                             onClick={() => setShowSelector(true)}
-                            className="inline-flex items-center gap-1 text-[11px] px-2 py-1.5 rounded-lg border border-white/10 text-white/60 hover:text-white hover:border-[#007AFF]/50 transition-colors"
+                        variant="secondary"
+                        size="xs"
+                        className="inline-flex items-center gap-1 text-[11px]"
                         >
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                             Library
-                        </button>
+                        </Button>
                     </div>
                     <textarea
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
-                        className="w-full min-h-[180px] bg-black/60 border border-white/10 rounded-lg px-3 py-3 text-sm text-white/90 font-mono resize-none focus:outline-none focus:border-[#007AFF]/40"
+                        className="w-full min-h-[180px] bg-black/60 border border-white/10 rounded-lg px-3 py-3 text-sm text-white/90 font-mono resize-none focus:outline-none focus:border-white/20"
                         placeholder="Enter prompt to test for robustness..."
                     />
 
@@ -229,7 +240,7 @@ export function RobustnessLab({ settings, datasets, onTestTypeChange, onDatasetC
                                 step={100}
                                 value={contextLength}
                                 onChange={(e) => setContextLength(parseInt(e.target.value) || 1000)}
-                                className="bg-black/60 border border-white/10 rounded-lg px-3 py-2 text-xs text-white/80 focus:outline-none focus:border-[#007AFF]/40"
+                                className="bg-black/60 border border-white/10 rounded-lg px-3 py-2 text-xs text-white/80 focus:outline-none focus:border-white/20"
                             />
                         </div>
                     )}
@@ -239,16 +250,15 @@ export function RobustnessLab({ settings, datasets, onTestTypeChange, onDatasetC
                             <span className="text-[11px] text-white/40">Adversarial level</span>
                             <div className="flex items-center gap-2">
                                 {['light', 'medium', 'heavy'].map(level => (
-                                    <button
+                                    <Button
                                         key={level}
                                         onClick={() => setAdversarialLevel(level as any)}
-                                        className={`px-3 py-1.5 text-xs rounded-lg border ${adversarialLevel === level
-                                            ? 'border-[#007AFF]/50 bg-[#007AFF]/15 text-white'
-                                            : 'border-white/10 text-white/60 hover:text-white hover:border-white/30'
-                                            } transition-colors`}
+                                        variant={adversarialLevel === level ? 'secondary' : 'outline'}
+                                        size="xs"
+                                        className={`px-3 py-1.5 text-xs rounded-lg ${adversarialLevel === level ? '' : 'text-white/60'}`}
                                     >
                                         {level.charAt(0).toUpperCase() + level.slice(1)}
-                                    </button>
+                                    </Button>
                                 ))}
                             </div>
                         </div>
@@ -268,7 +278,7 @@ export function RobustnessLab({ settings, datasets, onTestTypeChange, onDatasetC
                     <div className="grid grid-cols-3 gap-4 mb-6">
                         <div className="bg-black/40 p-3 rounded">
                             <div className="text-xs text-white/40">Robustness Score</div>
-                            <div className="text-lg font-mono text-[#007AFF]">
+                            <div className="text-lg font-mono text-white/70">
                                 {results.robustness_score?.toFixed(3) || 'N/A'}
                             </div>
                         </div>
@@ -280,7 +290,7 @@ export function RobustnessLab({ settings, datasets, onTestTypeChange, onDatasetC
                         </div>
                         <div className="bg-black/40 p-3 rounded">
                             <div className="text-xs text-white/40">Variations Tested</div>
-                            <div className="text-lg font-mono text-emerald-400">
+                            <div className="text-lg font-mono text-white/70">
                                 {results.variations?.length || results.format_variations?.length || results.length_tests?.length || results.adversarial_tests?.length || 0}
                             </div>
                         </div>
@@ -295,7 +305,7 @@ export function RobustnessLab({ settings, datasets, onTestTypeChange, onDatasetC
                                     <div key={idx} className="bg-black/20 p-3 rounded border border-white/10">
                                         <div className="flex justify-between items-start mb-2">
                                             <span className="text-sm font-medium text-white/80">{variation.name}</span>
-                                            <span className="text-sm font-mono text-[#007AFF]">{variation.score.toFixed(3)}</span>
+                                            <span className="text-sm font-mono text-white/70">{variation.score.toFixed(3)}</span>
                                         </div>
                                         <div className="text-xs text-white/40 font-mono bg-black/30 p-2 rounded truncate">
                                             {variation.example?.substring(0, 100)}...
@@ -318,7 +328,7 @@ export function RobustnessLab({ settings, datasets, onTestTypeChange, onDatasetC
                                     {results.length_tests.map((test: any, idx: number) => (
                                         <div key={idx} className="flex justify-between text-xs">
                                             <span className="text-white/80">{test.context_length} tokens</span>
-                                            <span className="text-[#007AFF] font-mono">{test.score.toFixed(3)}</span>
+                                            <span className="text-white/70 font-mono">{test.score.toFixed(3)}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -383,10 +393,12 @@ export function RobustnessLab({ settings, datasets, onTestTypeChange, onDatasetC
                             Variations: {results?.variations?.length || datasetSize || 0}
                         </div>
                     </div>
-                    <button
+                    <Button
                         onClick={runTest}
                         disabled={loading}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-[#4F46E5] to-[#007AFF] text-sm font-semibold text-white shadow-[0_10px_30px_-12px_rgba(0,122,255,0.8)] hover:opacity-95 disabled:opacity-50 transition-all"
+                        variant="primary"
+                        size="md"
+                        className={loading ? 'opacity-60 cursor-not-allowed' : ''}
                     >
                         {loading ? (
                             <>
@@ -399,7 +411,7 @@ export function RobustnessLab({ settings, datasets, onTestTypeChange, onDatasetC
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" /></svg>
                             </>
                         )}
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

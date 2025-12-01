@@ -9,20 +9,19 @@ interface TabsProps {
 
 export const Tabs: React.FC<TabsProps> = ({ tabs, activeTab, onTabChange, className = '' }) => {
   return (
-    <div className={`flex gap-6 ${className}`}>
+    <div className={`flex gap-3 ${className}`}>
       {tabs.map((tab) => (
-        <button
+        <Button
           key={tab}
           onClick={() => onTabChange(tab)}
-          className={`pb-1 text-[13px] font-medium transition-all duration-200 ${
-            tab === activeTab
-              ? 'text-primary'
-              : 'text-text-muted hover:text-text-main'
-          }`}
+          variant={tab === activeTab ? 'primary' : 'ghost'}
+          size="sm"
+          className="px-3 py-1.5 text-[13px]"
         >
           {tab}
-        </button>
+        </Button>
       ))}
     </div>
   );
 };
+import { Button } from './Button';

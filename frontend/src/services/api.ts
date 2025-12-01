@@ -80,6 +80,18 @@ class APIService {
     });
   }
 
+  async generateTitle(request: {
+    prompt_text: string;
+    provider: string;
+    model: string;
+    api_key?: string;
+  }): Promise<{ title: string }> {
+    return this.request('/api/generate-title', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
   async getHistory(limit?: number): Promise<{ history: any[]; stats: any }> {
     const params = limit ? `?limit=${limit}` : '';
     return this.request(`/api/history${params}`);

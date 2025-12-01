@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { Button } from './ui/Button';
 
 interface SettingsProps {
     settings: {
@@ -114,7 +115,7 @@ export function Settings({ settings, onSettingsChange }: SettingsProps) {
                                 <select
                                     value={settings.provider}
                                     onChange={(e) => onSettingsChange({ ...settings, provider: e.target.value })}
-                                    className="w-full rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white/80 focus:outline-none focus:border-[#007AFF]/30"
+                                    className="w-full rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white/80 focus:outline-none focus:border-white/20"
                                 >
                                     <option value="ollama">Ollama (Local)</option>
                                     <option value="gemini">Google Gemini</option>
@@ -126,7 +127,7 @@ export function Settings({ settings, onSettingsChange }: SettingsProps) {
                                 <select
                                     value={settings.model}
                                     onChange={(e) => onSettingsChange({ ...settings, model: e.target.value })}
-                                    className="w-full rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white/80 focus:outline-none focus:border-[#007AFF]/30"
+                                    className="w-full rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white/80 focus:outline-none focus:border-white/20"
                                 >
                                     {availableModels.map(model => (
                                         <option key={model} value={model}>{model}</option>
@@ -140,12 +141,14 @@ export function Settings({ settings, onSettingsChange }: SettingsProps) {
                     <div>
                         <div className="flex items-center justify-between mb-3">
                             <h3 className="text-xs font-semibold text-white/70">API Keys</h3>
-                            <button
+                            <Button
                                 onClick={() => setShowApiKeys(!showApiKeys)}
-                                className="text-xs text-[#007AFF] hover:text-[#0071E3]"
+                                variant="ghost"
+                                size="xs"
+                                className="text-xs text-white/60 hover:text-white px-0"
                             >
                                 {showApiKeys ? 'Hide' : 'Show'}
-                            </button>
+                            </Button>
                         </div>
 
                         {showApiKeys && (
@@ -154,19 +157,21 @@ export function Settings({ settings, onSettingsChange }: SettingsProps) {
                                 <div className="bg-white/[0.02] p-3 rounded-lg border border-white/5">
                                     <div className="flex items-center justify-between mb-2">
                                         <label className="text-xs font-medium text-white/70">OpenAI API Key</label>
-                                        <button
+                                        <Button
                                             onClick={() => testApiKey('openai')}
-                                            className="text-[10px] px-2 py-1 bg-white/[0.05] hover:bg-white/[0.08] border border-white/10 text-white/70 rounded transition-colors"
+                                            variant="secondary"
+                                            size="xs"
+                                            className="text-[10px] px-2 py-1"
                                         >
                                             Test
-                                        </button>
+                                        </Button>
                                     </div>
                                     <input
                                         type="password"
                                         value={apiKeyInputs.openai || ''}
                                         onChange={(e) => updateApiKey('openai', e.target.value)}
                                         placeholder="sk-..."
-                                        className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-xs text-white/80 font-mono focus:outline-none focus:border-[#007AFF]/30"
+                                        className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-xs text-white/80 font-mono focus:outline-none focus:border-white/20"
                                     />
                                     <div className="text-[10px] text-white/40 mt-1">Used for GPT models and embeddings</div>
                                 </div>
@@ -175,19 +180,21 @@ export function Settings({ settings, onSettingsChange }: SettingsProps) {
                                 <div className="bg-white/[0.02] p-3 rounded-lg border border-white/5">
                                     <div className="flex items-center justify-between mb-2">
                                         <label className="text-xs font-medium text-white/70">Google Gemini API Key</label>
-                                        <button
+                                        <Button
                                             onClick={() => testApiKey('gemini')}
-                                            className="text-[10px] px-2 py-1 bg-white/[0.05] hover:bg-white/[0.08] border border-white/10 text-white/70 rounded transition-colors"
+                                            variant="secondary"
+                                            size="xs"
+                                            className="text-[10px] px-2 py-1"
                                         >
                                             Test
-                                        </button>
+                                        </Button>
                                     </div>
                                     <input
                                         type="password"
                                         value={apiKeyInputs.gemini || ''}
                                         onChange={(e) => updateApiKey('gemini', e.target.value)}
                                         placeholder="AIza..."
-                                        className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-xs text-white/80 font-mono focus:outline-none focus:border-[#007AFF]/30"
+                                        className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-xs text-white/80 font-mono focus:outline-none focus:border-white/20"
                                     />
                                     <div className="text-[10px] text-white/40 mt-1">Used for Gemini models and services</div>
                                 </div>
@@ -196,19 +203,21 @@ export function Settings({ settings, onSettingsChange }: SettingsProps) {
                                 <div className="bg-white/[0.02] p-3 rounded-lg border border-white/5">
                                     <div className="flex items-center justify-between mb-2">
                                         <label className="text-xs font-medium text-white/70">Anthropic API Key</label>
-                                        <button
+                                        <Button
                                             onClick={() => testApiKey('anthropic')}
-                                            className="text-[10px] px-2 py-1 bg-white/[0.05] hover:bg-white/[0.08] border border-white/10 text-white/70 rounded transition-colors"
+                                            variant="secondary"
+                                            size="xs"
+                                            className="text-[10px] px-2 py-1"
                                         >
                                             Test
-                                        </button>
+                                        </Button>
                                     </div>
                                     <input
                                         type="password"
                                         value={apiKeyInputs.anthropic || ''}
                                         onChange={(e) => updateApiKey('anthropic', e.target.value)}
                                         placeholder="sk-ant-..."
-                                        className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-xs text-white/80 font-mono focus:outline-none focus:border-[#007AFF]/30"
+                                        className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-xs text-white/80 font-mono focus:outline-none focus:border-white/20"
                                     />
                                     <div className="text-[10px] text-white/40 mt-1">Used for Claude models and evaluation</div>
                                 </div>

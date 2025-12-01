@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { Button } from './ui/Button';
 
 // Map article titles to documentation file paths
 const articleDocs: Record<string, string> = {
@@ -172,17 +173,19 @@ export function Help() {
         {/* Header Bar */}
         <div className="px-6 py-4 border-b border-white/5 bg-white/[0.02] flex items-center gap-4 shrink-0">
           {selectedArticle ? (
-            <button
+            <Button
               onClick={handleBack}
-              className="group flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all"
+              variant="secondary"
+              size="sm"
+              className="group flex items-center gap-2 px-3 py-1.5"
             >
               <svg className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
               <span className="text-sm font-medium">Home</span>
-            </button>
+            </Button>
           ) : (
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#007AFF]/20 to-[#007AFF]/5 border border-[#007AFF]/20 flex items-center justify-center text-[#007AFF]">
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-white/20 to-white/5 border border-white/20 flex items-center justify-center text-white/70">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
@@ -196,7 +199,7 @@ export function Help() {
               </svg>
             </div>
             <input
-              className="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-12 py-2 text-sm text-white/90 placeholder:text-white/30 focus:outline-none focus:border-[#007AFF]/40 focus:ring-1 focus:ring-[#007AFF]/40 transition-all"
+              className="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-12 py-2 text-sm text-white/90 placeholder:text-white/30 focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all"
               placeholder="Search documentation (e.g., 'optimizer', 'datasets')..."
             />
             <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
@@ -215,7 +218,7 @@ export function Help() {
                     <div className="flex flex-col items-center justify-center py-32 gap-4">
                       <div className="relative w-12 h-12">
                         <div className="absolute inset-0 border-4 border-white/10 rounded-full"></div>
-                        <div className="absolute inset-0 border-4 border-transparent border-t-[#007AFF] rounded-full animate-spin"></div>
+                        <div className="absolute inset-0 border-4 border-transparent border-t-white/60 rounded-full animate-spin"></div>
                       </div>
                       <span className="text-sm text-white/50 font-medium animate-pulse">Loading article...</span>
                     </div>
@@ -239,15 +242,15 @@ export function Help() {
                           },
                           p: ({ node, ...props }) => <p className="text-sm text-white/70 leading-7 mb-6 font-light tracking-wide" {...props} />,
                           ul: ({ node, ...props }) => <ul className="list-none ml-0 mb-6 space-y-3" {...props} />,
-                          ol: ({ node, ...props }) => <ol className="list-decimal list-outside ml-5 text-white/70 mb-6 space-y-3 marker:text-[#007AFF] marker:font-semibold" {...props} />,
+                          ol: ({ node, ...props }) => <ol className="list-decimal list-outside ml-5 text-white/70 mb-6 space-y-3 marker:text-white/60 marker:font-semibold" {...props} />,
                           li: ({ node, children, ...props }) => (
                             <li className="pl-2 relative flex gap-3 text-sm text-white/70" {...props}>
-                              <span className="text-[#007AFF] mt-2 w-1.5 h-1.5 rounded-full bg-[#007AFF] shrink-0 block" />
+                              <span className="text-white/60 mt-2 w-1.5 h-1.5 rounded-full bg-white/60 shrink-0 block" />
                               <span className="flex-1">{children}</span>
                             </li>
                           ),
                           a: ({ node, ...props }) => <a className="text-[#5FA5F9] hover:text-white transition-colors underline decoration-[#5FA5F9]/30 hover:decoration-white/50 underline-offset-4" {...props} />,
-                          blockquote: ({ node, children, ...props }: any) => {
+                          blockquote: ({ children }: any) => {
                             // Check for admonitions
                             const content = children?.[1]?.props?.children?.[0] || '';
                             let type = 'info';
@@ -259,7 +262,7 @@ export function Help() {
                             }
 
                             const styles = {
-                              info: 'border-[#007AFF] bg-[#007AFF]/5 text-[#007AFF]',
+                              info: 'border-white/30 bg-white/5 text-white/70',
                               warning: 'border-amber-500 bg-amber-500/5 text-amber-500',
                               success: 'border-emerald-500 bg-emerald-500/5 text-emerald-500'
                             };
@@ -281,9 +284,11 @@ export function Help() {
                                   <div className="text-[11px] text-white/40 font-mono uppercase tracking-wider">
                                     {match ? match[1] : 'code'}
                                   </div>
-                                  <button
+                                  <Button
                                     onClick={() => handleCopyCode(codeText)}
-                                    className="text-white/40 hover:text-white transition-colors"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-white/60 hover:text-white"
                                     title="Copy code"
                                   >
                                     {copiedCode === codeText ? (
@@ -291,7 +296,7 @@ export function Help() {
                                     ) : (
                                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                                     )}
-                                  </button>
+                                  </Button>
                                 </div>
                                 <pre className="p-5 overflow-x-auto">
                                   <code className={`font-mono text-sm text-white/80 leading-relaxed ${className}`} {...props}>
@@ -317,23 +322,29 @@ export function Help() {
                       {/* Article Footer Navigation */}
                       <div className="mt-20 pt-8 border-t border-white/10 grid grid-cols-2 gap-4">
                         {prevArticle ? (
-                          <button
+                          <Button
                             onClick={() => navigateArticle('prev')}
+                            variant="subtle"
+                            size="md"
+                            fullWidth
                             className="group text-left p-4 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/10 transition-all"
                           >
-                            <div className="text-[11px] text-white/40 uppercase tracking-wider mb-1 group-hover:text-[#007AFF] transition-colors">Previous</div>
+                            <div className="text-[11px] text-white/40 uppercase tracking-wider mb-1 group-hover:text-white transition-colors">Previous</div>
                             <div className="text-sm font-medium text-white/80 group-hover:text-white truncate">{getShortTitle(prevArticle)}</div>
-                          </button>
+                          </Button>
                         ) : <div />}
 
                         {nextArticle ? (
-                          <button
+                          <Button
                             onClick={() => navigateArticle('next')}
+                            variant="subtle"
+                            size="md"
+                            fullWidth
                             className="group text-right p-4 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/10 transition-all"
                           >
-                            <div className="text-[11px] text-white/40 uppercase tracking-wider mb-1 group-hover:text-[#007AFF] transition-colors">Next</div>
+                            <div className="text-[11px] text-white/40 uppercase tracking-wider mb-1 group-hover:text-white transition-colors">Next</div>
                             <div className="text-sm font-medium text-white/80 group-hover:text-white truncate">{getShortTitle(nextArticle)}</div>
-                          </button>
+                          </Button>
                         ) : <div />}
                       </div>
                     </article>
@@ -369,7 +380,7 @@ export function Help() {
           ) : (
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               {categories.map((cat) => (
-                <div key={cat.title} className="bg-white/[0.02] border border-white/10 rounded-xl p-4 space-y-3 hover:border-[#007AFF]/20 transition-colors">
+                <div key={cat.title} className="bg-white/[0.02] border border-white/10 rounded-xl p-4 space-y-3 hover:border-white/20 transition-colors">
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-lg font-semibold text-white">{cat.title}</h3>
@@ -378,16 +389,19 @@ export function Help() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {cat.articles.map((article) => (
-                      <button
+                      <Button
                         key={article}
                         onClick={() => handleArticleClick(article)}
-                        className="text-left bg-black/30 border border-white/5 rounded-lg px-3 py-2 text-sm text-white/80 hover:border-[#007AFF]/20 hover:text-white transition-colors flex items-center justify-between"
+                        variant="subtle"
+                        size="sm"
+                        fullWidth
+                        className="text-left bg-black/30 border border-white/5 rounded-lg px-3 py-2 text-sm text-white/80 hover:border-white/20 hover:text-white transition-colors flex items-center justify-between"
                       >
                         <span className="pr-2 truncate">{article}</span>
                         <svg className="w-4 h-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>

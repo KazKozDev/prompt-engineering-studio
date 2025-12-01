@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
+import { Button } from '../ui/Button';
 
 interface FullReportProps {
     initialPrompt?: string;
@@ -79,8 +80,8 @@ export const FullReport: React.FC<FullReportProps> = ({ initialPrompt = '', init
 
     const getGradeColor = (grade: string) => {
         switch (grade) {
-            case 'A': return 'text-emerald-400';
-            case 'B': return 'text-blue-400';
+            case 'A': return 'text-white/70';
+            case 'B': return 'text-white/60';
             case 'C': return 'text-yellow-400';
             case 'D': return 'text-orange-400';
             default: return 'text-red-400';
@@ -126,7 +127,7 @@ export const FullReport: React.FC<FullReportProps> = ({ initialPrompt = '', init
                     <select
                         value={selectedDatasetId}
                         onChange={handleDatasetChange}
-                        className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-3 text-sm text-white/90 focus:outline-none focus:border-[#007AFF]/40"
+                        className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-3 text-sm text-white/90 focus:outline-none focus:border-white/20"
                     >
                         <option value="">Select a dataset...</option>
                         {availableDatasets.map(ds => (
@@ -145,7 +146,7 @@ export const FullReport: React.FC<FullReportProps> = ({ initialPrompt = '', init
                     <textarea
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
-                        className="w-full min-h-[180px] bg-black/60 border border-white/10 rounded-lg px-3 py-3 text-sm text-white/90 font-mono resize-none focus:outline-none focus:border-[#007AFF]/40"
+                        className="w-full min-h-[180px] bg-black/60 border border-white/10 rounded-lg px-3 py-3 text-sm text-white/90 font-mono resize-none focus:outline-none focus:border-white/20"
                         placeholder="Enter the prompt to evaluate across quality, stability, and robustness..."
                     />
                 </div>
@@ -185,7 +186,7 @@ export const FullReport: React.FC<FullReportProps> = ({ initialPrompt = '', init
                             </div>
                             <div className="bg-black/20 rounded-lg p-4">
                                 <div className="text-xs text-white/40 uppercase tracking-wider mb-1">Status</div>
-                                <div className="text-2xl font-mono text-emerald-400">Ready</div>
+                                <div className="text-2xl font-mono text-white/70">Ready</div>
                             </div>
                         </div>
                     </div>
@@ -196,10 +197,10 @@ export const FullReport: React.FC<FullReportProps> = ({ initialPrompt = '', init
                         <div className="bg-white/[0.03] border border-white/10 rounded-xl p-5">
                             <div className="flex items-center justify-between mb-4">
                                 <h4 className="font-medium text-white/80">Stability (Self-Consistency)</h4>
-                                <span className="text-sm font-mono text-[#007AFF]">{report.consistency.consistency_score?.toFixed(3)}</span>
+                                <span className="text-sm font-mono text-white/70">{report.consistency.consistency_score?.toFixed(3)}</span>
                             </div>
                             <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                                <div className="h-full bg-[#007AFF]" style={{ width: `${(report.consistency.consistency_score || 0) * 100}%` }}></div>
+                                <div className="h-full bg-white/50" style={{ width: `${(report.consistency.consistency_score || 0) * 100}%` }}></div>
                             </div>
                             <p className="text-xs text-white/40 mt-3">
                                 Based on {report.consistency.n_samples} samples. Higher is better.
@@ -210,10 +211,10 @@ export const FullReport: React.FC<FullReportProps> = ({ initialPrompt = '', init
                         <div className="bg-white/[0.03] border border-white/10 rounded-xl p-5">
                             <div className="flex items-center justify-between mb-4">
                                 <h4 className="font-medium text-white/80">Format Resilience</h4>
-                                <span className="text-sm font-mono text-purple-400">{report.robustness.format?.robustness_score?.toFixed(3)}</span>
+                                <span className="text-sm font-mono text-white/70">{report.robustness.format?.robustness_score?.toFixed(3)}</span>
                             </div>
                             <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                                <div className="h-full bg-purple-400" style={{ width: `${(report.robustness.format?.robustness_score || 0) * 100}%` }}></div>
+                                <div className="h-full bg-white/40" style={{ width: `${(report.robustness.format?.robustness_score || 0) * 100}%` }}></div>
                             </div>
                             <p className="text-xs text-white/40 mt-3">
                                 Resistance to spacing, capitalization, and punctuation changes.
@@ -250,39 +251,39 @@ export const FullReport: React.FC<FullReportProps> = ({ initialPrompt = '', init
                     </div>
 
                     {/* Auto-Fix Suggestions */}
-                            <div className="bg-blue-500/5 border border-blue-500/10 rounded-xl p-5">
-                                <h4 className="font-medium text-blue-400 mb-3 flex items-center gap-2">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                                    Recommended Actions
-                                </h4>
-                                <ul className="space-y-2 text-sm text-white/70">
+                    <div className="bg-white/5 border border-white/10 rounded-xl p-5">
+                        <h4 className="font-medium text-white/60 mb-3 flex items-center gap-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                            Recommended Actions
+                        </h4>
+                        <ul className="space-y-2 text-sm text-white/70">
                             {report.summary.avg_score < 0.8 && (
                                 <li className="flex items-start gap-2">
-                                    <span className="text-blue-400">•</span>
+                                    <span className="text-white/60">•</span>
                                     <span>Consider simplifying the prompt instructions to improve overall stability.</span>
                                 </li>
                             )}
                             {report.robustness.format?.robustness_score < 0.9 && (
                                 <li className="flex items-start gap-2">
-                                    <span className="text-blue-400">•</span>
+                                    <span className="text-white/60">•</span>
                                     <span>Add explicit formatting constraints (e.g., "Always use this JSON schema") to fix format sensitivity.</span>
                                 </li>
                             )}
                             {report.robustness.length?.robustness_score < 0.8 && (
                                 <li className="flex items-start gap-2">
-                                    <span className="text-blue-400">•</span>
+                                    <span className="text-white/60">•</span>
                                     <span>Add "Ignore irrelevant context" instruction to handle long contexts better.</span>
                                 </li>
                             )}
                             {report.robustness.adversarial?.robustness_score < 0.8 && (
                                 <li className="flex items-start gap-2">
-                                    <span className="text-blue-400">•</span>
+                                    <span className="text-white/60">•</span>
                                     <span>Implement input sanitization or add a defensive system prompt layer.</span>
                                 </li>
                             )}
                             {report.summary.avg_score >= 0.9 && (
                                 <li className="flex items-start gap-2">
-                                    <span className="text-emerald-400">•</span>
+                                    <span className="text-white/70">•</span>
                                     <span>No major issues found. Ready for deployment!</span>
                                 </li>
                             )}
@@ -303,10 +304,12 @@ export const FullReport: React.FC<FullReportProps> = ({ initialPrompt = '', init
                             Model: {model || 'model'}
                         </div>
                     </div>
-                    <button
+                    <Button
                         onClick={runReport}
                         disabled={loading}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-[#4F46E5] to-[#007AFF] text-sm font-semibold text-white shadow-[0_10px_30px_-12px_rgba(0,122,255,0.8)] hover:opacity-95 disabled:opacity-50 transition-all"
+                        variant="primary"
+                        size="md"
+                        className={loading ? 'opacity-60 cursor-not-allowed' : ''}
                     >
                         {loading ? (
                             <>
@@ -319,7 +322,7 @@ export const FullReport: React.FC<FullReportProps> = ({ initialPrompt = '', init
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" /></svg>
                             </>
                         )}
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

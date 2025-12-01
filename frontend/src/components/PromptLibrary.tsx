@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Button } from './ui/Button';
 
 // Prompt status types
 type PromptStatus = 'draft' | 'testing' | 'production';
@@ -141,8 +142,8 @@ const STATUS_CONFIG = {
     },
     production: {
         label: 'Production Ready',
-        color: 'bg-green-500',
-        textColor: 'text-green-300',
+        color: 'bg-emerald-500/20',
+        textColor: 'text-emerald-300/80',
         Icon: Icons.production,
         description: 'Tested and approved'
     }
@@ -175,6 +176,11 @@ export function PromptLibrary({ onEvaluatePrompt }: PromptLibraryProps) {
 
     useEffect(() => {
         loadPrompts();
+        
+        // Listen for prompt library updates from other components
+        const handleLibraryUpdate = () => loadPrompts();
+        window.addEventListener('prompt-library-updated', handleLibraryUpdate);
+        return () => window.removeEventListener('prompt-library-updated', handleLibraryUpdate);
     }, []);
 
     useEffect(() => {
@@ -279,15 +285,15 @@ export function PromptLibrary({ onEvaluatePrompt }: PromptLibraryProps) {
     };
 
     const getScoreColor = (score: number) => {
-        if (score >= 80) return 'text-green-400';
-        if (score >= 60) return 'text-yellow-400';
-        return 'text-red-400';
+        if (score >= 80) return 'text-white/80';
+        if (score >= 60) return 'text-white/60';
+        return 'text-white/40';
     };
 
     const getScoreBg = (score: number) => {
-        if (score >= 80) return 'bg-green-900/30 border-green-700';
-        if (score >= 60) return 'bg-yellow-900/30 border-yellow-700';
-        return 'bg-red-900/30 border-red-700';
+        if (score >= 80) return 'bg-white/10 border-white/20';
+        if (score >= 60) return 'bg-white/5 border-white/15';
+        return 'bg-white/5 border-white/10';
     };
 
     // Stats
@@ -313,13 +319,13 @@ export function PromptLibrary({ onEvaluatePrompt }: PromptLibraryProps) {
 
                 {/* Search */}
                 <div className="relative group">
-                    <svg className="absolute left-3 top-2.5 w-4 h-4 text-white/20 group-focus-within:text-[#007AFF] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    <svg className="absolute left-3 top-2.5 w-4 h-4 text-white/20 group-focus-within:text-white/40 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                     <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search prompts..."
-                        className="w-full bg-black/20 border border-white/5 rounded-lg pl-9 pr-3 py-2 text-sm text-white/80 placeholder:text-white/20 focus:outline-none focus:border-[#007AFF]/50 focus:bg-black/40 transition-all"
+                        className="w-full bg-black/20 border border-white/5 rounded-lg pl-9 pr-3 py-2 text-sm text-white/80 placeholder:text-white/20 focus:outline-none focus:border-white/20 focus:bg-black/40 transition-all"
                     />
                 </div>
 
@@ -328,7 +334,7 @@ export function PromptLibrary({ onEvaluatePrompt }: PromptLibraryProps) {
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value as PromptStatus | 'all')}
-                        className="flex-1 rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-[#007AFF]/50"
+                        className="flex-1 rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-white/20"
                     >
                         <option value="all">All Status</option>
                         <option value="draft">Draft</option>
@@ -338,7 +344,7 @@ export function PromptLibrary({ onEvaluatePrompt }: PromptLibraryProps) {
                     <select
                         value={categoryFilter}
                         onChange={(e) => setCategoryFilter(e.target.value)}
-                        className="flex-1 rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-[#007AFF]/50"
+                        className="flex-1 rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-white/20"
                     >
                         {CATEGORIES.map(cat => (
                             <option key={cat} value={cat}>{cat}</option>
@@ -346,18 +352,16 @@ export function PromptLibrary({ onEvaluatePrompt }: PromptLibraryProps) {
                     </select>
                 </div>
 
-                <div className="flex gap-2">
-                    <select
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value as 'date' | 'score' | 'name' | 'usage')}
-                        className="flex-1 rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-[#007AFF]/50"
-                    >
-                        <option value="date">Sort by Date</option>
-                        <option value="score">Sort by Score</option>
-                        <option value="name">Sort by Name</option>
-                        <option value="usage">Sort by Usage</option>
-                    </select>
-                </div>
+                <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as 'date' | 'score' | 'name' | 'usage')}
+                    className="w-full rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-white/20"
+                >
+                    <option value="date">Sort by Date</option>
+                    <option value="score">Sort by Score</option>
+                    <option value="name">Sort by Name</option>
+                    <option value="usage">Sort by Usage</option>
+                </select>
 
                 {/* Stats Summary */}
                 <div className="flex gap-2 text-[10px] text-white/40">
@@ -367,11 +371,11 @@ export function PromptLibrary({ onEvaluatePrompt }: PromptLibraryProps) {
                     <span>•</span>
                     <span className="text-yellow-400">{stats.testing} testing</span>
                     <span>•</span>
-                    <span className="text-green-400">{stats.production} prod</span>
+                    <span className="text-white/40">{stats.production} prod</span>
                 </div>
 
                 {/* Prompts List */}
-                <div className="flex-1 overflow-y-auto min-h-0 space-y-2 pr-2 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto min-h-0 space-y-1.5 pr-2 custom-scrollbar mt-2">
                     {isLoading ? (
                         <div className="text-center py-12 text-white/40 text-xs">Loading...</div>
                     ) : filteredPrompts.length === 0 ? (
@@ -385,34 +389,14 @@ export function PromptLibrary({ onEvaluatePrompt }: PromptLibraryProps) {
                             <button
                                 key={prompt.id}
                                 onClick={() => setSelectedPrompt(prompt)}
-                                className={`w-full text-left p-3 rounded-xl border transition-all ${selectedPrompt?.id === prompt.id
-                                        ? 'bg-[#007AFF]/10 border-[#007AFF]/30'
-                                        : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.04] hover:border-white/10'
+                                className={`w-full text-left px-3 py-2.5 rounded-lg border transition-all ${selectedPrompt?.id === prompt.id
+                                    ? 'bg-white/10 border-white/20'
+                                    : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.05] hover:border-white/10'
                                     }`}
                             >
-                                <div className="flex items-start justify-between mb-2">
-                                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                                        <span className="text-white/60">{STATUS_CONFIG[prompt.status].Icon()}</span>
-                                        <span className="text-sm font-medium text-white/90 truncate">{prompt.name}</span>
-                                    </div>
-                                    {prompt.evaluation && (
-                                        <div className={`text-xs font-bold px-2 py-0.5 rounded ${getScoreColor(prompt.evaluation.overallScore)}`}>
-                                            {prompt.evaluation.overallScore}%
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="text-[11px] text-white/40 line-clamp-1 mb-2">
-                                    {prompt.text.substring(0, 100)}...
-                                </div>
-                                <div className="flex items-center gap-2 text-[10px] text-white/30">
-                                    <span className={`px-1.5 py-0.5 rounded ${STATUS_CONFIG[prompt.status].color} text-white`}>
-                                        {STATUS_CONFIG[prompt.status].label}
-                                    </span>
-                                    <span>•</span>
-                                    <span>{prompt.category}</span>
-                                    <span>•</span>
-                                    <span>v{prompt.currentVersion}</span>
-                                </div>
+                                <span className={`block text-[13px] font-medium truncate text-left ${selectedPrompt?.id === prompt.id ? 'text-white' : 'text-white/70'}`}>
+                                    {prompt.name}
+                                </span>
                             </button>
                         ))
                     )}
@@ -429,48 +413,31 @@ export function PromptLibrary({ onEvaluatePrompt }: PromptLibraryProps) {
                                     {selectedPrompt.name}
                                     <span className="text-[11px] text-white/50">v{selectedPrompt.currentVersion}</span>
                                 </h2>
-                                <span className={`text-[11px] px-2 py-1 rounded-full ${STATUS_CONFIG[selectedPrompt.status].color} text-white`}>
+                                <span className={`text-[11px] px-2 py-1 rounded-full ${STATUS_CONFIG[selectedPrompt.status].color} ${STATUS_CONFIG[selectedPrompt.status].textColor}`}>
                                     {STATUS_CONFIG[selectedPrompt.status].label}
                                 </span>
                             </div>
                             <div className="flex items-center gap-2 text-xs text-white/50 flex-wrap">
-                                <span className="flex items-center gap-1">
-                                    <Icons.target />
-                                    <span>{selectedPrompt.techniqueName || selectedPrompt.technique}</span>
-                                </span>
+                                <span>{selectedPrompt.techniqueName || selectedPrompt.technique}</span>
                                 <span>•</span>
                                 <span>{selectedPrompt.category}</span>
                                 <span>•</span>
                                 <span>Updated {new Date(selectedPrompt.updatedAt).toLocaleDateString()}</span>
-                                {selectedPrompt.tags.length > 0 && (
-                                    <>
-                                        <span>•</span>
-                                        <span className="flex items-center gap-1 flex-wrap">
-                                            {selectedPrompt.tags.map(tag => (
-                                                <span key={tag} className="px-2 py-0.5 bg-white/[0.04] border border-white/10 text-white/60 text-[10px] rounded">
-                                                    {tag}
-                                                </span>
-                                            ))}
-                                        </span>
-                                    </>
-                                )}
                             </div>
                         </div>
 
                         <div className="flex items-center gap-2 shrink-0">
                             <button
                                 onClick={() => handleCopyPrompt(selectedPrompt.text)}
-                                className="p-2 rounded-lg bg-white/[0.04] border border-white/10 text-white/70 hover:text-white hover:border-white/30"
-                                title="Copy"
+                                className="px-3 py-1.5 text-xs font-medium rounded-lg border border-white/10 bg-white/[0.04] text-white/70 hover:text-white hover:border-white/30 transition-all"
                             >
-                                <Icons.copy />
+                                Export
                             </button>
                             <button
                                 onClick={() => handleDuplicatePrompt(selectedPrompt)}
-                                className="p-2 rounded-lg bg-white/[0.04] border border-white/10 text-white/70 hover:text-white hover:border-white/30"
-                                title="Duplicate"
+                                className="px-3 py-1.5 text-xs font-medium rounded-lg border border-white/10 bg-white/[0.04] text-white/70 hover:text-white hover:border-white/30 transition-all"
                             >
-                                <Icons.duplicate />
+                                Duplicate
                             </button>
                             {onEvaluatePrompt && (
                                 <button
@@ -478,7 +445,7 @@ export function PromptLibrary({ onEvaluatePrompt }: PromptLibraryProps) {
                                         onEvaluatePrompt(selectedPrompt);
                                         setSelectedPrompt(null);
                                     }}
-                                    className="px-3 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white/80 hover:bg-white/[0.08]"
+                                    className="px-3 py-1.5 text-xs font-medium rounded-lg border border-white/10 bg-white/[0.04] text-white/70 hover:text-white hover:border-white/30 transition-all"
                                 >
                                     Evaluate
                                 </button>
@@ -489,23 +456,23 @@ export function PromptLibrary({ onEvaluatePrompt }: PromptLibraryProps) {
                                         handleUpdateStatus(selectedPrompt.id, 'production');
                                         setSelectedPrompt({ ...selectedPrompt, status: 'production' });
                                     }}
-                                    className="px-3 py-2 rounded-lg bg-gradient-to-r from-[#4F46E5] to-[#007AFF] text-white font-semibold shadow-[0_10px_30px_-12px_rgba(0,122,255,0.8)] hover:opacity-95 transition-all"
+                                    className="px-3 py-1.5 text-xs font-medium rounded-lg border border-white/20 bg-white/10 text-white hover:bg-white/20 transition-all"
                                 >
                                     Deploy
                                 </button>
                             )}
                             <button
                                 onClick={() => handleDeletePrompt(selectedPrompt.id)}
-                                className="p-2 rounded-lg bg-red-900/20 border border-red-800/30 text-red-400/80 hover:bg-red-900/30"
+                                className="px-2 py-1.5 rounded-lg border border-red-800/30 bg-red-900/20 text-red-300 hover:bg-red-900/30 transition-all"
                                 title="Delete"
                             >
                                 <Icons.delete />
                             </button>
-                            <button onClick={() => setSelectedPrompt(null)} className="p-2 text-white/40 hover:text-white/70">
+                            <Button onClick={() => setSelectedPrompt(null)} variant="ghost" size="icon" className="p-2 text-white/60 hover:text-white">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
-                            </button>
+                            </Button>
                         </div>
                     </div>
 
@@ -575,17 +542,14 @@ export function PromptLibrary({ onEvaluatePrompt }: PromptLibraryProps) {
                 </div>
             ) : (
                 <div className="flex-1 flex flex-col bg-gradient-to-b from-black/20 to-transparent border border-white/5 rounded-2xl overflow-hidden">
-                    <div className="px-6 py-5 border-b border-white/5 bg-white/[0.02]">
-                        <h2 className="text-xl font-semibold text-white/90 leading-tight mb-1">Prompt Details</h2>
-                        <p className="text-xs text-white/45 mt-1">Select a prompt to view</p>
-                    </div>
                     <div className="flex-1 flex items-center justify-center p-8">
                         <div className="text-center">
                             <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-center text-white/20">
-                                <Icons.library />
+                                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
                             </div>
                             <p className="text-sm text-white/40">Select a prompt from the list</p>
-                            <p className="text-xs text-white/30 mt-1">to view details and actions</p>
                         </div>
                     </div>
                 </div>
@@ -619,6 +583,9 @@ export function savePromptToLibrary(prompt: Omit<LibraryPrompt, 'id' | 'createdA
 
     prompts.push(newPrompt);
     localStorage.setItem('prompt-library', JSON.stringify(prompts));
+    
+    // Notify PromptLibrary component to refresh
+    window.dispatchEvent(new CustomEvent('prompt-library-updated'));
 
     return newPrompt;
 }
