@@ -83,16 +83,17 @@ class PromptManager:
         if not technique:
             raise ValueError(f"Technique '{technique_key}' not found.")
 
-        # Check if we have a specific template for this technique
+        # Get the template if available
+        technique_template = ""
         if technique_key in self.technique_templates:
             template_data = self.technique_templates[technique_key]
-            template = template_data.get("template", "")
-            if template:
-                return template.format(user_input=user_input)
+            technique_template = template_data.get("template", "")
 
-        # Fallback to generic meta-prompt
+        # Format the meta-prompt
+        # We pass the template to the meta-prompt so the LLM can use it as a guide
         return self.meta_prompt_template.format(
             user_input=user_input,
             technique_name=technique["name"],
-            technique_description=technique["description"]
+            technique_description=technique["description"],
+            technique_template=technique_template
         )

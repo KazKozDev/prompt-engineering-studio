@@ -22,6 +22,7 @@ from src.prompts.manager import PromptManager
 from src.storage.history import HistoryManager
 from src.storage.templates import TemplatesManager
 from src.dataset_manager import DatasetManager
+from src.dataset_generator import DatasetGenerator, GenerationConfig, GenerationMode, TaskType, Difficulty
 from src.utils.logger import get_logger, setup_logging
 
 setup_logging()
@@ -335,10 +336,7 @@ async def use_template(template_id: str):
     templates_manager.increment_usage(template_id)
     return {"message": "Usage count incremented"}
 
-@app.get("/api/datasets")
-async def get_datasets():
-    """Get datasets (placeholder)"""
-    return {"datasets": [], "message": "Datasets feature coming soon"}
+
 
 
 from src.evaluator import OfflineEvaluator
@@ -444,7 +442,7 @@ class RobustnessRequest(BaseModel):
 
 @app.post("/api/evaluator/robustness")
 async def run_robustness_test(request: RobustnessRequest):
-    """Run robustness test for a prompt."""
+    """Run robustness test for a prompt (Legacy/Default to Format)."""
     tester = RobustnessTester()
     
     def model_func(prompt: str) -> str:
@@ -465,15 +463,326 @@ async def run_robustness_test(request: RobustnessRequest):
         # Convert Pydantic models to dicts
         dataset_dicts = [{"input": item.input, "output": item.output} for item in request.dataset]
         
-        results = tester.test_robustness(
+        results = tester.test_format_robustness(
             prompt=request.prompt,
             dataset=dataset_dicts,
             model_func=model_func,
-            variation_func=model_func # Use same model for variations for now
+            variation_func=model_func
         )
         return results
     except Exception as e:
         logger.error(f"Robustness test error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class MutualConsistencyRequest(BaseModel):
+    prompts: List[str]
+    provider: str = "ollama"
+    model: str = "llama2"
+
+@app.post("/api/evaluator/mutual-consistency")
+async def run_mutual_consistency(request: MutualConsistencyRequest):
+    """Run mutual consistency check (GLaPE)."""
+    scorer = ConsistencyScorer()
+    
+    def model_func(prompt: str, temperature: float = 0.7) -> str:
+        try:
+            if request.provider == "ollama":
+                client = OllamaClient(config["models"]["ollama"])
+                return client.complete(prompt, model=request.model) 
+            elif request.provider == "gemini":
+                client = GeminiClient(config["models"]["gemini"], api_key=None)
+                return client.complete(prompt, model=request.model)
+            else:
+                return "Error: Provider not supported"
+        except Exception as e:
+            logger.error(f"Model generation error: {e}")
+            return "Error"
+
+    try:
+        results = scorer.run_mutual_consistency_check(
+            prompts=request.prompts,
+            model_func=model_func
+        )
+        return results
+    except Exception as e:
+        logger.error(f"Mutual consistency error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class FormatRobustnessRequest(BaseModel):
+    prompt: str
+    dataset: List[EvaluationItem]
+    provider: str = "ollama"
+    model: str = "llama2"
+
+@app.post("/api/evaluator/robustness/format")
+async def run_format_robustness(request: FormatRobustnessRequest):
+    """Run format robustness test."""
+    tester = RobustnessTester()
+    
+    def model_func(prompt: str) -> str:
+        try:
+            if request.provider == "ollama":
+                client = OllamaClient(config["models"]["ollama"])
+                return client.complete(prompt, model=request.model) 
+            elif request.provider == "gemini":
+                client = GeminiClient(config["models"]["gemini"], api_key=None)
+                return client.complete(prompt, model=request.model)
+            else:
+                return "Error: Provider not supported"
+        except Exception as e:
+            logger.error(f"Model generation error: {e}")
+            return "Error"
+
+    try:
+        dataset_dicts = [{"input": item.input, "output": item.output} for item in request.dataset]
+        results = tester.test_format_robustness(
+            prompt=request.prompt,
+            dataset=dataset_dicts,
+            model_func=model_func,
+            variation_func=model_func
+        )
+        return results
+    except Exception as e:
+        logger.error(f"Format robustness error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class LengthRobustnessRequest(BaseModel):
+    prompt: str
+    dataset: List[EvaluationItem]
+    max_context_length: int = 1000
+    provider: str = "ollama"
+    model: str = "llama2"
+
+@app.post("/api/evaluator/robustness/length")
+async def run_length_robustness(request: LengthRobustnessRequest):
+    """Run length robustness test."""
+    tester = RobustnessTester()
+    
+    def model_func(prompt: str) -> str:
+        try:
+            if request.provider == "ollama":
+                client = OllamaClient(config["models"]["ollama"])
+                return client.complete(prompt, model=request.model) 
+            elif request.provider == "gemini":
+                client = GeminiClient(config["models"]["gemini"], api_key=None)
+                return client.complete(prompt, model=request.model)
+            else:
+                return "Error: Provider not supported"
+        except Exception as e:
+            logger.error(f"Model generation error: {e}")
+            return "Error"
+
+    try:
+        dataset_dicts = [{"input": item.input, "output": item.output} for item in request.dataset]
+        results = tester.test_length_robustness(
+            prompt=request.prompt,
+            dataset=dataset_dicts,
+            model_func=model_func,
+            max_context_length=request.max_context_length
+        )
+        return results
+    except Exception as e:
+        logger.error(f"Length robustness error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class AdversarialRobustnessRequest(BaseModel):
+    prompt: str
+    dataset: List[EvaluationItem]
+    level: str = "medium"
+    provider: str = "ollama"
+    model: str = "llama2"
+
+@app.post("/api/evaluator/robustness/adversarial")
+async def run_adversarial_robustness(request: AdversarialRobustnessRequest):
+    """Run adversarial robustness test."""
+    tester = RobustnessTester()
+    
+    def model_func(prompt: str) -> str:
+        try:
+            if request.provider == "ollama":
+                client = OllamaClient(config["models"]["ollama"])
+                return client.complete(prompt, model=request.model) 
+            elif request.provider == "gemini":
+                client = GeminiClient(config["models"]["gemini"], api_key=None)
+                return client.complete(prompt, model=request.model)
+            else:
+                return "Error: Provider not supported"
+        except Exception as e:
+            logger.error(f"Model generation error: {e}")
+            return "Error"
+
+    try:
+        dataset_dicts = [{"input": item.input, "output": item.output} for item in request.dataset]
+        results = tester.test_adversarial_robustness(
+            prompt=request.prompt,
+            dataset=dataset_dicts,
+            model_func=model_func,
+            level=request.level
+        )
+        return results
+    except Exception as e:
+        logger.error(f"Adversarial robustness error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class FullReportRequest(BaseModel):
+    prompt: str
+    dataset: List[EvaluationItem]
+    provider: str = "ollama"
+    model: str = "llama2"
+
+@app.post("/api/evaluator/full_report")
+async def run_full_report(request: FullReportRequest):
+    """Run a full evaluation suite: Consistency + Robustness (Format, Length, Adversarial)."""
+    consistency_scorer = ConsistencyScorer()
+    robustness_tester = RobustnessTester()
+    
+    def model_func(prompt: str, temperature: float = 0.7) -> str:
+        try:
+            if request.provider == "ollama":
+                client = OllamaClient(config["models"]["ollama"])
+                return client.complete(prompt, model=request.model) # TODO: Pass temp if supported
+            elif request.provider == "gemini":
+                client = GeminiClient(config["models"]["gemini"], api_key=None)
+                return client.complete(prompt, model=request.model)
+            else:
+                return "Error: Provider not supported"
+        except Exception as e:
+            logger.error(f"Model generation error: {e}")
+            return "Error"
+
+    # Helper for robustness model func (no temp)
+    def robust_model_func(prompt: str) -> str:
+        return model_func(prompt, temperature=0.0)
+
+    report = {
+        "summary": {},
+        "consistency": {},
+        "robustness": {}
+    }
+
+    try:
+        # 1. Consistency Check
+        logger.info("Running Consistency Check...")
+        consistency_res = consistency_scorer.run_consistency_check(
+            prompt=request.prompt,
+            model_func=model_func,
+            n_samples=5
+        )
+        report["consistency"] = consistency_res
+
+        # 2. Robustness Tests (require dataset)
+        if request.dataset:
+            dataset_dicts = [{"input": item.input, "output": item.output} for item in request.dataset]
+            
+            # Format
+            logger.info("Running Format Robustness...")
+            format_res = robustness_tester.test_format_robustness(
+                prompt=request.prompt,
+                dataset=dataset_dicts,
+                model_func=robust_model_func
+            )
+            report["robustness"]["format"] = format_res
+
+            # Length (limit to 2x, 4x for speed in report mode)
+            logger.info("Running Length Robustness...")
+            # Note: We might want to customize test_length_robustness to accept multipliers, 
+            # but for now we run standard. It might be slow.
+            length_res = robustness_tester.test_length_robustness(
+                prompt=request.prompt,
+                dataset=dataset_dicts,
+                model_func=robust_model_func
+            )
+            report["robustness"]["length"] = length_res
+
+            # Adversarial (Light)
+            logger.info("Running Adversarial Robustness...")
+            adv_res = robustness_tester.test_adversarial_robustness(
+                prompt=request.prompt,
+                dataset=dataset_dicts,
+                model_func=robust_model_func,
+                level="light"
+            )
+            report["robustness"]["adversarial"] = adv_res
+        
+        # 3. Calculate Overall Grade
+        scores = []
+        if "consistency_score" in report["consistency"]:
+            scores.append(report["consistency"]["consistency_score"])
+        if "robustness" in report:
+            if "format" in report["robustness"]:
+                scores.append(report["robustness"]["format"]["robustness_score"])
+            if "length" in report["robustness"]:
+                scores.append(report["robustness"]["length"]["robustness_score"])
+            if "adversarial" in report["robustness"]:
+                scores.append(report["robustness"]["adversarial"]["robustness_score"])
+        
+        avg_score = sum(scores) / len(scores) if scores else 0
+        
+        grade = "F"
+        if avg_score >= 0.9: grade = "A"
+        elif avg_score >= 0.8: grade = "B"
+        elif avg_score >= 0.7: grade = "C"
+        elif avg_score >= 0.6: grade = "D"
+
+        report["summary"] = {
+            "grade": grade,
+            "avg_score": avg_score,
+            "tests_run": len(scores)
+        }
+
+        return report
+
+    except Exception as e:
+        logger.error(f"Full report error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+class PromptEvalRequest(BaseModel):
+    prompts: List[str]
+    dataset: List[EvaluationItem]
+    budget: int
+    provider: str = "ollama"
+    model: str = "llama2"
+
+@app.post("/api/evaluator/promp-eva")
+async def run_prompt_eval(request: PromptEvalRequest):
+    """Run PromptEval (budget-aware evaluation)."""
+    evaluator = OfflineEvaluator()
+    
+    def model_func(prompt: str) -> str:
+        try:
+            if request.provider == "ollama":
+                client = OllamaClient(config["models"]["ollama"])
+                return client.complete(prompt, model=request.model) 
+            elif request.provider == "gemini":
+                client = GeminiClient(config["models"]["gemini"], api_key=None)
+                return client.complete(prompt, model=request.model)
+            else:
+                return "Error: Provider not supported"
+        except Exception as e:
+            logger.error(f"Model generation error: {e}")
+            return "Error"
+
+    try:
+        # Simple budget implementation: limit dataset size
+        # In a real PromptEval, this would be more sophisticated (e.g. successive elimination)
+        limit = min(len(request.dataset), request.budget)
+        limited_dataset = request.dataset[:limit]
+        
+        dataset_dicts = [{"input": item.input, "output": item.output} for item in limited_dataset]
+        
+        results = evaluator.run_evaluation(
+            dataset=dataset_dicts,
+            prompts=request.prompts,
+            model_func=model_func
+        )
+        return results
+    except Exception as e:
+        logger.error(f"PromptEval error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -643,6 +952,179 @@ async def get_example_datasets():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ==================== Dataset Generation Endpoints ====================
+
+class DatasetGenerateRequest(BaseModel):
+    """Request model for dataset generation."""
+    mode: str  # from_task, from_examples, from_prompt, edge_cases
+    task_type: str = "custom"  # classification, extraction, generation, qa, summarization, translation, custom
+    count: int = 10
+    difficulty: str = "mixed"  # easy, medium, hard, mixed
+    domain: str = ""
+    include_edge_cases: bool = False
+    task_description: str = ""
+    seed_examples: List[Dict[str, str]] = []
+    prompt_to_test: str = ""
+    provider: str = "ollama"
+    model: str = "llama2"
+    api_key: Optional[str] = None
+    # Whether to save immediately or just return generated data
+    save_as_dataset: bool = False
+    dataset_name: str = ""
+    dataset_description: str = ""
+
+
+@app.post("/api/datasets/generate")
+async def generate_dataset(request: DatasetGenerateRequest):
+    """Generate a synthetic dataset using LLM.
+    
+    Modes:
+    - from_task: Generate from a task description
+    - from_examples: Expand from seed examples
+    - from_prompt: Generate test cases for a prompt
+    - edge_cases: Generate adversarial/edge case inputs
+    
+    Returns generated data, optionally saves as a new dataset.
+    """
+    try:
+        # Validate mode
+        try:
+            mode = GenerationMode(request.mode)
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Invalid mode: {request.mode}. Valid modes: from_task, from_examples, from_prompt, edge_cases")
+        
+        # Validate task_type
+        try:
+            task_type = TaskType(request.task_type)
+        except ValueError:
+            task_type = TaskType.CUSTOM
+        
+        # Validate difficulty
+        try:
+            difficulty = Difficulty(request.difficulty)
+        except ValueError:
+            difficulty = Difficulty.MIXED
+        
+        # Validate required fields based on mode
+        if mode == GenerationMode.FROM_TASK and not request.task_description:
+            raise HTTPException(status_code=400, detail="task_description is required for from_task mode")
+        if mode == GenerationMode.FROM_EXAMPLES and not request.seed_examples:
+            raise HTTPException(status_code=400, detail="seed_examples is required for from_examples mode")
+        if mode == GenerationMode.FROM_PROMPT and not request.prompt_to_test:
+            raise HTTPException(status_code=400, detail="prompt_to_test is required for from_prompt mode")
+        
+        # Initialize LLM client
+        if request.provider == "gemini":
+            if not request.api_key:
+                raise HTTPException(status_code=400, detail="API key required for Gemini")
+            client = GeminiClient(config["models"]["gemini"], request.api_key)
+        elif request.provider == "ollama":
+            client = OllamaClient(config["models"]["ollama"])
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported provider: {request.provider}")
+        
+        # Create generation config
+        gen_config = GenerationConfig(
+            mode=mode,
+            task_type=task_type,
+            count=min(request.count, 100),  # Cap at 100
+            difficulty=difficulty,
+            domain=request.domain,
+            include_edge_cases=request.include_edge_cases,
+            task_description=request.task_description,
+            seed_examples=request.seed_examples,
+            prompt_to_test=request.prompt_to_test
+        )
+        
+        # Generate dataset
+        generator = DatasetGenerator(client)
+        generated_data = generator.generate(gen_config, model=request.model)
+        
+        if not generated_data:
+            raise HTTPException(status_code=500, detail="Failed to generate dataset - no valid items returned")
+        
+        result = {
+            "success": True,
+            "generated_count": len(generated_data),
+            "data": generated_data,
+            "config": {
+                "mode": request.mode,
+                "task_type": request.task_type,
+                "difficulty": request.difficulty,
+                "domain": request.domain
+            }
+        }
+        
+        # Optionally save as dataset
+        if request.save_as_dataset and request.dataset_name:
+            dataset = dataset_manager.create_dataset(
+                name=request.dataset_name,
+                data=generated_data,
+                description=request.dataset_description or f"Auto-generated dataset ({request.mode})",
+                category="generated"
+            )
+            result["saved_dataset"] = {
+                "id": dataset["id"],
+                "name": dataset["name"]
+            }
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating dataset: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/datasets/generate/modes")
+async def get_generation_modes():
+    """Get available dataset generation modes and their descriptions."""
+    return {
+        "modes": {
+            "from_task": {
+                "name": "From Task Description",
+                "description": "Describe your task and let AI generate input/output pairs",
+                "required_fields": ["task_description"],
+                "example": "Generate customer support Q&A pairs for an e-commerce platform"
+            },
+            "from_examples": {
+                "name": "From Examples",
+                "description": "Provide 2-5 seed examples and expand to a full dataset",
+                "required_fields": ["seed_examples"],
+                "example": "Provide 3 examples, generate 50 similar ones"
+            },
+            "from_prompt": {
+                "name": "From Prompt",
+                "description": "Generate test cases to evaluate a specific prompt",
+                "required_fields": ["prompt_to_test"],
+                "example": "Test cases for a sentiment analysis prompt"
+            },
+            "edge_cases": {
+                "name": "Edge Cases",
+                "description": "Generate adversarial and edge case inputs for robustness testing",
+                "required_fields": [],
+                "example": "Typos, special characters, prompt injection attempts"
+            }
+        },
+        "task_types": [
+            {"id": "classification", "name": "Classification", "description": "Categorize inputs into classes"},
+            {"id": "extraction", "name": "Extraction", "description": "Extract information from text"},
+            {"id": "generation", "name": "Generation", "description": "Generate creative text"},
+            {"id": "qa", "name": "Q&A", "description": "Question answering"},
+            {"id": "summarization", "name": "Summarization", "description": "Condense text"},
+            {"id": "translation", "name": "Translation", "description": "Convert between formats"},
+            {"id": "custom", "name": "Custom", "description": "Custom task type"}
+        ],
+        "difficulties": [
+            {"id": "easy", "name": "Easy", "description": "Simple, straightforward examples"},
+            {"id": "medium", "name": "Medium", "description": "Moderate complexity"},
+            {"id": "hard", "name": "Hard", "description": "Challenging edge cases"},
+            {"id": "mixed", "name": "Mixed", "description": "Variety of difficulties"}
+        ]
+    }
+
+
 # ==================== Advanced Metrics Endpoints ====================
 
 from src.evaluator import MetricsCalculator, LLMJudge, calculate_bleu, calculate_rouge
@@ -783,7 +1265,8 @@ async def run_llm_judge(request: LLMJudgeRequest):
             "score": result.score,
             "raw_score": result.details.get("raw_score", 0),
             "reasoning": result.details.get("reasoning", ""),
-            "criteria": result.details.get("criteria", request.criteria)
+            "criteria": result.details.get("criteria", request.criteria),
+            "confidence": result.details.get("confidence", result.score)
         }
     except Exception as e:
         logger.error(f"LLM Judge error: {e}")

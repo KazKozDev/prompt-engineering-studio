@@ -6,35 +6,34 @@ templates:
     # Based on: "Language Models are Few-Shot Learners" (Brown et al., 2020)
     # arXiv:2005.14165 - Direct query without examples
     template: |
+      You are given a direct question or instruction. Answer it clearly and concisely.
+
+      Question/Instruction:
       {user_input}
 
   few_shot:
     # Based on: "Language Models are Few-Shot Learners" (Brown et al., 2020)
     # arXiv:2005.14165 - Provide examples before the main query
     template: |
-      Here are some examples of how to approach similar tasks:
+      Use the pattern from the examples to answer the main query.
 
-      Example 1:
-      Input: [Example input]
-      Output: [Example output]
+      Example 1: [Input] -> [Output]
+      Example 2: [Input] -> [Output]
+      Example 3: [Input] -> [Output]
 
-      Example 2:
-      Input: [Example input]
-      Output: [Example output]
-
-      Now, please solve the following:
-      {user_input}
+      Main Query:
+      {user_input} ->
 
   role_prompting:
     # Based on: "Prompting GPT-3 To Be Reliable" (Si et al., 2022)
     # arXiv:2210.09150 - Assign expert role to the model
     template: |
-      You are an expert specialist with deep knowledge and years of experience in this field.
-      
-      As an expert, please address the following:
+      You are an expert [role]. Adopt the tone, terminology, and best practices of this role.
+
+      Task:
       {user_input}
-      
-      Provide a comprehensive, professional response based on your expertise.
+
+      Respond as the expert would, with precise and professional guidance.
 
   step_back:
     # Based on: "Take a Step Back" (Zheng et al., 2023)
@@ -141,14 +140,12 @@ templates:
     # Based on: "Self-critiquing models" (Saunders et al., 2022)
     # arXiv:2206.05802 - Critically evaluate own answer
     template: |
+      Task:
       {user_input}
 
-      After providing your initial answer, critically evaluate it:
-      
-      1. Initial Answer: [Your first response]
-      2. Critique: What are the potential weaknesses or errors in this answer?
-      3. Improvements: How can the answer be improved?
-      4. Final Answer: Provide an improved version based on your critique.
+      1) Draft: Provide your best answer.
+      2) Critique: What is wrong, missing, or unclear? List concrete fixes.
+      3) Final: Rewrite the answer applying the fixes. Return only the improved answer.
 
   reflection:
     # Based on: "Reflexion" (Shinn et al., 2023)
@@ -169,15 +166,13 @@ templates:
     # Based on: "Self-Refine" (Madaan et al., 2023)
     # arXiv:2303.17651 - Iteratively improve the answer
     template: |
+      Task:
       {user_input}
 
-      Use iterative refinement:
-      
-      Iteration 1: Provide initial answer
-      Feedback 1: What could be better?
-      Iteration 2: Improve based on feedback
-      Feedback 2: Any remaining issues?
-      Final Answer: The polished, refined response
+      Iteration 1: Draft a concise answer.
+      Feedback: Identify the top 3 improvements (clarity, completeness, format).
+      Iteration 2: Rewrite the answer applying the feedback.
+      Final Answer: Provide only the refined version.
 
   metacognitive:
     # Based on: "Metacognitive Prompting" (Liusie et al., 2023)
@@ -247,17 +242,11 @@ templates:
     # Based on: "Skeleton-of-Thought" (Ning et al., 2023)
     # arXiv:2307.15337 - First create structure, then fill in details
     template: |
-      First, create a skeleton outline, then fill in the details.
-
       Task: {user_input}
 
-      SKELETON (main points):
-      1. [Point 1]
-      2. [Point 2]
-      3. [Point 3]
-
-      DETAILED EXPANSION:
-      Now expand each point with full details and explanations.
+      1) Skeleton: List 3–5 bullet points covering the main steps/sections.
+      2) Expansion: For each bullet, write 2–3 sentences expanding it.
+      Return the expanded version only.
 
   chain_of_density:
     # Based on: "Chain of Density Prompting" (Adams et al., 2023)
@@ -370,71 +359,51 @@ templates:
     # Based on: "Meta-Prompting" (Suzgun & Kalai, 2024)
     # arXiv:2401.12954 - Use one LM as conductor for multiple experts
     template: |
-      Act as a conductor coordinating multiple expert perspectives.
+      Act as a conductor coordinating multiple expert roles.
 
       Task: {user_input}
 
-      Expert 1 (Domain Specialist): What does this expert say?
-      Expert 2 (Critical Analyst): What concerns or critiques arise?
-      Expert 3 (Creative Thinker): What innovative solutions exist?
+      Expert A (Domain Specialist): [key insights]
+      Expert B (Critical Analyst): [risks/edge cases]
+      Expert C (Creative Thinker): [novel ideas]
 
-      Conductor's Synthesis: Integrate all expert opinions into a coherent response.
+      Conductor: Synthesize A+B+C into one coherent answer.
 
   prompt_engineering_pe2:
     # Based on: "Prompt Engineering a Prompt Engineer" (Ye et al., 2024)
     # arXiv:2311.05661 - Meta-prompting for automatic prompt engineering
     template: |
-      As a prompt engineering expert, optimize the following task.
+      Design and execute the best prompt for this task.
 
-      Original Task: {user_input}
+      Task: {user_input}
 
-      Analysis:
-      1. What is the core objective?
-      2. What makes this task challenging?
-      3. What prompt structure would work best?
-
-      Optimized Prompt: [Rewritten, improved version]
-      
-      Execution: Now execute the optimized prompt.
+      1) Analyze the goal, constraints, and desired output format.
+      2) Draft an optimized prompt with clear instructions and structure.
+      3) Execute using that optimized prompt.
+      Return only the execution output.
 
   textgrad:
     # Based on: "TextGrad" (Yuksekgonul et al., 2024)
     # arXiv:2406.07496 - Automatic differentiation via text feedback
     template: |
-      Use iterative text-based feedback to optimize the response.
-
       Task: {user_input}
 
-      Initial Response: [First attempt]
-      
-      Feedback Round 1:
-      - What works well?
-      - What needs improvement?
-      - Gradient: Direction of improvement
-      
-      Updated Response: [Improved based on feedback]
-      
-      Feedback Round 2: [If needed]
-      
-      Final Optimized Response:
+      Initial: Draft a concise answer.
+      Feedback: Bullet the issues and “gradient” directions (what to change and how).
+      Update: Apply the feedback to produce a better answer.
+      Final: Provide only the improved answer.
 
   system_prompt_optimization:
     # Based on: "System Prompt Optimization" (Choi et al., 2025)
     # arXiv:2505.09666 - Two-level optimization of system prompts
     template: |
-      Apply two-level optimization to this task.
+      Optimize the system prompt, then execute with it.
 
       Task: {user_input}
 
-      Level 1 - Meta-Level Analysis:
-      - What is the optimal way to frame this problem?
-      - What context would help most?
-
-      Level 2 - Execution Level:
-      - Apply the optimized framing
-      - Generate the response
-
-      Optimized Output:
+      Level 1 (Optimize): Write an improved system prompt framing the task, constraints, and style.
+      Level 2 (Execute): Use that optimized system prompt to answer the task.
+      Return the execution answer only.
 
   chain_of_draft:
     # Based on: "Chain of Draft" (Xu et al., 2025)

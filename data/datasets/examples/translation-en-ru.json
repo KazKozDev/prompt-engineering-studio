@@ -2,16 +2,40 @@
   "id": "translation-en-ru",
   "name": "Translation EN→RU",
   "description": "Перевод с английского на русский",
-  "category": "translation",
+  "category": "Translation",
   "size": 8,
   "data": [
-    {"input": "Hello, how are you?", "output": "Привет, как дела?"},
-    {"input": "The weather is nice today.", "output": "Сегодня хорошая погода."},
-    {"input": "I love programming.", "output": "Я люблю программирование."},
-    {"input": "What time is it?", "output": "Который час?"},
-    {"input": "Thank you very much.", "output": "Большое спасибо."},
-    {"input": "See you tomorrow.", "output": "Увидимся завтра."},
-    {"input": "This is a test.", "output": "Это тест."},
-    {"input": "Good morning!", "output": "Доброе утро!"}
+    {
+      "input": "Hello, how are you?",
+      "output": "Привет, как дела?"
+    },
+    {
+      "input": "The weather is nice today.",
+      "output": "Сегодня хорошая погода."
+    },
+    {
+      "input": "I love programming.",
+      "output": "Я люблю программирование."
+    },
+    {
+      "input": "What time is it?",
+      "output": "Который час?"
+    },
+    {
+      "input": "Thank you very much.",
+      "output": "Большое спасибо."
+    },
+    {
+      "input": "See you tomorrow.",
+      "output": "Увидимся завтра."
+    },
+    {
+      "input": "This is a test.",
+      "output": "Это тест."
+    },
+    {
+      "input": "Good morning!",
+      "output": "Доброе утро!"
+    }
   ]
 }

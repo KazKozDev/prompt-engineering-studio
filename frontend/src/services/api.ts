@@ -12,6 +12,7 @@ export interface Technique {
   authors: string;
   paper: string;
   arxiv: string;
+  structure_hint?: string;
 }
 
 export interface GenerateRequest {
@@ -141,6 +142,18 @@ class APIService {
     });
   }
 
+  async runFullReport(request: {
+    prompt: string;
+    dataset: { input: string; output: string }[];
+    provider: string;
+    model: string;
+  }): Promise<any> {
+    return this.request('/api/evaluator/full_report', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
   async getTelemetryDashboard(timeRange: string = "7d"): Promise<any> {
     return this.request(`/api/evaluator/telemetry?time_range=${timeRange}`);
   }
@@ -198,6 +211,58 @@ class APIService {
 
   async getExampleDatasets(): Promise<any> {
     return this.request('/api/datasets/examples/list');
+  }
+
+  // ==================== Dataset Generation ====================
+
+  async generateDataset(request: {
+    mode: 'from_task' | 'from_examples' | 'from_prompt' | 'edge_cases';
+    task_type?: 'classification' | 'extraction' | 'generation' | 'qa' | 'summarization' | 'translation' | 'custom';
+    count?: number;
+    difficulty?: 'easy' | 'medium' | 'hard' | 'mixed';
+    domain?: string;
+    include_edge_cases?: boolean;
+    task_description?: string;
+    seed_examples?: { input: string; output: string }[];
+    prompt_to_test?: string;
+    provider?: string;
+    model?: string;
+    api_key?: string;
+    save_as_dataset?: boolean;
+    dataset_name?: string;
+    dataset_description?: string;
+  }): Promise<{
+    success: boolean;
+    generated_count: number;
+    data: { input: string; output: string }[];
+    config: {
+      mode: string;
+      task_type: string;
+      difficulty: string;
+      domain: string;
+    };
+    saved_dataset?: {
+      id: string;
+      name: string;
+    };
+  }> {
+    return this.request('/api/datasets/generate', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  async getGenerationModes(): Promise<{
+    modes: Record<string, {
+      name: string;
+      description: string;
+      required_fields: string[];
+      example: string;
+    }>;
+    task_types: { id: string; name: string; description: string }[];
+    difficulties: { id: string; name: string; description: string }[];
+  }> {
+    return this.request('/api/datasets/generate/modes');
   }
 
   // ==================== Advanced Metrics ====================

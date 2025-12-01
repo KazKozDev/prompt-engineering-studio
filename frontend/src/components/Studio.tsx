@@ -2,14 +2,16 @@ import { useState, useEffect, useMemo } from 'react';
 import { api, type Technique } from '../services/api';
 import { savePromptToLibrary } from './PromptLibrary';
 
-const TASK_TYPES = ['General', 'Reasoning', 'Coding', 'Summarization', 'Creative Writing', 'Data Extraction'] as const;
-type TaskType = (typeof TASK_TYPES)[number];
-
-function getArxivId(url?: string): string | null {
-    if (!url) return null;
-    const parts = url.split('/abs/');
-    return parts[1] || null;
-}
+const TASK_TYPES = [
+    { label: 'General', value: 'General' },
+    { label: 'Reasoning', value: 'Reasoning' },
+    { label: 'Coding', value: 'Coding' },
+    { label: 'Summary', value: 'Summarization' },
+    { label: 'Writing', value: 'Creative Writing' },
+    { label: 'Translation', value: 'Translation' },
+    { label: 'Extraction', value: 'Data Extraction' },
+] as const;
+type TaskType = (typeof TASK_TYPES)[number]['value'];
 
 interface StudioProps {
     settings: {
@@ -27,6 +29,59 @@ interface GeneratedPromptResult {
     saved: boolean;
 }
 
+const normalizeTechniqueKey = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+const TECH_ALIASES: Record<string, string> = {
+    chainofthought: 'CoT',
+    chainofthoughtprompting: 'CoT',
+    chainofverification: 'CoVe',
+    treeofthoughts: 'ToT',
+    graphofthoughts: 'GoT',
+    reaction: 'ReAct',
+    chainofdensity: 'CoD',
+    chainofcode: 'CoC',
+    programofthoughts: 'PoT',
+    programaided: 'PAL',
+    system2attention: 'S2A',
+    leasttomost: 'LtM',
+    selfconsistency: 'SC',
+};
+
+const getTechniqueHints = (techKey: string, tech: Technique & { name: string }, techniques: Record<string, Technique>): string[] => {
+    // First, try to get structure_hint from the current technique
+    const currentTech = techniques[techKey];
+    if (currentTech?.structure_hint) {
+        return [currentTech.structure_hint];
+    }
+
+    // Fallback: try to find by name
+    const byName = Object.values(techniques).find(t =>
+        normalizeTechniqueKey(t.name) === normalizeTechniqueKey(tech.name)
+    );
+    if (byName?.structure_hint) {
+        return [byName.structure_hint];
+    }
+
+    // If no structure_hint found, return a generic hint
+    return [
+        'State the goal in one sentence.',
+        'List constraints and output format explicitly.',
+        'Provide the final answer cleanly without extra chatter.'
+    ];
+};
+
+const getTechniqueDisplayName = (tech: Technique & { name: string }, key?: string) => {
+    const alias =
+        (key && TECH_ALIASES[normalizeTechniqueKey(key)]) ||
+        TECH_ALIASES[normalizeTechniqueKey(tech.name)];
+    if (!alias) return tech.name;
+
+    const nameLower = tech.name.toLowerCase();
+    const aliasLower = alias.toLowerCase();
+    const alreadyHasAlias = nameLower.includes(`(${aliasLower})`) || nameLower.includes(aliasLower);
+    return alreadyHasAlias ? tech.name : `${tech.name} (${alias})`;
+};
+
 export function Studio({ settings }: StudioProps) {
     const [userPrompt, setUserPrompt] = useState('');
     const [techniques, setTechniques] = useState<Record<string, Technique>>({});
@@ -36,7 +91,26 @@ export function Studio({ settings }: StudioProps) {
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedResults, setGeneratedResults] = useState<GeneratedPromptResult[]>([]);
     const [showSaveSuccess, setShowSaveSuccess] = useState(false);
-    const [showResultsPanel, setShowResultsPanel] = useState(false);
+    const [previewTechniqueKey, setPreviewTechniqueKey] = useState<string | null>(null);
+    const [uploadError, setUploadError] = useState<string | null>(null);
+    const [editingIdx, setEditingIdx] = useState<number | null>(null);
+    const [editText, setEditText] = useState('');
+
+    // Shortcut: Cmd/Ctrl + Enter to generate
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            const isEnter = e.key === 'Enter';
+            const hasModifier = e.metaKey || e.ctrlKey;
+            const canGenerate = !isGenerating && userPrompt && selectedTechniques.length > 0;
+            if (isEnter && hasModifier && canGenerate) {
+                e.preventDefault();
+                handleGenerate();
+            }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isGenerating, userPrompt, selectedTechniques]);
 
     useEffect(() => {
         loadTechniques();
@@ -61,7 +135,6 @@ export function Studio({ settings }: StudioProps) {
         }
 
         setIsGenerating(true);
-        setShowResultsPanel(true);
 
         try {
             const response = await api.generatePrompts({
@@ -72,7 +145,6 @@ export function Studio({ settings }: StudioProps) {
                 techniques: selectedTechniques,
             });
 
-            // Store results for saving to library
             const newResults: GeneratedPromptResult[] = response.results.map(r => ({
                 technique: Object.keys(techniques).find(k => techniques[k].name === r.technique.name) || '',
                 techniqueName: r.technique.name,
@@ -89,9 +161,11 @@ export function Studio({ settings }: StudioProps) {
     };
 
     const toggleTechnique = (key: string) => {
-        setSelectedTechniques(prev =>
-            prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
-        );
+        setSelectedTechniques(prev => {
+            const next = prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key];
+            setPreviewTechniqueKey(next.includes(key) ? key : next[next.length - 1] || null);
+            return next;
+        });
     };
 
     const handleSaveToLibrary = (index: number) => {
@@ -110,7 +184,6 @@ export function Studio({ settings }: StudioProps) {
             sourceType: 'generated'
         });
 
-        // Mark as saved
         setGeneratedResults(prev => prev.map((r, i) =>
             i === index ? { ...r, saved: true } : r
         ));
@@ -150,36 +223,40 @@ export function Studio({ settings }: StudioProps) {
 
     const groupedTechniques = useMemo(() => {
         const filtered = getFilteredTechniques();
+        const seen = new Set<string>();
 
-        // If specific category selected, return as single group
+        const alreadySeen = (key: string, name: string) => {
+            const sig = `${key}::${normalizeTechniqueKey(name)}`;
+            if (seen.has(sig)) return true;
+            seen.add(sig);
+            return false;
+        };
+
         if (activeTaskType !== 'All Categories') {
-            return { [activeTaskType]: filtered };
+            const unique = filtered.filter(([key, tech]) => !alreadySeen(key, (tech as any).name));
+            return { [activeTaskType]: unique };
         }
 
-        // Group by primary category
         const groups: Record<string, typeof filtered> = {};
-
-        // Initialize with predefined order
         TASK_TYPES.forEach(type => {
-            groups[type] = [];
+            groups[type.value] = [];
         });
         groups['Other'] = [];
 
         filtered.forEach(item => {
-            const [_, tech] = item;
+            const [key, tech] = item;
+            if (alreadySeen(key, (tech as any).name)) return;
+
             const primaryCat = (tech as any).categories?.[0];
 
-            // Find which group this belongs to
-            // We prioritize the TASK_TYPES order
             let assigned = false;
-            if (primaryCat && TASK_TYPES.includes(primaryCat as any)) {
+            if (primaryCat && TASK_TYPES.some(t => t.value === primaryCat)) {
                 groups[primaryCat].push(item);
                 assigned = true;
             } else {
-                // Try other categories if primary isn't in TASK_TYPES
                 const cats = (tech as any).categories || [];
                 for (const cat of cats) {
-                    if (TASK_TYPES.includes(cat as any)) {
+                    if (TASK_TYPES.some(t => t.value === cat)) {
                         groups[cat].push(item);
                         assigned = true;
                         break;
@@ -195,316 +272,306 @@ export function Studio({ settings }: StudioProps) {
         return groups;
     }, [techniques, activeTaskType, searchQuery]);
 
+    const labelMap = useMemo(
+        () => Object.fromEntries(TASK_TYPES.map(t => [t.value, t.label])),
+        []
+    );
+
     return (
-        <div className="h-full flex">
-            {/* Main content */}
-            <div className={`flex-1 flex flex-col p-4 transition-all duration-300 ${showResultsPanel ? 'pr-0' : ''}`}>
-                {/* Top bar: Input + Actions */}
-                <div className="flex gap-3 mb-3 shrink-0">
-                    <textarea
-                        value={userPrompt}
-                        onChange={(e) => setUserPrompt(e.target.value)}
-                        rows={2}
-                        className="flex-1 bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white/90 placeholder:text-white/30 resize-none focus:outline-none focus:border-white/20 text-sm"
-                        placeholder="Describe your task... (e.g., 'Create a customer support chatbot that handles refund requests')"
-                    />
-                    <div className="flex flex-col gap-2 shrink-0">
-                        <button
-                            onClick={handleGenerate}
-                            disabled={isGenerating || !userPrompt || selectedTechniques.length === 0}
-                            className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${isGenerating || !userPrompt || selectedTechniques.length === 0 ? 'bg-white/5 text-white/30 cursor-not-allowed' : 'bg-[#007AFF] hover:bg-[#0071E3] text-white'}`}
-                        >
-                            {isGenerating ? 'Generating...' : 'Generate'}
-                        </button>
-                        {generatedResults.length > 0 && !showResultsPanel && (
+        <div className="h-full flex gap-6 p-6 overflow-hidden">
+            {/* Left: Techniques / Filters */}
+            <div className="w-96 flex flex-col shrink-0 gap-4">
+                <div>
+                    <h2 className="text-[11px] font-bold text-white/30 uppercase tracking-widest mb-1">Techniques</h2>
+                    <p className="text-xs text-white/40 mb-4 mt-1">Choose categories and techniques to generate variants.</p>
+                </div>
+
+                <div className="flex-1 bg-black/20 border border-white/5 rounded-2xl overflow-hidden flex flex-col">
+                    <div className="p-3 border-b border-white/5 space-y-2">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-2 gap-y-3">
                             <button
-                                onClick={() => setShowResultsPanel(true)}
-                                className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-white/60 transition-all"
+                                onClick={() => setActiveTaskType('All Categories')}
+                                className={`inline-flex items-center justify-center w-full px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap border transition-all ${activeTaskType === 'All Categories'
+                                    ? 'bg-white/10 text-white border-white/20 shadow-sm'
+                                    : 'text-white/50 border-white/10 hover:text-white/80 hover:border-white/20'
+                                    }`}
                             >
-                                Results ({generatedResults.length})
+                                All
                             </button>
-                        )}
+                            {TASK_TYPES.map(({ label, value }) => (
+                                <button
+                                    key={value}
+                                    onClick={() => setActiveTaskType(value)}
+                                    className={`inline-flex items-center justify-center w-full px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap border transition-all ${value === activeTaskType
+                                        ? 'bg-white/10 text-white border-white/20 shadow-sm'
+                                        : 'text-white/50 border-white/10 hover:text-white/80 hover:border-white/20'
+                                        }`}
+                                >
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+                        {/* Search hidden for compact layout */}
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-3 custom-scrollbar">
+                        {Object.entries(groupedTechniques).map(([category, items]) => {
+                            if (items.length === 0) return null;
+                            return (
+                                <div key={category} className="mb-4 last:mb-0">
+                                    {activeTaskType === 'All Categories' && (
+                                        <h3 className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2 px-2">
+                                            {(labelMap as Record<string, string>)[category] || category} ({items.length})
+                                        </h3>
+                                    )}
+                                    <div className="space-y-1">
+                                        {items.map(([key, tech]) => {
+                                            const isSelected = selectedTechniques.includes(key);
+                                            return (
+                                                <div
+                                                    key={key}
+                                                    onClick={() => toggleTechnique(key)}
+                                                    className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-all ${isSelected ? 'bg-[#007AFF]/20 text-white font-semibold border border-[#007AFF]/40' : 'hover:bg-white/5 text-white/70 hover:text-white/90'}`}
+                                                >
+                                                    <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all ${isSelected ? 'bg-[#007AFF] border-[#007AFF]' : 'border-white/20'}`}>
+                                                        {isSelected && <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="text-sm font-medium truncate">{getTechniqueDisplayName(tech as any, key)}</div>
+                                                        <div className="text-[11px] text-white/50 truncate">{tech.description}</div>
+                                                    </div>
+                                                    <span className="text-[10px] text-white/30 shrink-0">{tech.year}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    <div className="px-3 py-2 border-t border-white/5 text-[10px] text-white/30 flex justify-between">
+                        <span>{Object.values(groupedTechniques).flat().length} techniques</span>
+                        <span className="text-white/50">{selectedTechniques.length} techniques selected</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Middle: Generator */}
+            <div className="flex-1 min-w-0 bg-black/20 border border-white/5 rounded-2xl overflow-hidden flex flex-col">
+                <div className="px-6 py-5 border-b border-white/5 bg-white/[0.02] flex items-start justify-between gap-4">
+                    <div>
+                        <h2 className="text-xl font-semibold text-white/90 mb-1">Prompt Generator</h2>
+                        <p className="text-xs text-white/45 mt-1">Pick techniques, paste your task, and generate variants.</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="text-[11px] px-2 py-1 rounded-md border border-white/10 text-white/50 bg-black/30">
+                            {settings.provider} · {settings.model}
+                        </div>
                     </div>
                 </div>
 
-                {/* Main area: Techniques + Workflow */}
-                <div className="flex-1 flex gap-4 min-h-0">
-                    {/* Left: Techniques */}
-                    <div className="flex-1 flex flex-col min-h-0 bg-black/20 border border-white/10 rounded-lg overflow-hidden">
-                        {/* Toolbar */}
-                        <div className="p-3 border-b border-white/5 space-y-2">
-                            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+                <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                    <div className="space-y-2 flex-1 flex flex-col">
+                        <div className="flex items-center justify-between">
+                            <label className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Task Description</label>
+                            <span className="text-[11px] text-white/40">{selectedTechniques.length} techniques selected</span>
+                        </div>
+                        <textarea
+                            value={userPrompt}
+                            onChange={(e) => setUserPrompt(e.target.value)}
+                            className="w-full flex-1 bg-black/30 border border-white/5 rounded-xl px-4 py-3 text-sm text-white/90 placeholder:text-white/30 resize-none focus:outline-none focus:border-white/15 hover:border-white/15 min-h-[320px]"
+                            placeholder="Describe your task... (e.g., 'Create a customer support chatbot that handles refund requests')"
+                        />
+                        {uploadError && (
+                            <div className="text-[11px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-2 rounded-lg">
+                                {uploadError}
+                            </div>
+                        )}
+                        <div className="flex items-center justify-between text-[11px] text-white/40">
+                            <span className="text-white/50 font-mono">{Math.max(userPrompt.trim().split(/\s+/).filter(Boolean).length, userPrompt ? 1 : 0)} tokens (approx)</span>
+                            <div className="flex items-center gap-2">
+                                <label className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-lg cursor-pointer border border-white/10 bg-white/10 hover:bg-white/15 text-white">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                    <span className="text-[12px]">Upload</span>
+                                    <input
+                                        type="file"
+                                        accept=".txt,.md,.json,.csv,.pdf,.doc,.docx,.xls,.xlsx"
+                                        className="hidden"
+                                        onChange={async (e) => {
+                                            setUploadError(null);
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+                                            const ext = file.name.toLowerCase().split('.').pop() || '';
+                                            const textLike = ['txt', 'md', 'json', 'csv'];
+                                            if (textLike.includes(ext) || file.type.startsWith('text/')) {
+                                                const text = await file.text();
+                                                setUserPrompt(prev => prev ? `${prev}\n\n${text}` : text);
+                                            } else {
+                                                setUploadError('Unsupported file type for inline extraction. Please convert to text.');
+                                            }
+                                            e.target.value = '';
+                                        }}
+                                    />
+                                </label>
                                 <button
-                                    onClick={() => setActiveTaskType('All Categories')}
-                                    className={`px-3 py-1 rounded text-[11px] font-medium whitespace-nowrap transition-all ${activeTaskType === 'All Categories' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/70'}`}
+                                    onClick={handleGenerate}
+                                    disabled={isGenerating || !userPrompt || selectedTechniques.length === 0}
+                                    className={`px-6 py-2 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-blue-500/10 ${isGenerating || !userPrompt || selectedTechniques.length === 0
+                                        ? 'bg-[#2563EB]/50 text-white/50 cursor-not-allowed'
+                                        : 'bg-[#2563EB] hover:bg-[#1d4fd8] text-white'
+                                        }`}
                                 >
-                                    All
+                                    {isGenerating ? 'Generating...' : 'Generate (⌘/Ctrl + Enter)'}
                                 </button>
-                                {TASK_TYPES.map((label) => (
-                                    <button
-                                        key={label}
-                                        onClick={() => setActiveTaskType(label)}
-                                        className={`px-3 py-1 rounded text-[11px] font-medium whitespace-nowrap transition-all ${label === activeTaskType ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/70'}`}
-                                    >
-                                        {label}
-                                    </button>
-                                ))}
                             </div>
-                            <div className="relative">
-                                <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                                <input
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full bg-black/30 border border-white/5 rounded-md pl-8 pr-3 py-1.5 text-xs text-white/90 placeholder:text-white/20 focus:outline-none focus:border-white/10"
-                                    placeholder="Search..."
-                                />
-                            </div>
-                        </div>
-
-                        {/* Techniques List */}
-                        <div className="flex-1 overflow-y-auto p-3 custom-scrollbar">
-                            {Object.entries(groupedTechniques).map(([category, items]) => {
-                                if (items.length === 0) return null;
-                                return (
-                                    <div key={category} className="mb-4 last:mb-0">
-                                        {activeTaskType === 'All Categories' && (
-                                            <h3 className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2 px-2">
-                                                {category} ({items.length})
-                                            </h3>
-                                        )}
-                                        <div className="space-y-1">
-                                            {items.map(([key, tech]) => {
-                                                const isSelected = selectedTechniques.includes(key);
-                                                return (
-                                                    <div
-                                                        key={key}
-                                                        onClick={() => toggleTechnique(key)}
-                                                        className={`
-                                                            flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-all
-                                                            ${isSelected
-                                                                ? 'bg-[#007AFF]/15 text-white'
-                                                                : 'hover:bg-white/5 text-white/70 hover:text-white/90'
-                                                            }
-                                                        `}
-                                                    >
-                                                        <div className={`
-                                                            w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all
-                                                            ${isSelected
-                                                                ? 'bg-[#007AFF] border-[#007AFF]'
-                                                                : 'border-white/20'
-                                                            }
-                                                        `}>
-                                                            {isSelected && <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="text-sm font-medium truncate">{tech.name}</div>
-                                                            <div className="text-[11px] text-white/40 truncate">{tech.description}</div>
-                                                        </div>
-                                                        <span className="text-[10px] text-white/30 shrink-0">{tech.year}</span>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-
-                        {/* Footer Stats */}
-                        <div className="px-3 py-2 border-t border-white/5 text-[10px] text-white/30 flex justify-between">
-                            <span>{Object.values(groupedTechniques).flat().length} techniques</span>
-                            <span className="text-white/50">{selectedTechniques.length} selected</span>
-                        </div>
-                    </div>
-
-                    {/* Right: Workflow Guide */}
-                    <div className="flex-1 flex flex-col min-h-0 bg-gradient-to-b from-black/20 to-transparent border border-white/5 rounded-lg overflow-hidden">
-                        <div className="px-5 py-4 border-b border-white/5 flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#007AFF]/20 to-[#007AFF]/5 flex items-center justify-center">
-                                <svg className="w-4 h-4 text-[#007AFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
-                            </div>
-                            <div>
-                                <h2 className="text-sm font-semibold text-white/90">Workflow Guide</h2>
-                                <p className="text-[10px] text-white/40">How to use Prompt Generator</p>
-                            </div>
-                        </div>
-                        
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                            
-                            {/* When to use - compact card */}
-                            <div className="bg-white/[0.03] border border-white/10 rounded-lg p-3">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <svg className="w-3.5 h-3.5 text-[#007AFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                    <span className="text-[11px] font-semibold text-white/70 uppercase tracking-wide">When to use</span>
-                                </div>
-                                <ul className="text-xs text-white/60 space-y-1">
-                                    <li>• Create prompts <span className="text-white/80">from scratch</span></li>
-                                    <li>• Make rough prompts <span className="text-white/80">more structured</span></li>
-                                    <li>• Try <span className="text-white/80">different techniques</span></li>
-                                    <li>• No dataset yet for testing</li>
-                                </ul>
-                            </div>
-
-                            {/* Steps - vertical timeline */}
-                            <div>
-                                <div className="flex items-center gap-2 mb-3">
-                                    <svg className="w-3.5 h-3.5 text-[#007AFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                                    <span className="text-[11px] font-semibold text-white/70 uppercase tracking-wide">How to use</span>
-                                </div>
-                                <div className="relative pl-4 border-l border-white/10 space-y-4">
-                                    <div className="relative">
-                                        <div className="absolute -left-[21px] w-3 h-3 rounded-full bg-[#007AFF] border-2 border-[#0a0a0a]"></div>
-                                        <p className="text-xs text-white/85 font-medium">Describe your task</p>
-                                        <p className="text-[11px] text-white/45">Context, format, constraints</p>
-                                    </div>
-                                    <div className="relative">
-                                        <div className="absolute -left-[21px] w-3 h-3 rounded-full bg-[#007AFF] border-2 border-[#0a0a0a] opacity-80"></div>
-                                        <p className="text-xs text-white/85 font-medium">Select 1-3 techniques</p>
-                                        <p className="text-[11px] text-white/45">Reasoning, Few-Shot, Guardrails...</p>
-                                    </div>
-                                    <div className="relative">
-                                        <div className="absolute -left-[21px] w-3 h-3 rounded-full bg-[#007AFF] border-2 border-[#0a0a0a] opacity-65"></div>
-                                        <p className="text-xs text-white/85 font-medium">Run generation</p>
-                                        <p className="text-[11px] text-white/45">Creates variant per technique</p>
-                                    </div>
-                                    <div className="relative">
-                                        <div className="absolute -left-[21px] w-3 h-3 rounded-full bg-[#007AFF] border-2 border-[#0a0a0a] opacity-50"></div>
-                                        <p className="text-xs text-white/85 font-medium">Compare & save</p>
-                                        <p className="text-[11px] text-white/45">Best ones → Library v1</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Output */}
-                            <div className="bg-white/[0.02] border border-white/10 rounded-lg p-3">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <svg className="w-3.5 h-3.5 text-[#007AFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-                                    <span className="text-[11px] font-semibold text-white/70 uppercase tracking-wide">Output</span>
-                                </div>
-                                <div className="flex gap-2 text-[10px] text-white/65 flex-wrap">
-                                    <span className="px-2 py-1 bg-white/5 rounded">Multiple variants</span>
-                                    <span className="px-2 py-1 bg-white/5 rounded">Versioned</span>
-                                    <span className="px-2 py-1 bg-white/5 rounded">Ready to use</span>
-                                </div>
-                            </div>
-
-                            {/* Pipeline visual */}
-                            <div>
-                                <div className="flex items-center gap-2 mb-3">
-                                    <svg className="w-3.5 h-3.5 text-[#007AFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" /></svg>
-                                    <span className="text-[11px] font-semibold text-white/70 uppercase tracking-wide">Full Pipeline</span>
-                                </div>
-                                <div className="flex items-center gap-1 text-[10px] flex-wrap">
-                                    <span className="px-2 py-1.5 bg-[#007AFF]/20 text-[#007AFF] rounded font-medium">Generator</span>
-                                    <span className="text-white/25">→</span>
-                                    <span className="px-2 py-1.5 bg-white/5 text-white/60 rounded">Library</span>
-                                    <span className="text-white/25">→</span>
-                                    <span className="px-2 py-1.5 bg-white/5 text-white/60 rounded">Optimizer</span>
-                                    <span className="text-white/25">→</span>
-                                    <span className="px-2 py-1.5 bg-white/5 text-white/60 rounded">Eval Lab</span>
-                                    <span className="text-white/25">→</span>
-                                    <span className="px-2 py-1.5 bg-white/5 text-white/70 rounded font-medium">Production</span>
-                                </div>
-                            </div>
-
-                            {/* Next steps */}
-                            <div className="pt-3 border-t border-white/5">
-                                <p className="text-[10px] text-white/35 uppercase tracking-wide mb-2">Next steps</p>
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-2 text-xs text-white/55 hover:text-white/75 cursor-pointer transition-colors">
-                                        <span className="text-[#007AFF]">→</span>
-                                        <span><span className="text-white/75">Optimizer</span> — auto-improve on dataset</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-xs text-white/55 hover:text-white/75 cursor-pointer transition-colors">
-                                        <span className="text-[#007AFF]">→</span>
-                                        <span><span className="text-white/75">Evaluation Lab</span> — quality, robustness, consistency</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-xs text-white/55 hover:text-white/75 cursor-pointer transition-colors">
-                                        <span className="text-[#007AFF]">→</span>
-                                        <span><span className="text-white/75">Library</span> — versions, metrics, deploy</span>
-                                    </div>
-                                </div>
-                            </div>
-
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Results Panel - Slide in from right */}
-            {showResultsPanel && (
-                <div className="w-[420px] bg-[#0a0a0a] border-l border-white/10 flex flex-col shrink-0">
-                    <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
-                        <div className="flex items-center gap-3">
-                            <h2 className="text-sm font-semibold text-white/80">Results</h2>
-                            <span className="text-xs text-white/30 bg-white/5 px-2 py-0.5 rounded-full">{generatedResults.length}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            {generatedResults.length > 0 && !generatedResults.every(r => r.saved) && (
-                                <button
-                                    onClick={handleSaveAllToLibrary}
-                                    className="text-xs text-white/50 hover:text-white/80 transition-colors px-2 py-1 rounded hover:bg-white/5"
-                                >
-                                    Save All
-                                </button>
-                            )}
-                            <button
-                                onClick={() => setShowResultsPanel(false)}
-                                className="p-1.5 rounded-md hover:bg-white/10 text-white/30 hover:text-white/60 transition-colors"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                            </button>
-                        </div>
+            {/* Right: Results */}
+            <div className="w-[420px] bg-[#0a0a0a] border border-white/10 rounded-2xl flex flex-col shrink-0 overflow-hidden">
+                <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+                    <div className="flex items-center gap-3">
+                        <h2 className="text-sm font-semibold text-white/80">Results</h2>
+                        <span className="text-xs text-white/30 bg-white/5 px-2 py-0.5 rounded-full">{generatedResults.length}</span>
                     </div>
-                    
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                        {isGenerating ? (
-                            <div className="flex flex-col items-center justify-center py-16 text-white/40">
-                                <svg className="animate-spin h-8 w-8 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                <span className="text-sm">Generating prompts...</span>
-                            </div>
-                        ) : generatedResults.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-16 text-white/30">
-                                <svg className="w-10 h-10 mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
-                                <span className="text-sm">No results yet</span>
+                    {generatedResults.length > 0 && !generatedResults.every(r => r.saved) && (
+                        <button
+                            onClick={handleSaveAllToLibrary}
+                            className="text-xs text-white/50 hover:text-white/80 transition-colors px-3 py-1 rounded-md border border-white/10 bg-white/[0.04]"
+                        >
+                            Save All
+                        </button>
+                    )}
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                    {isGenerating ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-white/40">
+                            <svg className="animate-spin h-8 w-8 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span className="text-sm">Generating prompts...</span>
+                        </div>
+                    ) : generatedResults.length === 0 ? (
+                        previewTechniqueKey && techniques[previewTechniqueKey] ? (
+                            <div className="flex flex-col gap-3 p-4 text-white/70">
+                                <div className="flex items-center justify-between">
+                                    <div className="text-sm font-semibold text-white/85">Preview structure</div>
+                                    {selectedTechniques.length > 1 && (
+                                        <div className="flex items-center gap-2 text-[11px] text-white/50">
+                                            <span>Viewing:</span>
+                                            <select
+                                                value={previewTechniqueKey}
+                                                onChange={(e) => setPreviewTechniqueKey(e.target.value)}
+                                                className="bg-black/40 border border-white/10 rounded px-2 py-1 text-[11px] text-white/80 focus:outline-none"
+                                            >
+                                                {selectedTechniques.map(key => (
+                                                    <option key={key} value={key}>
+                                                        {techniques[key]?.name || key}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="bg-white/[0.03] border border-white/10 rounded-lg p-3 space-y-2 text-[12px]">
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-semibold text-white/90">{techniques[previewTechniqueKey].name}</span>
+                                        <span className="text-[11px] text-white/40 font-mono">{techniques[previewTechniqueKey].year}</span>
+                                    </div>
+                                    <p className="text-white/50 leading-relaxed">{techniques[previewTechniqueKey].description}</p>
+                                </div>
+                                <div className="bg-black/30 border border-white/10 rounded-lg p-3 text-[12px] font-mono text-white/80 leading-relaxed space-y-2">
+                                    <div className="text-[11px] uppercase tracking-wide text-white/40">Prompt skeleton</div>
+                                    <pre className="whitespace-pre-wrap">
+                                        {`Technique: ${techniques[previewTechniqueKey].name}
+Task:
+${userPrompt || '[enter your task here]'}
+
+Structure hints:
+${getTechniqueHints(previewTechniqueKey, techniques[previewTechniqueKey], techniques).map(h => `- ${h}`).join('\n')}`}
+                                    </pre>
+                                </div>
                             </div>
                         ) : (
-                            generatedResults.map((result, idx) => (
-                                <div key={idx} className="border border-white/10 rounded-xl p-4 bg-white/5 hover:bg-white/[0.07] transition-all">
-                                    <div className="flex justify-between items-start mb-3">
-                                        <div className="font-medium text-sm text-white/90">{result.techniqueName}</div>
-                                        <div className="flex items-center gap-2">
-                                            {result.tokens && (
-                                                <span className="text-[10px] font-mono text-emerald-400/70 bg-black/30 px-2 py-0.5 rounded">
-                                                    {result.tokens} tok
-                                                </span>
-                                            )}
-                                            <button
-                                                onClick={() => handleSaveToLibrary(idx)}
-                                                disabled={result.saved}
-                                                className={`p-1 rounded transition-colors ${result.saved ? 'text-emerald-400' : 'text-white/30 hover:text-white/60 hover:bg-white/5'}`}
-                                                title={result.saved ? 'Saved' : 'Save to Library'}
+                            <div className="flex flex-col items-center justify-center py-20 text-white/35 text-center gap-2">
+                                <span className="text-sm">No prompts generated yet</span>
+                                <span className="text-xs text-white/30">Enter your task and select techniques to get started</span>
+                            </div>
+                        )
+                    ) : (
+                        generatedResults.map((result, idx) => {
+                            const tokens = result.tokens || Math.max(result.text.trim().split(/\s+/).filter(Boolean).length, 0);
+                            const baseTokens = Math.max(userPrompt.trim().split(/\s+/).filter(Boolean).length, 1);
+                            const ratio = (tokens / baseTokens).toFixed(1);
+                            return (
+                                <div key={idx} className="border border-white/10 rounded-xl bg-white/5 overflow-hidden">
+                                    <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+                                        <div className="text-sm font-semibold text-white/85">Generated Prompt</div>
+                                        <div className="text-[11px] text-white/60 font-mono">{tokens} tokens — {ratio}x</div>
+                                    </div>
+                                    <div className="flex items-center gap-2 px-4 py-2 border-b border-white/10 text-[11px] text-white/60">
+                                        <button
+                                            onClick={() => navigator.clipboard.writeText(result.text)}
+                                            className="px-2 py-1 rounded-md border border-white/10 hover:bg-white/10 transition-colors"
+                                        >
+                                            Copy
+                                        </button>
+                                        <button
+                                            onClick={() => handleSaveToLibrary(idx)}
+                                            disabled={result.saved}
+                                            className={`px-2 py-1 rounded-md border border-white/10 transition-colors ${result.saved ? 'text-emerald-400 border-emerald-500/30' : 'hover:bg-white/10 text-white/70 hover:text-white'}`}
+                                        >
+                                            {result.saved ? 'Saved' : 'Save'}
+                                        </button>
+                                        <button 
+                                            onClick={() => {
+                                                if (editingIdx === idx) {
+                                                    // Save edit
+                                                    const updated = [...generatedResults];
+                                                    updated[idx] = { ...updated[idx], text: editText };
+                                                    setGeneratedResults(updated);
+                                                    setEditingIdx(null);
+                                                } else {
+                                                    // Start editing
+                                                    setEditingIdx(idx);
+                                                    setEditText(result.text);
+                                                }
+                                            }}
+                                            className={`px-2 py-1 rounded-md border transition-colors ${editingIdx === idx ? 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10' : 'border-white/10 hover:bg-white/10'}`}
+                                        >
+                                            {editingIdx === idx ? 'Save' : 'Edit'}
+                                        </button>
+                                        {editingIdx === idx && (
+                                            <button 
+                                                onClick={() => setEditingIdx(null)}
+                                                className="px-2 py-1 rounded-md border border-white/10 hover:bg-white/10 transition-colors text-white/50"
                                             >
-                                                {result.saved ? (
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                                ) : (
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
-                                                )}
+                                                Cancel
                                             </button>
+                                        )}
+                                    </div>
+                                    {editingIdx === idx ? (
+                                        <textarea
+                                            value={editText}
+                                            onChange={(e) => setEditText(e.target.value)}
+                                            className="w-full p-4 text-[13px] text-white/80 font-mono bg-black/40 leading-relaxed min-h-[200px] max-h-[420px] resize-y border-none focus:outline-none focus:ring-1 focus:ring-[#007AFF]/30"
+                                        />
+                                    ) : (
+                                        <div className="p-4 text-[13px] text-white/80 whitespace-pre-wrap font-mono bg-black/40 leading-relaxed max-h-[420px] overflow-y-auto">
+                                            {result.text}
                                         </div>
-                                    </div>
-                                    <div className="text-[13px] text-white/70 whitespace-pre-wrap font-mono bg-black/30 p-3 rounded-lg border border-white/5 leading-relaxed max-h-[300px] overflow-y-auto">
-                                        {result.text}
-                                    </div>
+                                    )}
                                 </div>
-                            ))
-                        )}
-                    </div>
+                            );
+                        })
+                    )}
                 </div>
-            )}
+            </div>
 
             {/* Save Success Toast */}
             {showSaveSuccess && (

@@ -93,7 +93,67 @@ class ConsistencyScorer:
         score = self.calculate_self_consistency(responses)
         
         return {
-            "score": score,
-            "samples": responses,
+            "consistency_score": score,
+            "score": score,  # Alias for compatibility
+            "samples": [{"response": r} for r in responses],
             "n_samples": n_samples
+        }
+
+    def run_mutual_consistency_check(self,
+                                   prompts: List[str],
+                                   model_func: Any,
+                                   temperature: float = 0.7) -> Dict[str, Any]:
+        """
+        Run mutual consistency check (GLaPE) for multiple prompts.
+        
+        Args:
+            prompts: List of prompts to check.
+            model_func: Function to call model.
+            temperature: Temperature for sampling.
+            
+        Returns:
+            Dictionary with GLaPE score and consistency matrix.
+        """
+        # 1. Generate responses for all prompts
+        responses = []
+        for prompt in prompts:
+            try:
+                resp = model_func(prompt, temperature=temperature)
+                responses.append(resp)
+            except Exception:
+                responses.append("")
+        
+        # 2. Calculate consistency matrix
+        n = len(prompts)
+        matrix = [[0.0] * n for _ in range(n)]
+        
+        for i in range(n):
+            for j in range(n):
+                if i == j:
+                    matrix[i][j] = 1.0
+                else:
+                    # For mutual consistency between single responses, we check if they are "equivalent"
+                    # Here we use a simple exact match or substring match after normalization
+                    # In a real GLaPE implementation, this would be semantic similarity or exact match of the answer part
+                    r1 = responses[i].strip().lower()
+                    r2 = responses[j].strip().lower()
+                    matrix[i][j] = 1.0 if r1 == r2 else 0.0
+        
+        # 3. Calculate GLaPE score (average of off-diagonal elements)
+        total_consistency = 0.0
+        count = 0
+        for i in range(n):
+            for j in range(n):
+                if i != j:
+                    total_consistency += matrix[i][j]
+                    count += 1
+                    
+        glape_score = total_consistency / count if count > 0 else 0.0
+        
+        return {
+            "glape_score": glape_score,
+            "score": glape_score,  # Alias for compatibility
+            "avg_consistency": glape_score, # Same in this simple case
+            "consistency_matrix": matrix,
+            "responses": responses
         }

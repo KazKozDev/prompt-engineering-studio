@@ -1,17 +1,33 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../services/api';
+import { PromptSelector } from './PromptSelector';
+import { DatasetGenerator } from '../DatasetGenerator';
 
 interface OfflineBenchmarksProps {
-    settings: any;
+    settings: {
+        provider: string;
+        model: string;
+        apiKey?: string;
+    };
     datasets: any[];
+    onOpenGuide?: () => void;
+    onDatasetCreated?: () => void;
 }
 
-export function OfflineBenchmarks({ settings, datasets }: OfflineBenchmarksProps) {
+const variantLabel = (index: number) => String.fromCharCode(65 + index);
+
+export function OfflineBenchmarks({ settings, datasets, onDatasetCreated }: OfflineBenchmarksProps) {
     const [selectedDataset, setSelectedDataset] = useState<string>('');
     const [prompts, setPrompts] = useState<string[]>(['']);
+    const [variantModels, setVariantModels] = useState<string[]>(['']);
     const [results, setResults] = useState<any>(null);
     const [loading, setLoading] = useState(false);
+    const [showGenerator, setShowGenerator] = useState(false);
     const [logs, setLogs] = useState<string[]>([]);
+
+    // Selector state
+    const [showSelector, setShowSelector] = useState(false);
+    const [selectorTargetIndex, setSelectorTargetIndex] = useState<number>(0);
 
     useEffect(() => {
         if (datasets.length > 0 && !selectedDataset) {
@@ -19,15 +35,52 @@ export function OfflineBenchmarks({ settings, datasets }: OfflineBenchmarksProps
         }
     }, [datasets]);
 
-    const addPrompt = () => setPrompts([...prompts, '']);
-    const removePrompt = (idx: number) => setPrompts(prompts.filter((_, i) => i !== idx));
+    useEffect(() => {
+        // Keep model selectors aligned with prompts
+        if (variantModels.length !== prompts.length) {
+            setVariantModels(prev =>
+                prompts.map((_, idx) => prev[idx] ?? settings.model ?? '')
+            );
+        }
+    }, [prompts, variantModels.length, settings.model]);
+
+    const addPrompt = () => {
+        setPrompts([...prompts, '']);
+        setVariantModels([...variantModels, settings.model ?? variantModels[variantModels.length - 1] ?? '']);
+    };
+
+    const removePrompt = (idx: number) => {
+        setPrompts(prompts.filter((_, i) => i !== idx));
+        setVariantModels(variantModels.filter((_, i) => i !== idx));
+    };
+
     const updatePrompt = (idx: number, val: string) => {
         const newPrompts = [...prompts];
         newPrompts[idx] = val;
         setPrompts(newPrompts);
     };
 
+    const updateVariantModel = (idx: number, model: string) => {
+        setVariantModels(models => models.map((m, i) => (i === idx ? model : m)));
+    };
+
+    const handleOpenSelector = (index: number) => {
+        setSelectorTargetIndex(index);
+        setShowSelector(true);
+    };
+
+    const handleSelectPrompt = (text: string) => {
+        updatePrompt(selectorTargetIndex, text);
+        setShowSelector(false);
+    };
+
+    const selectedDatasetMeta = datasets.find(d => d.id === selectedDataset);
+    const datasetSize = selectedDatasetMeta?.size ?? selectedDatasetMeta?.data?.length ?? 0;
+    const datasetName = selectedDatasetMeta?.name || 'Not set';
+
     const runTest = async () => {
+        const dataset = datasets.find(d => d.id === selectedDataset);
+
         const validPrompts = prompts.filter(p => p.trim());
         if (validPrompts.length === 0) {
             alert('Add at least one prompt');
@@ -37,21 +90,36 @@ export function OfflineBenchmarks({ settings, datasets }: OfflineBenchmarksProps
             alert('Select a dataset');
             return;
         }
+        if (!dataset?.data) {
+            alert('Selected dataset has no data');
+            return;
+        }
 
         setLoading(true);
         setLogs(['Starting Offline Benchmark...']);
 
         try {
-            const dataset = datasets.find(d => d.id === selectedDataset);
-            if (!dataset?.data) throw new Error('Dataset has no data');
+            const normalizedModels = variantModels.length
+                ? variantModels.map(m => m || settings.model).filter(Boolean)
+                : [settings.model];
+            const uniqueModels = Array.from(new Set(normalizedModels));
+            const effectiveModel = uniqueModels[0] || settings.model;
+
+            if (uniqueModels.length > 1) {
+                setLogs(prev => [
+                    ...prev,
+                    `Multiple models selected (${uniqueModels.join(', ')}); offline runner will use ${effectiveModel} for this batch.`,
+                ]);
+            }
 
             setLogs(prev => [...prev, `Testing ${validPrompts.length} prompts on ${dataset.data.length} examples...`]);
+            setLogs(prev => [...prev, `Provider: ${settings.provider || 'default'}, Model: ${effectiveModel}`]);
 
             const evalRes = await api.runOfflineEvaluation({
                 dataset: dataset.data,
                 prompts: validPrompts,
                 provider: settings.provider,
-                model: settings.model
+                model: effectiveModel
             });
 
             // Process multi-prompt results with aggregates
@@ -79,50 +147,204 @@ export function OfflineBenchmarks({ settings, datasets }: OfflineBenchmarksProps
 
     return (
         <div className="space-y-6">
-            <div className="bg-black/20 p-4 rounded-lg border border-white/5">
-                <h3 className="text-sm font-medium text-white/90 mb-4">Configuration</h3>
+            {showSelector && (
+                <PromptSelector
+                    onSelect={handleSelectPrompt}
+                    onClose={() => setShowSelector(false)}
+                />
+            )}
 
-                <div className="space-y-4">
+            {showGenerator && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-8">
+                    <div className="bg-[#0d0d0d] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <DatasetGenerator
+                            settings={settings}
+                            context="benchmark"
+                            title="Generate Benchmark Dataset"
+                            description="Create test cases with expected outputs to measure prompt accuracy"
+                            initialPrompt={prompts[0] || ''}
+                            onGenerated={async (data, name) => {
+                                try {
+                                    const result = await api.createDataset({
+                                        name: name || `Benchmark Dataset ${new Date().toLocaleDateString()}`,
+                                        description: 'Generated for offline benchmarks',
+                                        category: 'benchmark',
+                                        data
+                                    });
+                                    if (result?.id) {
+                                        setSelectedDataset(result.id);
+                                    }
+                                    onDatasetCreated?.();
+                                    setShowGenerator(false);
+                                } catch (err) {
+                                    console.error('Failed to save dataset:', err);
+                                }
+                            }}
+                            onClose={() => setShowGenerator(false)}
+                        />
+                    </div>
+                </div>
+            )}
+
+            <div className="bg-black/25 p-5 rounded-xl border border-white/5 shadow-lg shadow-black/30">
+                <div className="flex items-center gap-3 mb-4">
                     <div>
-                        <label className="block text-xs font-medium text-white/40 mb-2">Dataset</label>
-                        <select
-                            value={selectedDataset}
-                            onChange={(e) => setSelectedDataset(e.target.value)}
-                            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/90 focus:outline-none focus:border-[#007AFF]/30"
+                        <p className="text-[11px] uppercase tracking-[0.2em] text-white/30 font-semibold mb-1">Test Configuration</p>
+                        <h3 className="text-lg font-semibold text-white">Offline Benchmarks</h3>
+                    </div>
+                </div>
+
+                <div className="space-y-6">
+                    <div className="bg-white/[0.02] border border-white/5 rounded-lg p-4">
+                            <div className="flex items-center justify-between gap-3 mb-3">
+                                <div>
+                                    <p className="text-[11px] uppercase tracking-[0.18em] text-white/30 font-semibold">Dataset</p>
+                                    <p className="text-sm text-white/70">Pick a labeled set to benchmark against ground truth.</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {selectedDataset && (
+                                        <span className="px-3 py-1 rounded-full text-[11px] bg-white/[0.06] border border-white/10 text-white/70">
+                                            {datasetSize} items
+                                        </span>
+                                    )}
+                                    <button
+                                        onClick={() => setShowGenerator(true)}
+                                        className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-[#2563EB]/10 border border-[#2563EB]/20 text-[#60a5fa] hover:bg-[#2563EB]/20 transition-colors"
+                                    >
+                                        Generate
+                                    </button>
+                                </div>
+                            </div>
+                            <select
+                                value={selectedDataset}
+                                onChange={(e) => setSelectedDataset(e.target.value)}
+                                className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-3 text-sm text-white/90 focus:outline-none focus:border-[#007AFF]/40"
                         >
-                            {datasets.map(d => (
-                                <option key={d.id} value={d.id}>{d.name} ({d.size} items)</option>
-                            ))}
+                            {datasets.map(d => {
+                                const sizeLabel = typeof d.size === 'number' ? `${d.size} items` : '';
+                                return (
+                                    <option key={d.id} value={d.id}>
+                                        {d.name} {sizeLabel ? `(${sizeLabel})` : ''}
+                                    </option>
+                                );
+                            })}
                         </select>
                     </div>
 
-                    <div>
-                        <label className="block text-xs font-medium text-white/40 mb-2">Prompts to Compare</label>
-                        <div className="space-y-3">
+                    <div className="bg-white/[0.02] border border-white/5 rounded-lg p-4">
+                        <div className="flex items-center justify-between gap-3 mb-3">
+                            <div>
+                                <p className="text-[11px] uppercase tracking-[0.18em] text-white/30 font-semibold">Prompt Variants</p>
+                                <p className="text-sm text-white/70">Set up a baseline and challengers side by side.</p>
+                            </div>
+                            <button
+                                onClick={addPrompt}
+                                className="inline-flex items-center gap-2 text-xs px-3 py-2 rounded-lg border border-dashed border-white/15 text-white/70 hover:text-white hover:border-white/40 transition-colors"
+                            >
+                                <span className="text-[#7cb5ff] text-base leading-none">+</span>
+                                Add Variant
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                             {prompts.map((p, idx) => (
-                                <div key={idx} className="flex gap-2">
+                                <div key={idx} className="relative bg-black/50 border border-white/10 rounded-xl p-4 flex flex-col gap-3 shadow-inner shadow-black/30">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <p className="text-[11px] uppercase tracking-[0.16em] text-white/30 font-semibold">
+                                                Variant {variantLabel(idx)}
+                                            </p>
+                                            <h4 className="text-sm font-semibold text-white">
+                                                {idx === 0 ? 'Baseline Prompt' : 'Challenger Prompt'}
+                                            </h4>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => handleOpenSelector(idx)}
+                                                className="inline-flex items-center gap-1 text-[11px] px-2 py-1.5 rounded-lg border border-white/10 text-white/60 hover:text-white hover:border-[#007AFF]/50 transition-colors"
+                                            >
+                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                                                Library
+                                            </button>
+                                            {prompts.length > 1 && (
+                                                <button
+                                                    onClick={() => removePrompt(idx)}
+                                                    className="text-white/30 hover:text-red-400 transition-colors"
+                                                    title="Remove variant"
+                                                >
+                                                    ✕
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+
                                     <textarea
                                         value={p}
                                         onChange={(e) => updatePrompt(idx, e.target.value)}
-                                        placeholder={`Prompt variant #${idx + 1}...`}
-                                        className="flex-1 h-20 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/90 font-mono resize-none focus:outline-none focus:border-[#007AFF]/30"
+                                        placeholder={idx === 0 ? 'Baseline system prompt...' : 'Compare against your baseline...'}
+                                        className="w-full min-h-[160px] bg-black/60 border border-white/10 rounded-lg px-3 py-3 text-sm text-white/90 font-mono resize-none focus:outline-none focus:border-[#007AFF]/40"
                                     />
-                                    {prompts.length > 1 && (
-                                        <button onClick={() => removePrompt(idx)} className="text-red-400/70 hover:text-red-400 px-2">✕</button>
-                                    )}
+
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        <div className="flex flex-col flex-1 min-w-[140px]">
+                                            <span className="text-[11px] text-white/40 mb-1">Model (per variant)</span>
+                                            <input
+                                                value={variantModels[idx] || ''}
+                                                onChange={(e) => updateVariantModel(idx, e.target.value)}
+                                                placeholder={settings.model || 'Enter model id'}
+                                                className="bg-black/60 border border-white/10 rounded-lg px-3 py-2 text-xs text-white/80 focus:outline-none focus:border-[#007AFF]/40 font-mono"
+                                            />
+                                        </div>
+                                        <div className="text-[11px] text-white/40">
+                                            Keep models aligned for apples-to-apples; mixed models will run on the primary selection.
+                                        </div>
+                                    </div>
                                 </div>
                             ))}
+
+                            <button
+                                onClick={addPrompt}
+                                className="border-2 border-dashed border-white/10 rounded-xl h-full min-h-[180px] flex flex-col items-center justify-center gap-2 text-white/50 hover:border-[#007AFF]/50 hover:text-white transition-colors"
+                            >
+                                <span className="text-lg">+ Add Variant to Compare</span>
+                                <p className="text-xs text-white/40">Drop in another prompt to visualize the head-to-head run.</p>
+                            </button>
                         </div>
-                        <button onClick={addPrompt} className="mt-2 text-xs text-[#007AFF] hover:text-[#0071E3] font-medium">+ Add Variant</button>
                     </div>
 
-                    <button
-                        onClick={runTest}
-                        disabled={loading}
-                        className="w-full py-2 bg-[#007AFF] hover:bg-[#0071E3] text-white rounded-lg font-medium disabled:opacity-50 transition-all"
-                    >
-                        {loading ? 'Running Benchmark...' : 'Run Benchmark'}
-                    </button>
+                    <div className="sticky bottom-0 left-0 right-0">
+                            <div className="flex items-center justify-between gap-4 bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3 shadow-lg shadow-black/30 backdrop-blur">
+                                <div className="flex items-center gap-3 text-xs text-white/60">
+                                    <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-white/[0.02] border border-white/5">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-400/80" />
+                                        <span>Estimated: ~{Math.max(1, Math.ceil(((datasetSize || 10) * Math.max(prompts.length, 1)) / 40))} mins</span>
+                                    </div>
+                                    <div className="px-2 py-1 rounded-lg bg-white/[0.02] border border-white/5">
+                                        Variants: {prompts.length}
+                                    </div>
+                                    <div className="px-2 py-1 rounded-lg bg-white/[0.02] border border-white/5">
+                                        Dataset: {datasetName}
+                                    </div>
+                                </div>
+                            <button
+                                onClick={runTest}
+                                disabled={loading}
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-[#4F46E5] to-[#007AFF] text-sm font-semibold text-white shadow-[0_10px_30px_-12px_rgba(0,122,255,0.8)] hover:opacity-95 disabled:opacity-50 transition-all"
+                            >
+                                {loading ? (
+                                    <>
+                                        <span className="w-2 h-2 rounded-full bg-white/80 animate-ping" />
+                                        Running Benchmark...
+                                    </>
+                                ) : (
+                                    <>
+                                        Run Benchmark
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" /></svg>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 

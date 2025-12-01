@@ -334,18 +334,22 @@ JSON:"""
             json_match = re.search(r'\{[^}]+\}', judge_response)
             if json_match:
                 result = json.loads(json_match.group())
-                score = float(result.get("score", 5)) / 10  # Normalize to 0-1
+                raw_score = float(result.get("score", 5))
+                score = raw_score / 10  # Normalize to 0-1
                 reasoning = result.get("reasoning", "No reasoning provided")
+                confidence = result.get("confidence", score)  # Use score as confidence if not provided
             else:
                 score = 0.5
                 reasoning = "Could not parse judge response"
+                confidence = 0.5
             
             return MetricResult(
                 score=round(score, 2),
                 details={
                     "raw_score": int(score * 10),
                     "reasoning": reasoning,
-                    "criteria": criteria_text
+                    "criteria": criteria_text,
+                    "confidence": round(confidence, 2)
                 }
             )
         except Exception as e:

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { api } from './services/api';
-import logo from './assets/logo.png';
 
 // Components
 import { Studio } from './components/Studio';
@@ -11,6 +10,7 @@ import { Settings } from './components/Settings';
 import { EvaluationLab } from './components/EvaluationLab';
 import { ProductionMetrics } from './components/ProductionMetrics';
 import { PromptOptimizer } from './components/PromptOptimizer';
+import { Help } from './components/Help';
 
 // Navigation structure with groups - logical pipeline
 const NAV_GROUPS = [
@@ -38,11 +38,12 @@ const NAV_GROUPS = [
   },
 ] as const;
 
-type SectionId = 
-  | 'Prompt Generator' | 'Prompt Optimizer' 
-  | 'Prompt Library' | 'Datasets' 
-  | 'Evaluation Lab' | 'Production Metrics' | 'History' 
-  | 'Settings';
+type SectionId =
+  | 'Prompt Generator' | 'Prompt Optimizer'
+  | 'Prompt Library' | 'Datasets'
+  | 'Evaluation Lab' | 'Production Metrics' | 'History'
+  | 'Settings'
+  | 'Help';
 
 interface SettingsState {
   provider: string;
@@ -59,6 +60,7 @@ interface SettingsState {
 
 function App() {
   const [activeSection, setActiveSection] = useState<SectionId>('Prompt Generator');
+  const [isLoading, setIsLoading] = useState(true);
 
   // Prompt to evaluate (passed from Library to Evaluation Lab)
   const [promptToEvaluate, setPromptToEvaluate] = useState<LibraryPrompt | null>(null);
@@ -73,9 +75,16 @@ function App() {
     apiKeys: {},
   });
 
-  // Load models on mount
+  // Load models on mount + splash screen
   useEffect(() => {
-    loadModels(settings.provider);
+    const initApp = async () => {
+      await loadModels(settings.provider);
+      // Show splash screen for 2 seconds
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 2000);
+    };
+    initApp();
   }, []);
 
   const loadModels = async (provider: string) => {
@@ -94,26 +103,92 @@ function App() {
     setActiveSection('Evaluation Lab');
   };
 
+  // Splash Screen
+  if (isLoading) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-gradient-to-br from-[#0a0a0a] via-[#1a1a1a] to-[#0a0a0a] overflow-hidden">
+        {/* Animated background grid */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0" style={{
+            backgroundImage: 'linear-gradient(#ffffff22 1px, transparent 1px), linear-gradient(90deg, #ffffff22 1px, transparent 1px)',
+            backgroundSize: '50px 50px',
+            animation: 'grid-move 20s linear infinite'
+          }}></div>
+        </div>
+
+        {/* Main content */}
+        <div className="relative z-10 flex flex-col items-center gap-6">
+          <div className="flex items-center gap-6">
+            {/* Logo with pulse animation */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-[#007AFF] opacity-20 blur-[100px] rounded-full animate-pulse"></div>
+              <img
+                src="/logo.png"
+                alt="Prompt Engineering Studio"
+                className="h-32 w-auto object-contain relative z-10 animate-fade-in"
+              />
+            </div>
+
+            {/* Spinner */}
+            <div className="relative w-12 h-12 animate-slide-up" style={{ animationDelay: '0.2s' }}>
+              <div className="absolute inset-0 border-4 border-white/10 rounded-full"></div>
+              <div className="absolute inset-0 border-4 border-transparent border-t-[#007AFF] rounded-full animate-spin"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Add keyframe animations to global styles */}
+        <style>{`
+          @keyframes grid-move {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+          }
+          @keyframes fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          @keyframes slide-up {
+            from {
+              opacity: 0;
+              transform: translateY(20px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          .animate-fade-in {
+            animation: fade-in 0.8s ease-out forwards;
+          }
+          .animate-slide-up {
+            animation: slide-up 0.6s ease-out forwards;
+            opacity: 0;
+          }
+        `}</style>
+      </div>
+    );
+  }
+
   return (
     <div className="h-screen flex flex-col bg-studio-bg text-slate-100">
       {/* Top Navigation Bar */}
       <header className="h-12 bg-[#0a0a0a] border-b border-white/10 flex items-center px-5 shrink-0">
-        <img src={logo} alt="Prompt Engineering Studio" className="h-6 w-auto object-contain mr-6" />
-        
+        <img src="/logo.png" alt="Prompt Engineering Studio" className="h-8 w-auto object-contain mr-6" />
+
         <nav className="flex items-center gap-6 flex-1">
           {NAV_GROUPS.map((group, groupIdx) => (
             <div key={group.label} className="flex items-center gap-1">
               {groupIdx > 0 && <div className="w-px h-4 bg-white/10 mr-4" />}
-              <span className="text-[10px] uppercase tracking-widest text-white/20 font-semibold mr-2">{group.label}</span>
+              <span className="text-[9px] uppercase tracking-widest text-white/20 font-semibold mr-2">{group.label}</span>
               {group.items.map((item) => (
                 <button
                   key={item.id}
                   onClick={() => setActiveSection(item.id as SectionId)}
                   className={
-                    'px-3 py-1 rounded-md text-[13px] font-medium transition-all duration-200 whitespace-nowrap ' +
+                    'px-2 py-1 text-[13px] transition-all duration-200 whitespace-nowrap ' +
                     (item.id === activeSection
-                      ? 'bg-white/10 text-white'
-                      : 'text-white/50 hover:bg-white/5 hover:text-white/80')
+                      ? 'text-white font-semibold'
+                      : 'text-white/40 hover:text-white/80 font-medium')
                   }
                 >
                   {item.label}
@@ -125,12 +200,24 @@ function App() {
 
         <div className="flex items-center gap-4">
           <button
+            onClick={() => setActiveSection('Help')}
+            className={
+              'px-2 py-1 text-[13px] transition-all ' +
+              (activeSection === 'Help'
+                ? 'text-white font-semibold'
+                : 'text-white/50 font-medium hover:text-white/80')
+            }
+            title="Help"
+          >
+            Help
+          </button>
+          <button
             onClick={() => setActiveSection('Settings')}
             className={
-              'p-1.5 rounded-md transition-all ' +
+              'transition-all ' +
               (activeSection === 'Settings'
-                ? 'bg-white/10 text-white'
-                : 'text-white/40 hover:bg-white/5 hover:text-white/70')
+                ? 'text-white'
+                : 'text-white/40 hover:text-white/80')
             }
             title="Settings"
           >
@@ -141,7 +228,7 @@ function App() {
           </button>
           <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-white/30 font-semibold">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]" />
-            <span>v4.1</span>
+            <span>v2.0</span>
           </div>
         </div>
       </header>
@@ -167,10 +254,13 @@ function App() {
           <PromptLibrary onEvaluatePrompt={handleEvaluatePrompt} />
         </div>
         <div style={{ display: activeSection === 'Datasets' ? 'block' : 'none', height: '100%' }}>
-          <Datasets />
+          <Datasets settings={settings} />
         </div>
         <div style={{ display: activeSection === 'Settings' ? 'block' : 'none', height: '100%' }}>
           <Settings settings={settings} onSettingsChange={setSettings} />
+        </div>
+        <div style={{ display: activeSection === 'Help' ? 'block' : 'none', height: '100%' }}>
+          <Help />
         </div>
       </main>
     </div>

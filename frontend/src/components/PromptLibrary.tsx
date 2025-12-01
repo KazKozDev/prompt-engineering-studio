@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { api } from '../services/api';
 
 // Prompt status types
 type PromptStatus = 'draft' | 'testing' | 'production';
@@ -53,7 +52,6 @@ export interface LibraryPrompt {
 }
 
 interface PromptLibraryProps {
-    onSelectPrompt?: (prompt: LibraryPrompt) => void;
     onEvaluatePrompt?: (prompt: LibraryPrompt) => void;
 }
 
@@ -162,7 +160,7 @@ const CATEGORIES = [
     'Custom'
 ];
 
-export function PromptLibrary({ onSelectPrompt, onEvaluatePrompt }: PromptLibraryProps) {
+export function PromptLibrary({ onEvaluatePrompt }: PromptLibraryProps) {
     const [prompts, setPrompts] = useState<LibraryPrompt[]>([]);
     const [filteredPrompts, setFilteredPrompts] = useState<LibraryPrompt[]>([]);
     const [selectedPrompt, setSelectedPrompt] = useState<LibraryPrompt | null>(null);
@@ -174,14 +172,6 @@ export function PromptLibrary({ onSelectPrompt, onEvaluatePrompt }: PromptLibrar
     const [categoryFilter, setCategoryFilter] = useState('All');
     const [sortBy, setSortBy] = useState<'date' | 'score' | 'name' | 'usage'>('date');
 
-    // UI state
-    const [showCreateModal, setShowCreateModal] = useState(false);
-    const [editingPrompt, setEditingPrompt] = useState<LibraryPrompt | null>(null);
-    
-    // Edit mode state
-    const [isEditing, setIsEditing] = useState(false);
-    const [editedText, setEditedText] = useState('');
-    const [editDescription, setEditDescription] = useState('');
 
     useEffect(() => {
         loadPrompts();
@@ -312,504 +302,290 @@ export function PromptLibrary({ onSelectPrompt, onEvaluatePrompt }: PromptLibrar
     };
 
     return (
-        <div className="p-6 h-full flex flex-col overflow-hidden">
-            {/* Header */}
-            <div className="mb-6">
-                <h2 className="text-3xl font-bold text-slate-100 mb-2">Prompt Library</h2>
-                <p className="text-slate-400">
-                    Central repository for all your prompts. Track status, scores, and deploy to production.
-                </p>
-            </div>
+        <div className="h-full flex gap-6 p-6 overflow-hidden">
+            {/* Left Sidebar: Prompts List */}
+            <div className="w-80 flex flex-col shrink-0 gap-4">
+                {/* Header */}
+                <div>
+                    <h2 className="text-[11px] font-bold text-white/30 uppercase tracking-widest mb-1">PROMPT LIBRARY</h2>
+                    <p className="text-xs text-white/40 mb-4 mt-1">Manage and organize your production-ready prompts</p>
+                </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-5 gap-4 mb-6">
-                <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-                    <div className="text-2xl font-bold text-slate-100">{stats.total}</div>
-                    <div className="text-sm text-slate-400">Total Prompts</div>
+                {/* Search */}
+                <div className="relative group">
+                    <svg className="absolute left-3 top-2.5 w-4 h-4 text-white/20 group-focus-within:text-[#007AFF] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search prompts..."
+                        className="w-full bg-black/20 border border-white/5 rounded-lg pl-9 pr-3 py-2 text-sm text-white/80 placeholder:text-white/20 focus:outline-none focus:border-[#007AFF]/50 focus:bg-black/40 transition-all"
+                    />
                 </div>
-                <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-                    <div className="text-2xl font-bold text-gray-400">{stats.draft}</div>
-                    <div className="text-sm text-slate-400 flex items-center gap-1"><Icons.draft /> Drafts</div>
-                </div>
-                <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-                    <div className="text-2xl font-bold text-yellow-400">{stats.testing}</div>
-                    <div className="text-sm text-slate-400 flex items-center gap-1"><Icons.testing /> Testing</div>
-                </div>
-                <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-                    <div className="text-2xl font-bold text-green-400">{stats.production}</div>
-                    <div className="text-sm text-slate-400 flex items-center gap-1"><Icons.production /> Production</div>
-                </div>
-                <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-                    <div className={`text-2xl font-bold ${getScoreColor(stats.avgScore)}`}>
-                        {stats.avgScore > 0 ? `${stats.avgScore}%` : '—'}
-                    </div>
-                    <div className="text-sm text-slate-400">Avg Score</div>
-                </div>
-            </div>
 
-            {/* Filters */}
-            <div className="flex gap-4 mb-4 flex-wrap">
-                <input
-                    type="text"
-                    placeholder="Search prompts..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="flex-1 min-w-[200px] rounded-md border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-slate-200"
-                />
-                <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value as PromptStatus | 'all')}
-                    className="rounded-md border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-slate-200"
-                >
-                    <option value="all">All Status</option>
-                    <option value="draft">Draft</option>
-                    <option value="testing">Testing</option>
-                    <option value="production">Production</option>
-                </select>
-                <select
-                    value={categoryFilter}
-                    onChange={(e) => setCategoryFilter(e.target.value)}
-                    className="rounded-md border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-slate-200"
-                >
-                    {CATEGORIES.map(cat => (
-                        <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                </select>
-                <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as 'date' | 'score' | 'name' | 'usage')}
-                    className="rounded-md border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-slate-200"
-                >
-                    <option value="date">Sort by Date</option>
-                    <option value="score">Sort by Score</option>
-                    <option value="name">Sort by Name</option>
-                    <option value="usage">Sort by Usage</option>
-                </select>
-            </div>
+                {/* Filters */}
+                <div className="flex gap-2">
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value as PromptStatus | 'all')}
+                        className="flex-1 rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-[#007AFF]/50"
+                    >
+                        <option value="all">All Status</option>
+                        <option value="draft">Draft</option>
+                        <option value="testing">Testing</option>
+                        <option value="production">Production</option>
+                    </select>
+                    <select
+                        value={categoryFilter}
+                        onChange={(e) => setCategoryFilter(e.target.value)}
+                        className="flex-1 rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-[#007AFF]/50"
+                    >
+                        {CATEGORIES.map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                    </select>
+                </div>
 
-            {/* Prompts List */}
-            <div className="flex-1 overflow-y-auto">
-                {isLoading ? (
-                    <div className="text-center py-12 text-slate-400">Loading...</div>
-                ) : filteredPrompts.length === 0 ? (
-                    <div className="text-center py-12 bg-gray-800/30 rounded-lg border border-gray-700">
-                        <div className="text-slate-500 mb-4"><Icons.library /></div>
-                        <p className="text-slate-400 mb-2">
+                <div className="flex gap-2">
+                    <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value as 'date' | 'score' | 'name' | 'usage')}
+                        className="flex-1 rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-[#007AFF]/50"
+                    >
+                        <option value="date">Sort by Date</option>
+                        <option value="score">Sort by Score</option>
+                        <option value="name">Sort by Name</option>
+                        <option value="usage">Sort by Usage</option>
+                    </select>
+                </div>
+
+                {/* Stats Summary */}
+                <div className="flex gap-2 text-[10px] text-white/40">
+                    <span>{stats.total} total</span>
+                    <span>•</span>
+                    <span className="text-gray-400">{stats.draft} drafts</span>
+                    <span>•</span>
+                    <span className="text-yellow-400">{stats.testing} testing</span>
+                    <span>•</span>
+                    <span className="text-green-400">{stats.production} prod</span>
+                </div>
+
+                {/* Prompts List */}
+                <div className="flex-1 overflow-y-auto min-h-0 space-y-2 pr-2 custom-scrollbar">
+                    {isLoading ? (
+                        <div className="text-center py-12 text-white/40 text-xs">Loading...</div>
+                    ) : filteredPrompts.length === 0 ? (
+                        <div className="text-center py-12 text-white/20 text-xs">
                             {prompts.length === 0
                                 ? 'Your prompt library is empty'
                                 : 'No prompts match your filters'}
-                        </p>
-                        <p className="text-sm text-slate-500">
-                            Generate prompts in Prompt Generator and save them here
-                        </p>
-                    </div>
-                ) : (
-                    <div className="space-y-3">
-                        {filteredPrompts.map((prompt) => (
-                            <div
+                        </div>
+                    ) : (
+                        filteredPrompts.map((prompt) => (
+                            <button
                                 key={prompt.id}
-                                className={`bg-gray-800/50 rounded-lg border transition-colors cursor-pointer ${selectedPrompt?.id === prompt.id
-                                    ? 'border-purple-500'
-                                    : 'border-gray-700 hover:border-gray-600'
-                                    }`}
                                 onClick={() => setSelectedPrompt(prompt)}
+                                className={`w-full text-left p-3 rounded-xl border transition-all ${selectedPrompt?.id === prompt.id
+                                        ? 'bg-[#007AFF]/10 border-[#007AFF]/30'
+                                        : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.04] hover:border-white/10'
+                                    }`}
                             >
-                                <div className="p-4">
-                                    <div className="flex items-start justify-between gap-4">
-                                        {/* Left: Info */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <span className="text-slate-300">{STATUS_CONFIG[prompt.status].Icon()}</span>
-                                                <h3 className="font-semibold text-slate-100 truncate">{prompt.name}</h3>
-                                                <span className={`text-xs px-2 py-0.5 rounded ${STATUS_CONFIG[prompt.status].color} text-white`}>
-                                                    {STATUS_CONFIG[prompt.status].label}
-                                                </span>
-                                                <span className="text-xs px-2 py-0.5 rounded bg-gray-700 text-gray-300">
-                                                    v{prompt.currentVersion}
-                                                </span>
-                                            </div>
-                                            <p className="text-sm text-slate-400 line-clamp-1 mb-2">
-                                                {prompt.text.substring(0, 150)}...
-                                            </p>
-                                            <div className="flex items-center gap-3 text-xs text-slate-500">
-                                                <span className="flex items-center gap-1"><Icons.target /> {prompt.techniqueName || prompt.technique}</span>
-                                                <span className="flex items-center gap-1"><Icons.folder /> {prompt.category}</span>
-                                                <span className="flex items-center gap-1"><Icons.calendar /> {new Date(prompt.updatedAt).toLocaleDateString()}</span>
-                                                {prompt.usageCount > 0 && <span className="flex items-center gap-1"><Icons.refresh /> {prompt.usageCount} uses</span>}
-                                            </div>
-                                        </div>
-
-                                        {/* Right: Score */}
-                                        <div className="flex-shrink-0">
-                                            {prompt.evaluation ? (
-                                                <div className={`px-4 py-2 rounded-lg border ${getScoreBg(prompt.evaluation.overallScore)}`}>
-                                                    <div className={`text-2xl font-bold ${getScoreColor(prompt.evaluation.overallScore)}`}>
-                                                        {prompt.evaluation.overallScore}%
-                                                    </div>
-                                                    <div className="text-xs text-slate-400">Overall Score</div>
-                                                </div>
-                                            ) : (
-                                                <div className="px-4 py-2 rounded-lg border border-gray-600 bg-gray-700/30">
-                                                    <div className="text-2xl font-bold text-gray-500">—</div>
-                                                    <div className="text-xs text-slate-500">Not Tested</div>
-                                                </div>
-                                            )}
-                                        </div>
+                                <div className="flex items-start justify-between mb-2">
+                                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                                        <span className="text-white/60">{STATUS_CONFIG[prompt.status].Icon()}</span>
+                                        <span className="text-sm font-medium text-white/90 truncate">{prompt.name}</span>
                                     </div>
-
-                                    {/* Evaluation Details (if exists) */}
                                     {prompt.evaluation && (
-                                        <div className="mt-3 pt-3 border-t border-gray-700 flex gap-4">
-                                            <div className="text-xs">
-                                                <span className="text-slate-500">Quality:</span>
-                                                <span className={`ml-1 ${getScoreColor(prompt.evaluation.qualityScore)}`}>
-                                                    {prompt.evaluation.qualityScore}%
-                                                </span>
-                                            </div>
-                                            <div className="text-xs">
-                                                <span className="text-slate-500">Robustness:</span>
-                                                <span className={`ml-1 ${getScoreColor(prompt.evaluation.robustnessScore)}`}>
-                                                    {prompt.evaluation.robustnessScore}%
-                                                </span>
-                                            </div>
-                                            <div className="text-xs">
-                                                <span className="text-slate-500">Consistency:</span>
-                                                <span className={`ml-1 ${getScoreColor(prompt.evaluation.consistencyScore)}`}>
-                                                    {prompt.evaluation.consistencyScore}%
-                                                </span>
-                                            </div>
-                                            {prompt.evaluation.datasetName && (
-                                                <div className="text-xs text-slate-500">
-                                                    Dataset: {prompt.evaluation.datasetName}
-                                                </div>
-                                            )}
+                                        <div className={`text-xs font-bold px-2 py-0.5 rounded ${getScoreColor(prompt.evaluation.overallScore)}`}>
+                                            {prompt.evaluation.overallScore}%
                                         </div>
                                     )}
-
-                                    {/* Actions */}
-                                    <div className="mt-3 pt-3 border-t border-gray-700 flex gap-2" onClick={e => e.stopPropagation()}>
-                                        <button
-                                            onClick={() => handleCopyPrompt(prompt.text)}
-                                            className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded"
-                                        >
-                                            <span className="flex items-center gap-1"><Icons.copy /> Copy</span>
-                                        </button>
-                                        {onEvaluatePrompt && (
-                                            <button
-                                                onClick={() => onEvaluatePrompt(prompt)}
-                                                className="px-3 py-1.5 bg-purple-900/50 hover:bg-purple-900/70 text-purple-300 text-xs rounded"
-                                            >
-                                                <span className="flex items-center gap-1"><Icons.evaluate /> Evaluate</span>
-                                            </button>
-                                        )}
-                                        <button
-                                            onClick={() => handleDuplicatePrompt(prompt)}
-                                            className="px-3 py-1.5 bg-blue-900/50 hover:bg-blue-900/70 text-blue-300 text-xs rounded"
-                                        >
-                                            <span className="flex items-center gap-1"><Icons.duplicate /> Duplicate</span>
-                                        </button>
-                                        {prompt.status !== 'production' && (
-                                            <button
-                                                onClick={() => handleUpdateStatus(prompt.id, 'production')}
-                                                className="px-3 py-1.5 bg-green-900/50 hover:bg-green-900/70 text-green-300 text-xs rounded"
-                                            >
-                                                <span className="flex items-center gap-1"><Icons.deploy /> Mark Production</span>
-                                            </button>
-                                        )}
-                                        <button
-                                            onClick={() => handleDeletePrompt(prompt.id)}
-                                            className="px-3 py-1.5 bg-red-900/50 hover:bg-red-900/70 text-red-300 text-xs rounded ml-auto"
-                                        >
-                                            <span className="flex items-center gap-1"><Icons.delete /> Delete</span>
-                                        </button>
-                                    </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
+                                <div className="text-[11px] text-white/40 line-clamp-1 mb-2">
+                                    {prompt.text.substring(0, 100)}...
+                                </div>
+                                <div className="flex items-center gap-2 text-[10px] text-white/30">
+                                    <span className={`px-1.5 py-0.5 rounded ${STATUS_CONFIG[prompt.status].color} text-white`}>
+                                        {STATUS_CONFIG[prompt.status].label}
+                                    </span>
+                                    <span>•</span>
+                                    <span>{prompt.category}</span>
+                                    <span>•</span>
+                                    <span>v{prompt.currentVersion}</span>
+                                </div>
+                            </button>
+                        ))
+                    )}
+                </div>
             </div>
 
-            {/* Selected Prompt Detail Modal */}
-            {selectedPrompt && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => { setSelectedPrompt(null); setIsEditing(false); }}>
-                    <div className="bg-gray-800 rounded-lg max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
-                        <div className="p-6 border-b border-gray-700">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className="text-slate-300">{STATUS_CONFIG[selectedPrompt.status].Icon()}</span>
-                                        <h3 className="text-xl font-semibold text-slate-100">{selectedPrompt.name}</h3>
-                                        <span className={`text-xs px-2 py-0.5 rounded ${STATUS_CONFIG[selectedPrompt.status].color} text-white`}>
-                                            {STATUS_CONFIG[selectedPrompt.status].label}
-                                        </span>
-                                    </div>
-                                    <div className="flex gap-3 text-sm text-slate-400">
-                                        <span className="flex items-center gap-1"><Icons.target /> {selectedPrompt.techniqueName}</span>
-                                        <span className="flex items-center gap-1"><Icons.folder /> {selectedPrompt.category}</span>
-                                        <span className="flex items-center gap-1"><Icons.calendar /> Created: {new Date(selectedPrompt.createdAt).toLocaleDateString()}</span>
-                                    </div>
-                                </div>
-                                <button onClick={() => { setSelectedPrompt(null); setIsEditing(false); }} className="text-slate-400 hover:text-slate-200">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
+            {/* Right Panel: Selected Prompt Details */}
+            {selectedPrompt ? (
+                <div className="flex-1 flex flex-col bg-gradient-to-b from-black/20 to-transparent border border-white/5 rounded-2xl overflow-hidden">
+                    <div className="px-5 py-4 border-b border-white/5 flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0 space-y-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <h2 className="text-lg font-semibold text-white truncate flex items-center gap-2">
+                                    {selectedPrompt.name}
+                                    <span className="text-[11px] text-white/50">v{selectedPrompt.currentVersion}</span>
+                                </h2>
+                                <span className={`text-[11px] px-2 py-1 rounded-full ${STATUS_CONFIG[selectedPrompt.status].color} text-white`}>
+                                    {STATUS_CONFIG[selectedPrompt.status].label}
+                                </span>
                             </div>
-                        </div>
-
-                        <div className="p-6 overflow-y-auto flex-1">
-                            {/* Evaluation Scores */}
-                            {selectedPrompt.evaluation && (
-                                <div className="mb-6 grid grid-cols-4 gap-4">
-                                    <div className={`p-4 rounded-lg border ${getScoreBg(selectedPrompt.evaluation.overallScore)}`}>
-                                        <div className={`text-3xl font-bold ${getScoreColor(selectedPrompt.evaluation.overallScore)}`}>
-                                            {selectedPrompt.evaluation.overallScore}%
-                                        </div>
-                                        <div className="text-sm text-slate-400">Overall Score</div>
-                                    </div>
-                                    <div className="p-4 rounded-lg border border-gray-700 bg-gray-700/30">
-                                        <div className={`text-2xl font-bold ${getScoreColor(selectedPrompt.evaluation.qualityScore)}`}>
-                                            {selectedPrompt.evaluation.qualityScore}%
-                                        </div>
-                                        <div className="text-sm text-slate-400">Quality</div>
-                                    </div>
-                                    <div className="p-4 rounded-lg border border-gray-700 bg-gray-700/30">
-                                        <div className={`text-2xl font-bold ${getScoreColor(selectedPrompt.evaluation.robustnessScore)}`}>
-                                            {selectedPrompt.evaluation.robustnessScore}%
-                                        </div>
-                                        <div className="text-sm text-slate-400">Robustness</div>
-                                    </div>
-                                    <div className="p-4 rounded-lg border border-gray-700 bg-gray-700/30">
-                                        <div className={`text-2xl font-bold ${getScoreColor(selectedPrompt.evaluation.consistencyScore)}`}>
-                                            {selectedPrompt.evaluation.consistencyScore}%
-                                        </div>
-                                        <div className="text-sm text-slate-400">Consistency</div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Prompt Text */}
-                            <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
-                                <div className="flex justify-between items-center mb-2">
-                                    <div className="text-sm font-medium text-slate-300">
-                                        Prompt Text
-                                        <span className="ml-2 text-xs text-slate-500">v{selectedPrompt.currentVersion}</span>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        {!isEditing && (
-                                            <button
-                                                onClick={() => {
-                                                    setIsEditing(true);
-                                                    setEditedText(selectedPrompt.text);
-                                                    setEditDescription('');
-                                                }}
-                                                className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
-                                            >
-                                                ✏️ Edit
-                                            </button>
-                                        )}
-                                        <button
-                                            onClick={() => handleCopyPrompt(selectedPrompt.text)}
-                                            className="text-xs text-green-400 hover:text-green-300"
-                                        >
-                                            📋 Copy
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                {isEditing ? (
-                                    <div className="space-y-3">
-                                        <textarea
-                                            value={editedText}
-                                            onChange={(e) => setEditedText(e.target.value)}
-                                            className="w-full h-48 bg-gray-800 border border-gray-600 rounded-lg p-3 text-sm text-slate-200 font-mono focus:outline-none focus:border-blue-500 resize-none"
-                                            placeholder="Edit prompt text..."
-                                        />
-                                        <div>
-                                            <label className="block text-xs text-slate-400 mb-1">Version description (what changed?)</label>
-                                            <input
-                                                type="text"
-                                                value={editDescription}
-                                                onChange={(e) => setEditDescription(e.target.value)}
-                                                className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
-                                                placeholder="e.g., Added few-shot examples, Fixed formatting..."
-                                            />
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={() => {
-                                                    if (editedText.trim() === selectedPrompt.text) {
-                                                        alert('No changes detected');
-                                                        return;
-                                                    }
-                                                    if (!editDescription.trim()) {
-                                                        alert('Please describe what changed');
-                                                        return;
-                                                    }
-                                                    createNewVersion(selectedPrompt.id, editedText, editDescription);
-                                                    loadPrompts();
-                                                    setIsEditing(false);
-                                                    setSelectedPrompt({
-                                                        ...selectedPrompt,
-                                                        text: editedText,
-                                                        currentVersion: selectedPrompt.currentVersion + 1,
-                                                        versions: [
-                                                            ...selectedPrompt.versions,
-                                                            {
-                                                                versionNumber: selectedPrompt.currentVersion + 1,
-                                                                text: editedText,
-                                                                description: editDescription,
-                                                                createdAt: new Date().toISOString()
-                                                            }
-                                                        ]
-                                                    });
-                                                }}
-                                                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg font-medium"
-                                            >
-                                                💾 Save as v{selectedPrompt.currentVersion + 1}
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    setIsEditing(false);
-                                                    setEditedText('');
-                                                    setEditDescription('');
-                                                }}
-                                                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg"
-                                            >
-                                                Cancel
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <pre className="text-sm text-slate-200 whitespace-pre-wrap font-mono">
-                                        {selectedPrompt.text}
-                                    </pre>
+                            <div className="flex items-center gap-2 text-xs text-white/50 flex-wrap">
+                                <span className="flex items-center gap-1">
+                                    <Icons.target />
+                                    <span>{selectedPrompt.techniqueName || selectedPrompt.technique}</span>
+                                </span>
+                                <span>•</span>
+                                <span>{selectedPrompt.category}</span>
+                                <span>•</span>
+                                <span>Updated {new Date(selectedPrompt.updatedAt).toLocaleDateString()}</span>
+                                {selectedPrompt.tags.length > 0 && (
+                                    <>
+                                        <span>•</span>
+                                        <span className="flex items-center gap-1 flex-wrap">
+                                            {selectedPrompt.tags.map(tag => (
+                                                <span key={tag} className="px-2 py-0.5 bg-white/[0.04] border border-white/10 text-white/60 text-[10px] rounded">
+                                                    {tag}
+                                                </span>
+                                            ))}
+                                        </span>
+                                    </>
                                 )}
                             </div>
-
-                            {/* Tags */}
-                            {selectedPrompt.tags.length > 0 && (
-                                <div className="mt-4">
-                                    <div className="text-sm font-medium text-slate-300 mb-2">Tags</div>
-                                    <div className="flex gap-2 flex-wrap">
-                                        {selectedPrompt.tags.map(tag => (
-                                            <span key={tag} className="px-2 py-1 bg-gray-700 text-slate-300 text-xs rounded">
-                                                {tag}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Version History */}
-                            <div className="mt-6">
-                                <div className="text-sm font-medium text-slate-300 mb-3">📁 Version History</div>
-                                <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
-                                    {selectedPrompt.versions.slice().reverse().map((version, idx) => {
-                                        const isCurrentVersion = version.versionNumber === selectedPrompt.currentVersion;
-                                        const isLatest = idx === 0;
-
-                                        return (
-                                            <div key={version.versionNumber} className="relative">
-                                                {/* Version Node */}
-                                                <div className={`flex items-start gap-3 ${!isLatest ? 'pb-4' : ''}`}>
-                                                    {/* Tree Line */}
-                                                    <div className="flex flex-col items-center">
-                                                        <div className={`w-3 h-3 rounded-full ${isCurrentVersion ? 'bg-green-500' : 'bg-gray-600'}`} />
-                                                        {!isLatest && <div className="w-0.5 h-full bg-gray-700 mt-1" />}
-                                                    </div>
-
-                                                    {/* Version Info */}
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center gap-2 mb-1">
-                                                            <span className="text-sm font-medium text-slate-200">
-                                                                v{version.versionNumber}
-                                                            </span>
-                                                            {isCurrentVersion && (
-                                                                <span className="px-2 py-0.5 bg-green-900/50 text-green-300 text-xs rounded">
-                                                                    current
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <p className="text-sm text-slate-400 mb-1">
-                                                            {version.description}
-                                                        </p>
-                                                        <p className="text-xs text-slate-500">
-                                                            {new Date(version.createdAt).toLocaleString()}
-                                                        </p>
-
-                                                        {/* Version Actions */}
-                                                        <div className="mt-2 flex gap-2">
-                                                            <button
-                                                                onClick={() => {
-                                                                    alert(`Version ${version.versionNumber} text:\n\n${version.text}`);
-                                                                }}
-                                                                className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-slate-300 text-xs rounded"
-                                                            >
-                                                                👁️ View Text
-                                                            </button>
-                                                            {!isCurrentVersion && (
-                                                                <button
-                                                                    onClick={() => {
-                                                                        if (confirm(`Rollback to v${version.versionNumber}? This will create a new version.`)) {
-                                                                            rollbackToVersion(selectedPrompt.id, version.versionNumber, `Rolled back to v${version.versionNumber}`);
-                                                                            loadPrompts();
-                                                                            setSelectedPrompt(null);
-                                                                            setIsEditing(false);
-                                                                        }
-                                                                    }}
-                                                                    className="px-3 py-1 bg-blue-900/50 hover:bg-blue-900/70 text-blue-300 text-xs rounded"
-                                                                >
-                                                                    ↩️ Rollback
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
                         </div>
 
-                        {/* Modal Actions */}
-                        <div className="p-6 border-t border-gray-700 flex gap-3">
+                        <div className="flex items-center gap-2 shrink-0">
+                            <button
+                                onClick={() => handleCopyPrompt(selectedPrompt.text)}
+                                className="p-2 rounded-lg bg-white/[0.04] border border-white/10 text-white/70 hover:text-white hover:border-white/30"
+                                title="Copy"
+                            >
+                                <Icons.copy />
+                            </button>
+                            <button
+                                onClick={() => handleDuplicatePrompt(selectedPrompt)}
+                                className="p-2 rounded-lg bg-white/[0.04] border border-white/10 text-white/70 hover:text-white hover:border-white/30"
+                                title="Duplicate"
+                            >
+                                <Icons.duplicate />
+                            </button>
                             {onEvaluatePrompt && (
                                 <button
                                     onClick={() => {
                                         onEvaluatePrompt(selectedPrompt);
                                         setSelectedPrompt(null);
                                     }}
-                                    className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-md text-sm font-medium"
+                                    className="px-3 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white/80 hover:bg-white/[0.08]"
                                 >
-                                    <span className="flex items-center gap-1"><Icons.evaluate /> Run Evaluation</span>
+                                    Evaluate
                                 </button>
                             )}
-                            <button
-                                onClick={() => handleDuplicatePrompt(selectedPrompt)}
-                                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md text-sm font-medium"
-                            >
-                                <span className="flex items-center gap-1"><Icons.duplicate /> Duplicate</span>
-                            </button>
                             {selectedPrompt.status !== 'production' && (
                                 <button
                                     onClick={() => {
                                         handleUpdateStatus(selectedPrompt.id, 'production');
                                         setSelectedPrompt({ ...selectedPrompt, status: 'production' });
                                     }}
-                                    className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-md text-sm font-medium"
+                                    className="px-3 py-2 rounded-lg bg-gradient-to-r from-[#4F46E5] to-[#007AFF] text-white font-semibold shadow-[0_10px_30px_-12px_rgba(0,122,255,0.8)] hover:opacity-95 transition-all"
                                 >
-                                    <span className="flex items-center gap-1"><Icons.deploy /> Deploy to Production</span>
+                                    Deploy
                                 </button>
                             )}
                             <button
-                                onClick={() => setSelectedPrompt(null)}
-                                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md text-sm font-medium ml-auto"
+                                onClick={() => handleDeletePrompt(selectedPrompt.id)}
+                                className="p-2 rounded-lg bg-red-900/20 border border-red-800/30 text-red-400/80 hover:bg-red-900/30"
+                                title="Delete"
                             >
-                                Close
+                                <Icons.delete />
                             </button>
+                            <button onClick={() => setSelectedPrompt(null)} className="p-2 text-white/40 hover:text-white/70">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                        {selectedPrompt.evaluation && (
+                            <div className="grid grid-cols-4 gap-3">
+                                <div className={`p-3 rounded-lg border ${getScoreBg(selectedPrompt.evaluation.overallScore)}`}>
+                                    <div className={`text-xl font-bold ${getScoreColor(selectedPrompt.evaluation.overallScore)}`}>
+                                        {selectedPrompt.evaluation.overallScore}%
+                                    </div>
+                                    <div className="text-[11px] text-white/40">Overall</div>
+                                </div>
+                                <div className="bg-white/[0.03] border border-white/5 rounded-lg p-3">
+                                    <div className={`text-sm font-bold ${getScoreColor(selectedPrompt.evaluation.qualityScore)}`}>
+                                        {selectedPrompt.evaluation.qualityScore}%
+                                    </div>
+                                    <div className="text-[10px] text-white/40">Quality</div>
+                                </div>
+                                <div className="bg-white/[0.03] border border-white/5 rounded-lg p-3">
+                                    <div className={`text-sm font-bold ${getScoreColor(selectedPrompt.evaluation.robustnessScore)}`}>
+                                        {selectedPrompt.evaluation.robustnessScore}%
+                                    </div>
+                                    <div className="text-[10px] text-white/40">Robust</div>
+                                </div>
+                                <div className="bg-white/[0.03] border border-white/5 rounded-lg p-3">
+                                    <div className={`text-sm font-bold ${getScoreColor(selectedPrompt.evaluation.consistencyScore)}`}>
+                                        {selectedPrompt.evaluation.consistencyScore}%
+                                    </div>
+                                    <div className="text-[10px] text-white/40">Consist</div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="rounded-xl border border-white/5 bg-[#0B0D10]">
+                            <div className="flex items-center justify-between px-4 py-2 border-b border-white/5">
+                                <div className="text-[11px] uppercase tracking-[0.16em] text-white/40">Prompt</div>
+                                {selectedPrompt.usageCount > 0 && (
+                                    <div className="text-[11px] text-white/50 flex items-center gap-1">
+                                        <Icons.refresh />
+                                        <span>{selectedPrompt.usageCount} uses</span>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="max-h-[520px] overflow-y-auto font-mono text-[12px] text-white/80 custom-scrollbar">
+                                {selectedPrompt.text.split('\n').map((line, idx) => {
+                                    const segments = line.split(/(\{\{.*?\}\})/g);
+                                    return (
+                                        <div key={idx} className="flex">
+                                            <div className="w-12 shrink-0 text-right pr-3 pl-4 text-white/30 select-none">
+                                                {idx + 1}
+                                            </div>
+                                            <div className="flex-1 whitespace-pre-wrap pr-4">
+                                                {segments.map((part, i) =>
+                                                    part.startsWith('{{') && part.endsWith('}}') ? (
+                                                        <span key={i} className="text-amber-300">{part}</span>
+                                                    ) : (
+                                                        <span key={i}>{part}</span>
+                                                    )
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div className="flex-1 flex flex-col bg-gradient-to-b from-black/20 to-transparent border border-white/5 rounded-2xl overflow-hidden">
+                    <div className="px-6 py-5 border-b border-white/5 bg-white/[0.02]">
+                        <h2 className="text-xl font-semibold text-white/90 leading-tight mb-1">Prompt Details</h2>
+                        <p className="text-xs text-white/45 mt-1">Select a prompt to view</p>
+                    </div>
+                    <div className="flex-1 flex items-center justify-center p-8">
+                        <div className="text-center">
+                            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-center text-white/20">
+                                <Icons.library />
+                            </div>
+                            <p className="text-sm text-white/40">Select a prompt from the list</p>
+                            <p className="text-xs text-white/30 mt-1">to view details and actions</p>
                         </div>
                     </div>
                 </div>

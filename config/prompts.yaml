@@ -6,7 +6,8 @@ techniques:
     paper: "Language Models are Few-Shot Learners"
     arxiv: "https://arxiv.org/abs/2005.14165"
     year: "2020"
-    categories: ["General", "Reasoning", "Coding", "Summarization", "Creative Writing", "Data Extraction"]
+    categories: ["General", "Reasoning", "Coding", "Summarization", "Creative Writing", "Data Extraction", "Translation"]
+    structure_hint: "Direct answer only, no reasoning steps."
   few_shot:
     name: "Few-Shot Prompting"
     description: "Provide 2-5 input→output examples before the main query. Model learns the pattern from examples."
@@ -14,7 +15,8 @@ techniques:
     paper: "Language Models are Few-Shot Learners"
     arxiv: "https://arxiv.org/abs/2005.14165"
     year: "2020"
-    categories: ["General", "Coding", "Data Extraction"]
+    categories: ["General", "Coding", "Data Extraction", "Translation"]
+    structure_hint: "Follow the input-output pattern of the examples."
   role_prompting:
     name: "Role Prompting"
     description: "Assign expert role to the model. Start with 'You are an expert [role]...' — model adopts expertise and tone."
@@ -22,7 +24,8 @@ techniques:
     paper: "Prompting GPT-3 To Be Reliable"
     arxiv: "https://arxiv.org/abs/2210.09150"
     year: "2022"
-    categories: ["General", "Coding", "Creative Writing"]
+    categories: ["General", "Coding", "Creative Writing", "Translation"]
+    structure_hint: "Response in the persona of [Role], maintaining professional tone."
   step_back:
     name: "Step-Back Prompting"
     description: "First analyze general principles, then apply to specific task. Ask 'What are the key concepts?' before solving."
@@ -31,6 +34,7 @@ techniques:
     arxiv: "https://arxiv.org/abs/2310.06117"
     year: "2023"
     categories: ["Reasoning", "General"]
+    structure_hint: "First: Fundamental Principles. Second: Application to specific task."
   chain_of_thought:
     name: "Chain-of-Thought Prompting"
     description: "Step-by-step reasoning. Add 'Let's think step by step' — model explains each logical step of the solution."
@@ -38,7 +42,8 @@ techniques:
     paper: "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models"
     arxiv: "https://arxiv.org/abs/2201.11903"
     year: "2022"
-    categories: ["Reasoning", "Coding", "General"]
+    categories: ["Reasoning", "Coding", "General", "Translation"]
+    structure_hint: "Step 1: [Reasoning] ... Final Answer: [Conclusion]."
   least_to_most:
     name: "Least-to-Most Prompting"
     description: "Break complex problems into simpler subproblems. Solve simplest first, build up: 'First solve X, then use it for Y.'"
@@ -47,6 +52,7 @@ techniques:
     arxiv: "https://arxiv.org/abs/2205.10625"
     year: "2022"
     categories: ["Reasoning", "Coding"]
+    structure_hint: "Subproblem 1: [Solution] ... Final Solution: [Combined result]."
   complexity_based:
     name: "Complexity-Based Prompting"
     description: "Use examples with many reasoning steps. More complex demonstrations with longer chains = better performance."
@@ -55,6 +61,7 @@ techniques:
     arxiv: "https://arxiv.org/abs/2210.00720"
     year: "2022"
     categories: ["Reasoning"]
+    structure_hint: "Detailed reasoning chain with at least 5 steps."
   structured_cot:
     name: "Structured Chain-of-Thought"
     description: "Apply programming constructs to reasoning. Structure like code: IF condition THEN action, WHILE loop, sequential steps."
@@ -63,6 +70,7 @@ techniques:
     arxiv: "https://arxiv.org/abs/2305.06599"
     year: "2023"
     categories: ["Coding", "Reasoning"]
+    structure_hint: "Use structured logic: IF [condition] THEN [action]."
   reaction:
     name: "ReAct (Reasoning and Acting)"
     description: "Synergize reasoning and acting. Format: 'Thought: [reasoning] Action: [what to do] Observation: [result]' — repeat cycle."
@@ -71,6 +79,7 @@ techniques:
     arxiv: "https://arxiv.org/abs/2210.03629"
     year: "2022"
     categories: ["Reasoning", "General"]
+    structure_hint: "Thought: [Reasoning] Action: [Tool/Act] Observation: [Result]."
   program_aided:
     name: "Program-Aided Language Models"
     description: "Use algorithmic thinking and pseudocode. Ask to write algorithm first, then execute it mentally to get answer."
@@ -79,6 +88,7 @@ techniques:
     arxiv: "https://arxiv.org/abs/2211.10435"
     year: "2022"
     categories: ["Coding", "Reasoning"]
+    structure_hint: "Python code block implementing the solution logic."
   self_critique:
     name: "Self-Critique Prompting"
     description: "Critically evaluate own answer. After response, ask: 'Now critique this. What's wrong? How to improve?' Then revise."
@@ -86,7 +96,8 @@ techniques:
     paper: "Self-critiquing models for assisting human evaluators"
     arxiv: "https://arxiv.org/abs/2206.05802"
     year: "2022"
-    categories: ["General", "Reasoning", "Coding", "Creative Writing"]
+    categories: ["General", "Reasoning", "Coding", "Creative Writing", "Translation"]
+    structure_hint: "Original Answer -> Critique -> Revised Answer."
   reflection:
     name: "Reflection Prompting"
     description: "Analyze own thought process after answering. Ask: 'Reflect on your reasoning. What assumptions? What could be better?'"
@@ -94,7 +105,8 @@ techniques:
     paper: "Reflexion: Language Agents with Verbal Reinforcement Learning"
     arxiv: "https://arxiv.org/abs/2303.11366"
     year: "2023"
-    categories: ["Reasoning", "General"]
+    categories: ["Reasoning", "General", "Translation"]
+    structure_hint: "Answer -> Reflection (Assumptions/Errors) -> Refined Answer."
   refinement:
     name: "Iterative Refinement"
     description: "Gradually improve through iterations. Generate → Get feedback → Improve → Repeat: 'Now make it better.'"
@@ -102,7 +114,8 @@ techniques:
     paper: "Self-Refine: Iterative Refinement with Self-Feedback"
     arxiv: "https://arxiv.org/abs/2303.17651"
     year: "2023"
-    categories: ["General", "Creative Writing", "Coding"]
+    categories: ["General", "Creative Writing", "Coding", "Translation"]
+    structure_hint: "Draft -> Feedback -> Improved Draft -> Final Version."
   metacognitive:
     name: "Metacognitive Prompting"
     description: "Reflect on thinking process before responding. Ask: 'What type of problem? What strategy? What could go wrong?'"
@@ -111,6 +124,7 @@ techniques:
     arxiv: "https://arxiv.org/abs/2308.05342"
     year: "2023"
     categories: ["Reasoning", "General"]
+    structure_hint: "Metacognitive Analysis (Type/Strategy) -> Solution."
   self_consistency:
     name: "Self-Consistency Decoding"
     description: "Solve problem multiple ways to check consistency. Generate 3+ solutions, compare — majority vote = final answer."
@@ -118,7 +132,8 @@ techniques:
     paper: "Self-Consistency Improves Chain of Thought Reasoning in Language Models"
     arxiv: "https://arxiv.org/abs/2203.11171"
     year: "2022"
-    categories: ["Reasoning", "General"]
+    categories: ["Reasoning", "General", "Translation"]
+    structure_hint: "Consistency Analysis: [Comparison of paths] -> Final Consensus."
   progressive_hint:
     name: "Progressive-Hint Prompting"
     description: "Use previous answers as hints for improvement. Solve once, use as hint for next attempt, repeat until convergence."
@@ -127,6 +142,7 @@ techniques:
     arxiv: "https://arxiv.org/abs/2304.09797"
     year: "2023"
     categories: ["Reasoning"]
+    structure_hint: "Attempt 1 -> Hint -> Attempt 2 -> Final Answer."
   analogical_prompting:
     name: "Analogical Prompting"
     description: "Generate relevant examples via analogies. Ask: 'Think of similar problems. How were they solved? Apply that here.'"
@@ -135,6 +151,7 @@ techniques:
     arxiv: "https://arxiv.org/abs/2310.01714"
     year: "2023"
     categories: ["Reasoning", "General"]
+    structure_hint: "Analogy: [Similar Problem] -> Application -> Solution."
   skeleton_of_thought:
     name: "Skeleton-of-Thought"
     description: "First create answer skeleton, then expand. Ask: 'List main points' → 'Now expand each in detail.'"
@@ -143,6 +160,7 @@ techniques:
     arxiv: "https://arxiv.org/abs/2307.15337"
     year: "2023"
     categories: ["General", "Creative Writing"]
+    structure_hint: "Skeleton Outline -> Expanded Content."
   chain_of_density:
     name: "Chain of Density"
     description: "Iteratively create denser summaries. Summarize → 'Rewrite adding more facts, same length' → Repeat. Denser each time."
@@ -151,6 +169,7 @@ techniques:
     arxiv: "https://arxiv.org/abs/2309.04269"
     year: "2023"
     categories: ["Summarization"]
+    structure_hint: "Summary V1 (Sparse) -> ... -> Summary V5 (Dense)."
   tree_of_thoughts:
     name: "Tree of Thoughts"
     description: "Consider multiple solution paths like a tree. Explore branches A, B, C — evaluate each, pick best and continue."
@@ -159,6 +178,7 @@ techniques:
     arxiv: "https://arxiv.org/abs/2305.10601"
     year: "2023"
     categories: ["Reasoning", "Coding"]
+    structure_hint: "Branch A evaluation -> Branch B evaluation -> Best Path."
   graph_of_thoughts:
     name: "Graph of Thoughts"
     description: "Model reasoning as graph with thoughts as nodes, dependencies as edges. Combine/transform nodes to reach solution."
@@ -167,6 +187,7 @@ techniques:
     arxiv: "https://arxiv.org/abs/2308.09687"
     year: "2023"
     categories: ["Reasoning", "Coding"]
+    structure_hint: "Graph Nodes (Thoughts) -> Edges (Relations) -> Synthesis."
   thought_propagation:
     name: "Thought Propagation"
     description: "Use analogous problems and solutions. Find similar solved problems, extract strategies, apply combined approach."
@@ -175,6 +196,7 @@ techniques:
     arxiv: "https://arxiv.org/abs/2310.03965"
     year: "2023"
     categories: ["Reasoning"]
+    structure_hint: "Analogous Problem -> Insight Extraction -> Solution."
   visual_cot:
     name: "Visual Chain-of-Thought"
     description: "Chain of thought for multimodal tasks. For image+text: 'Describe what you see. Reason step by step about visuals.'"
@@ -183,6 +205,7 @@ techniques:
     arxiv: "https://arxiv.org/abs/2403.16999"
     year: "2024"
     categories: ["Reasoning", "Data Extraction"]
+    structure_hint: "Visual Description -> Visual Reasoning -> Conclusion."
   self_harmonized:
     name: "Self-Harmonized Chain of Thought"
     description: "Unify diverse solution paths. Generate 3+ reasoning paths, then: 'Harmonize these into one consistent answer.'"
@@ -191,6 +214,7 @@ techniques:
     arxiv: "https://arxiv.org/abs/2409.04057"
     year: "2024"
     categories: ["Reasoning"]
+    structure_hint: "Path 1/2/3 -> Harmonization Strategy -> Unified Answer."
   meta_prompting:
     name: "Meta-Prompting"
     description: "One LM as conductor managing expert queries. Delegate to Expert A, B, C — collect answers, synthesize response."
@@ -199,6 +223,7 @@ techniques:
     arxiv: "https://arxiv.org/abs/2401.12954"
     year: "2024"
     categories: ["General", "Reasoning"]
+    structure_hint: "Expert A View -> Expert B View -> Conductor Synthesis."
   prompt_engineering_pe2:
     name: "Prompt Engineering a Prompt Engineer"
     description: "Meta-prompting for automatic prompt optimization. Give task + examples, ask: 'Design optimal prompt, then execute.'"
@@ -207,6 +232,7 @@ techniques:
     arxiv: "https://arxiv.org/abs/2311.05661"
     year: "2024"
     categories: ["General"]
+    structure_hint: "Analysis -> Optimized Prompt -> Execution Output."
   textgrad:
     name: "TextGrad Optimization"
     description: "Automatic differentiation via text feedback. Generate → Evaluate → 'What to improve?' → Apply feedback → Repeat."
@@ -215,6 +241,7 @@ techniques:
     arxiv: "https://arxiv.org/abs/2406.07496"
     year: "2024"
     categories: ["General"]
+    structure_hint: "Draft -> Gradient Feedback (What to fix) -> Optimization."
   system_prompt_optimization:
     name: "System Prompt Optimization"
     description: "Two-level optimization of system prompts. Level 1: Optimize task framing. Level 2: Execute with optimized frame."
@@ -223,6 +250,7 @@ techniques:
     arxiv: "https://arxiv.org/abs/2505.09666"
     year: "2025"
     categories: ["General"]
+    structure_hint: "Optimized System Prompt -> Execution Result."
 
   chain_of_draft:
     name: "Chain of Draft (CoD)"
@@ -232,6 +260,7 @@ techniques:
     arxiv: "https://arxiv.org/abs/2502.18600"
     year: "2025"
     categories: ["Reasoning", "General", "Coding"]
+    structure_hint: "Minimal Draft (Key facts only) -> Final Answer."
 
   chain_of_verification:
     name: "Chain-of-Verification (CoVe)"
@@ -240,7 +269,8 @@ techniques:
     paper: "Chain-of-Verification Reduces Hallucination in Large Language Models"
     arxiv: "https://arxiv.org/abs/2309.11495"
     year: "2023"
-    categories: ["General", "Reasoning"]
+    categories: ["General", "Reasoning", "Translation"]
+    structure_hint: "Baseline -> Verification Questions -> Independent Answers -> Verified Response."
 
   program_of_thoughts:
     name: "Program of Thoughts (PoT)"
@@ -250,6 +280,7 @@ techniques:
     arxiv: "https://arxiv.org/abs/2211.12588"
     year: "2022"
     categories: ["Coding", "Reasoning"]
+    structure_hint: "Python Code -> Execution Result -> Explanation."
 
   chain_of_table:
     name: "Chain-of-Table"
@@ -259,6 +290,7 @@ techniques:
     arxiv: "https://arxiv.org/abs/2401.04398"
     year: "2024"
     categories: ["Data Extraction", "Reasoning"]
+    structure_hint: "Table: [Step | Operation | Result] -> Final Answer."
 
   thread_of_thought:
     name: "Thread of Thought (ThoT)"
@@ -268,6 +300,7 @@ techniques:
     arxiv: "https://arxiv.org/abs/2311.08734"
     year: "2023"
     categories: ["Reasoning", "Summarization"]
+    structure_hint: "Segment 1 Analysis -> Segment 2 Analysis -> Global Synthesis."
 
   system2_attention:
     name: "System 2 Attention (S2A)"
@@ -277,6 +310,7 @@ techniques:
     arxiv: "https://arxiv.org/abs/2311.11829"
     year: "2023"
     categories: ["Reasoning", "General"]
+    structure_hint: "Refined Context (Noise removed) -> Answer based on Refined Context."
 
   chain_of_code:
     name: "Chain-of-Code (CoC)"
@@ -286,6 +320,7 @@ techniques:
     arxiv: "https://arxiv.org/abs/2312.04474"
     year: "2023"
     categories: ["Coding", "Reasoning"]
+    structure_hint: "Pseudocode/Code Mix -> Execution Simulation -> Result."
 
   active_prompting:
     name: "Active Prompting"
@@ -295,11 +330,338 @@ techniques:
     arxiv: "https://arxiv.org/abs/2302.12246"
     year: "2023"
     categories: ["Reasoning", "General"]
+    structure_hint: "Answer -> Uncertainty Identification -> Resolution -> Final Answer."
+
+  buffer_of_thoughts:
+    name: "Buffer of Thoughts (BoT)"
+    description: "Thought-augmented reasoning with buffer. Maintain thought buffer across reasoning steps — accumulate insights, reference previous thoughts."
+    authors: "Ling Yang et al."
+    paper: "Buffer of Thoughts: Thought-Augmented Reasoning with Large Language Models"
+    arxiv: "https://arxiv.org/abs/2406.04271"
+    year: "2024"
+    categories: ["Reasoning", "General"]
+    structure_hint: "Thought Buffer: [Accumulated Insights] -> Reasoning."
+
+  chain_of_knowledge:
+    name: "Chain-of-Knowledge"
+    description: "Ground LLMs via dynamic knowledge adapting. Retrieve from heterogeneous sources → Adapt knowledge → Reason with grounded facts."
+    authors: "Xingxuan Li et al."
+    paper: "Chain-of-Knowledge: Grounding Large Language Models via Dynamic Knowledge Adapting"
+    arxiv: "https://arxiv.org/abs/2305.13269"
+    year: "2023"
+    categories: ["Reasoning", "General"]
+    structure_hint: "Retrieved Fact -> Adaptation -> Grounded Reasoning."
+
+  chain_of_note:
+    name: "Chain-of-Note"
+    description: "Enhance robustness in retrieval-augmented models. Generate notes about retrieved docs → Assess relevance → Answer with notes."
+    authors: "Wenhao Yu et al."
+    paper: "Chain-of-Note: Enhancing Robustness in Retrieval-Augmented Language Models"
+    arxiv: "https://arxiv.org/abs/2311.09210"
+    year: "2023"
+    categories: ["Reasoning", "General"]
+    structure_hint: "Retrieved Doc -> Note (Relevance) -> Answer."
+
+  chain_of_symbol:
+    name: "Chain-of-Symbol"
+    description: "Use symbols for planning in LLMs. Replace entities with symbols → Plan with symbols → Execute with original entities."
+    authors: "Hanxu Hu et al."
+    paper: "Chain-of-Symbol Prompting Elicits Planning in Large Language Models"
+    arxiv: "https://arxiv.org/abs/2305.10276"
+    year: "2023"
+    categories: ["Reasoning", "Coding"]
+    structure_hint: "Symbol Mapping -> Symbolic Plan -> Entity Execution."
+
+  code_prompting:
+    name: "Code Prompting"
+    description: "Elicit conditional reasoning via code. Frame problem as code with if/else → Model reasons through code logic structure."
+    authors: "Haritz Puerto et al."
+    paper: "Code Prompting Elicits Conditional Reasoning Abilities in Text+Code LLMs"
+    arxiv: "https://arxiv.org/abs/2401.10065"
+    year: "2024"
+    categories: ["Coding", "Reasoning"]
+    structure_hint: "Code Structure (If/Else/Loops) representing logic."
+
+  echo_prompt:
+    name: "EchoPrompt"
+    description: "Instruct model to rephrase queries. 'Rephrase this question in your own words, then answer the rephrased version.'"
+    authors: "Rajasekhar Reddy Mekala et al."
+    paper: "EchoPrompt: Instructing the Model to Rephrase Queries for Improved In-Context Learning"
+    arxiv: "https://arxiv.org/abs/2309.10687"
+    year: "2024"
+    categories: ["General", "Reasoning"]
+    structure_hint: "Rephrased Question -> Answer to Rephrased Question."
+
+  emotional_stimuli:
+    name: "Emotional Stimuli Prompting"
+    description: "Enhance with emotional context. Add: 'This is very important to my career.' or 'Take a deep breath and work on this step by step.'"
+    authors: "Cheng Li et al."
+    paper: "Large Language Models Understand and Can Be Enhanced by Emotional Stimuli"
+    arxiv: "https://arxiv.org/abs/2307.11760"
+    year: "2023"
+    categories: ["General", "Reasoning"]
+    structure_hint: "Emotional Context Acknowledgment -> Focused Answer."
+
+  graph_flattening:
+    name: "End-to-End Graph Flattening"
+    description: "Convert graphs to text for LLMs. Flatten graph structure → Describe nodes/edges textually → Process with LLM."
+    authors: "Bin Hong et al."
+    paper: "End-to-End Graph Flattening Method for Large Language Models"
+    arxiv: "https://arxiv.org/abs/2402.13085"
+    year: "2024"
+    categories: ["Data Extraction", "Reasoning"]
+    structure_hint: "Flattened Graph (Nodes/Edges text) -> Reasoning."
+
+  instance_adaptive_cot:
+    name: "Instance-Adaptive Zero-Shot CoT"
+    description: "Adapt CoT to instance difficulty. Assess complexity → Use simple/detailed reasoning accordingly → Optimize per instance."
+    authors: "Xiaosong Yuan et al."
+    paper: "Instance-Adaptive Zero-Shot Chain-of-Thought Prompting"
+    arxiv: "https://arxiv.org/abs/2409.03460"
+    year: "2024"
+    categories: ["Reasoning", "General"]
+    structure_hint: "Complexity Assessment -> Adaptive Reasoning Chain."
+
+  layer_of_thoughts:
+    name: "Layer-of-Thoughts (LoT)"
+    description: "Leverage LLM-based retrieval with constraint hierarchies. Layer constraints → Retrieve at each layer → Reason hierarchically."
+    authors: "Wachara Fungwacharakorn et al."
+    paper: "Layer-of-Thoughts Prompting (LoT): Leveraging LLM-Based Retrieval with Constraint Hierarchies"
+    arxiv: "https://arxiv.org/abs/2405.11534"
+    year: "2024"
+    categories: ["Reasoning", "General"]
+    structure_hint: "Layer 1 Constraints -> Layer 2 Constraints -> Solution."
+
+  logic_of_thought:
+    name: "Logic-of-Thought"
+    description: "Inject logic into contexts for full reasoning. Use formal logic rules → Apply to context → Derive conclusions logically."
+    authors: "Tongxuan Liu et al."
+    paper: "Logic-of-Thought: Injecting Logic into Contexts for Full Reasoning in LLMs"
+    arxiv: "https://arxiv.org/abs/2409.17539"
+    year: "2024"
+    categories: ["Reasoning", "General"]
+    structure_hint: "Formal Logic Propositions -> Logical Derivation."
+
+  narrative_of_thought:
+    name: "Narrative-of-Thought"
+    description: "Improve temporal reasoning via narratives. 'Recount events as a story with timeline' → Reason about temporal relations."
+    authors: "Xinliang Frederick Zhang et al."
+    paper: "Narrative-of-Thought: Improving Temporal Reasoning via Recounted Narratives"
+    arxiv: "https://arxiv.org/abs/2406.18070"
+    year: "2024"
+    categories: ["Reasoning", "General"]
+    structure_hint: "Narrative Timeline -> Temporal Reasoning -> Conclusion."
+
+  auto_cot:
+    name: "Automatic Chain-of-Thought (Auto-CoT)"
+    description: "Automatic CoT prompting. Cluster questions → Sample diverse examples → Generate reasoning chains automatically."
+    authors: "Zhuosheng Zhang et al."
+    paper: "Automatic Chain of Thought Prompting in Large Language Models"
+    arxiv: "https://arxiv.org/abs/2210.03493"
+    year: "2022"
+    categories: ["Reasoning", "General"]
+    structure_hint: "Auto-Generated Demonstration -> Reasoning -> Answer."
+
+  art:
+    name: "ART (Automatic Reasoning and Tool-use)"
+    description: "Multi-step reasoning with automatic tool selection. Decompose task → Select tools → Execute → Integrate results."
+    authors: "Bhargavi Paranjape et al."
+    paper: "ART: Automatic Multi-Step Reasoning and Tool-Use for Large Language Models"
+    arxiv: "https://arxiv.org/abs/2303.09014"
+    year: "2023"
+    categories: ["Reasoning", "General"]
+    structure_hint: "Task Decomposition -> Tool Selection -> Execution -> Integration."
+
+  llm_as_optimizer:
+    name: "LLM as Optimizer (OPRO)"
+    description: "Use LLM to optimize prompts. Generate candidates → Evaluate → 'Based on results, suggest better prompt' → Iterate."
+    authors: "Chengrun Yang et al."
+    paper: "Large Language Models as Optimizers"
+    arxiv: "https://arxiv.org/abs/2309.03409"
+    year: "2023"
+    categories: ["General"]
+    structure_hint: "Optimization History -> New Candidate -> Evaluation."
+
+  rephrase_and_respond:
+    name: "Rephrase and Respond (RaR)"
+    description: "Rephrase question before answering. 'First, rephrase the question in clearer terms. Then answer the rephrased question.'"
+    authors: "Deng et al."
+    paper: "Rephrase and Respond: Let Large Language Models Ask Better Questions for Themselves"
+    arxiv: "https://arxiv.org/abs/2311.04205"
+    year: "2023"
+    categories: ["General", "Reasoning"]
+    structure_hint: "Rephrased Query -> Expanded Clarification -> Answer."
+
+  simtom:
+    name: "SimToM (Simulated Theory of Mind)"
+    description: "Simulate perspective-taking. 'Consider what Person A knows/believes. What would they think/do given their perspective?'"
+    authors: "Melanie Sclar et al."
+    paper: "SimToM: Simulating Theory of Mind in Large Language Models"
+    arxiv: "https://arxiv.org/abs/2311.10227"
+    year: "2023"
+    categories: ["Reasoning", "General"]
+    structure_hint: "Perspective A Beliefs -> Perspective B Beliefs -> Answer."
+
+  contrastive_cot:
+    name: "Contrastive Chain-of-Thought"
+    description: "Contrast correct vs incorrect reasoning. Show valid reasoning + invalid example → 'Explain why one works, other fails.'"
+    authors: "Aman Madaan et al."
+    paper: "Contrastive Chain-of-Thought Prompting"
+    arxiv: "https://arxiv.org/abs/2311.09277"
+    year: "2023"
+    categories: ["Reasoning", "General", "Translation"]
+    structure_hint: "Valid Reasoning vs Invalid Reasoning -> Explanation."
+
+  uncertainty_routed_cot:
+    name: "Uncertainty Routed CoT"
+    description: "Route based on uncertainty. If confident → Direct answer. If uncertain → Use CoT reasoning. Adaptive strategy."
+    authors: "Jiashuo Sun et al."
+    paper: "Uncertainty Routed Chain-of-Thought for Robust Question Answering"
+    arxiv: "https://arxiv.org/abs/2310.03356"
+    year: "2023"
+    categories: ["Reasoning", "General"]
+    structure_hint: "Uncertainty Check -> (Direct Answer OR CoT Path)."
+
+  cumulative_reasoning:
+    name: "Cumulative Reasoning"
+    description: "Build reasoning cumulatively. Answer part 1 → Use as foundation for part 2 → Accumulate insights → Final answer."
+    authors: "Yifan Zhang et al."
+    paper: "Cumulative Reasoning with Large Language Models"
+    arxiv: "https://arxiv.org/abs/2308.04371"
+    year: "2023"
+    categories: ["Reasoning", "General"]
+    structure_hint: "Premise 1 -> Premise 2 -> Intermediate Conclusion -> Final."
+
+  faithful_cot:
+    name: "Faithful Chain-of-Thought"
+    description: "Combine natural language + symbolic reasoning. Translate to logic → Apply formal rules → Translate back to language."
+    authors: "Jing Qian et al."
+    paper: "Faithful Chain-of-Thought Reasoning"
+    arxiv: "https://arxiv.org/abs/2301.13379"
+    year: "2023"
+    categories: ["Reasoning", "General"]
+    structure_hint: "Symbolic Translation -> Formal Reasoning -> Natural Language."
+
+  tabular_cot:
+    name: "Tabular Chain-of-Thought"
+    description: "Structure CoT as table. Columns: Step | Reasoning | Result. Each row = one reasoning step. Clear tabular format."
+    authors: "Zilong Wang et al."
+    paper: "Tabular Representation and Reasoning for Chain-of-Thought"
+    arxiv: "https://arxiv.org/abs/2305.17812"
+    year: "2023"
+    categories: ["Reasoning", "Data Extraction"]
+    structure_hint: "Step | Reasoning | Result (Tabular Format)."
+
+  verify_and_edit:
+    name: "Verify-and-Edit"
+    description: "Generate, verify, then edit. Create answer → Verify correctness → 'What's wrong? Edit to fix.' → Repeat until valid."
+    authors: "Ruiqi Zhong et al."
+    paper: "Verify-and-Edit: A Knowledge-Enhanced Chain-of-Thought Framework"
+    arxiv: "https://arxiv.org/abs/2305.03268"
+    year: "2023"
+    categories: ["General", "Reasoning"]
+    structure_hint: "Draft -> Verification -> Edit Actions -> Final."
+
+  decomposed_prompting:
+    name: "Decomposed Prompting"
+    description: "Decompose into sub-tasks with separate prompts. Break into A, B, C → Solve each independently → Combine results."
+    authors: "Tushar Khot et al."
+    paper: "Decomposed Prompting: A Modular Approach for Solving Complex Tasks"
+    arxiv: "https://arxiv.org/abs/2210.02406"
+    year: "2022"
+    categories: ["Reasoning", "General"]
+    structure_hint: "Sub-task 1 Result -> Sub-task 2 Result -> Synthesis."
+
+  recursive_prompting:
+    name: "Recursive Prompting"
+    description: "Apply prompting recursively. Solve base case → Use result in recursive call → Combine until complete solution."
+    authors: "Daman Arora et al."
+    paper: "Recursive Prompting for Complex Reasoning"
+    arxiv: "https://arxiv.org/abs/2305.06983"
+    year: "2023"
+    categories: ["Reasoning", "Coding"]
+    structure_hint: "Base Case -> Recursive Step -> Combined Solution."
+
+  maieutic_prompting:
+    name: "Maieutic Prompting"
+    description: "Socratic method with explanation tree. Ask clarifying questions → Build tree of explanations → Find inconsistencies → Refine."
+    authors: "Jaehun Jung et al."
+    paper: "Maieutic Prompting: Logically Consistent Reasoning with Recursive Explanations"
+    arxiv: "https://arxiv.org/abs/2205.11822"
+    year: "2022"
+    categories: ["Reasoning", "General"]
+    structure_hint: "Explanation Tree -> Inconsistency Check -> Consistent Belief."
+
+  directional_stimulus:
+    name: "Directional Stimulus Prompting"
+    description: "Guide generation with directional hints. Provide keywords/summary of desired direction → 'Use these as guide' → Generate."
+    authors: "Zekun Li et al."
+    paper: "Directional Stimulus Prompting"
+    arxiv: "https://arxiv.org/abs/2302.11520"
+    year: "2023"
+    categories: ["General", "Creative Writing"]
+    structure_hint: "Directional Keywords/Hints -> Guided Generation."
+
+  generated_knowledge:
+    name: "Generated Knowledge Prompting"
+    description: "Generate relevant knowledge first. 'What facts are relevant to this question?' → Generate knowledge → Use to answer."
+    authors: "Jiacheng Liu et al."
+    paper: "Generated Knowledge Prompting for Commonsense Reasoning"
+    arxiv: "https://arxiv.org/abs/2110.08387"
+    year: "2021"
+    categories: ["Reasoning", "General"]
+    structure_hint: "Knowledge Generation -> Answer using Knowledge."
+
+  recitation_augmented:
+    name: "Recitation-Augmented Prompting"
+    description: "Recite relevant information before answering. 'First recite what you know about X. Now answer using that.'"
+    authors: "Zhihong Shao et al."
+    paper: "Recitation-Augmented Language Models"
+    arxiv: "https://arxiv.org/abs/2210.01296"
+    year: "2022"
+    categories: ["Reasoning", "General"]
+    structure_hint: "Recited Knowledge -> Answer."
+
+  self_ask:
+    name: "Self-Ask Prompting"
+    description: "Model asks itself follow-up questions. 'What do I need to know? [Sub-question] → Answer → Next question' → Final answer."
+    authors: "Ofir Press et al."
+    paper: "Measuring and Narrowing the Compositionality Gap in Language Models"
+    arxiv: "https://arxiv.org/abs/2210.03350"
+    year: "2022"
+    categories: ["Reasoning", "General"]
+    structure_hint: "Follow-up Q1 -> Ans1 -> Follow-up Q2 -> Ans2 -> Final Ans."
+
+  scratchpad:
+    name: "Scratchpad Prompting"
+    description: "Use scratchpad for intermediate computation. 'Use scratchpad: [working space for calculations/notes] → Final answer.'"
+    authors: "Maxwell Nye et al."
+    paper: "Show Your Work: Scratchpads for Intermediate Computation with Language Models"
+    arxiv: "https://arxiv.org/abs/2112.00114"
+    year: "2021"
+    categories: ["Reasoning", "Coding"]
+    structure_hint: "Scratchpad: [Intermediate work] -> Final Answer."
+
+  show_your_work:
+    name: "Show Your Work"
+    description: "Explicitly show all intermediate steps. 'Show every calculation, every assumption, every intermediate result clearly.'"
+    authors: "Maxwell Nye et al."
+    paper: "Show Your Work: Scratchpads for Intermediate Computation with Language Models"
+    arxiv: "https://arxiv.org/abs/2112.00114"
+    year: "2021"
+    categories: ["Reasoning", "Coding", "General"]
+    structure_hint: "Detailed Calculation/Step -> Validation -> Next Step."
 
 meta_prompt: |
   You are an expert in prompt engineering. Your task is to refine a user's initial query into a more effective prompt using a specific technique.
   User's Initial Query: "{user_input}"
   Prompting Technique: "{technique_name}"
   Technique Description: "{technique_description}"
+  
+  Technique Template:
+  """
+  {technique_template}
+  """
+  
   Based on this, generate a new, improved prompt that incorporates the specified technique to achieve the user's goal.
   The generated prompt should be ready to be used directly with a large language model. Respond ONLY with the generated prompt itself, without any preamble, introduction, or explanation.
