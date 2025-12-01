@@ -4,8 +4,6 @@ Automatically transforms your input — from zero-shot to advanced prompting —
 
 Prompt Engineering Studio is intended for AI practitioners, LLM developers, researchers, students, prompt engineers, UX designers, and hobbyists who want to explore and apply advanced prompt engineering techniques. The tool automatically transforms user input into optimized prompts according to selected techniques — from basic to state-of-the-art — making it useful for both experimentation and integration into real-world applications. It supports both local and cloud-based LLMs, and is accessible to users with or without prior experience in prompt engineering.
 
-![Screenshot 2025-06-06 at 12 37 29](https://github.com/user-attachments/assets/acc1785d-656e-4b46-9ba1-ea1b9466c3fc)
-
 ## Quick Start
 
 > Try Prompt Engineering Studio in your browser via Claude artifact: [Launch Online](https://claude.ai/public/artifacts/6572baf6-d867-4cee-b1a7-2625b24b2593)
