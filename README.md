@@ -7,6 +7,9 @@ Prompt Engineering Studio is a local-first workbench for designing, evaluating, 
 
 <img width="1500" height="1049" alt="Screenshot 2025-12-02 at 22 54 55" src="https://github.com/user-attachments/assets/9a5c60d2-fc37-4c8d-b5b6-bb4e33d4f3d3" />
 
+<img width="1540" height="1059" alt="Screenshot 2025-12-02 at 23 18 12" src="https://github.com/user-attachments/assets/0249bfca-a979-437e-b54f-88990f70b65c" />
+
+
 ## Features
 
 - Prompt generator with 30+ prompting techniques
