@@ -392,7 +392,6 @@ export function Studio({ settings }: StudioProps) {
                     <div className="space-y-2 flex-1 flex flex-col">
                         <div className="flex items-center justify-between">
                             <label className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Task Description</label>
-                            <span className="text-[11px] text-white/40">{selectedTechniques.length} techniques selected</span>
                         </div>
                         <textarea
                             value={userPrompt}

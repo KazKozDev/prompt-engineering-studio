@@ -1,7 +1,5 @@
 # Settings: Configure LLM Providers and Workspace
 
-## Overview
-
 **Settings** is your control center for configuring LLM providers, API keys, workspace preferences, and application behavior. Proper configuration ensures optimal performance and security.
 
 ## Quick Start
@@ -41,10 +39,10 @@
 ### Ollama (Local)
 
 **Advantages:**
-- ✅ Free and open-source
-- ✅ Complete privacy (runs locally)
-- ✅ No API costs
-- ✅ Offline capable
+- ✓ Free and open-source
+- ✓ Complete privacy (runs locally)
+- ✓ No API costs
+- ✓ Offline capable
 
 **Requirements:**
 - Ollama installed on your machine
@@ -91,10 +89,10 @@ ollama pull phi3              # Lightweight
 ### Google Gemini
 
 **Advantages:**
-- ✅ State-of-the-art performance
-- ✅ Fast responses
-- ✅ Multimodal (text + images)
-- ✅ Generous free tier
+- ✓ State-of-the-art performance
+- ✓ Fast responses
+- ✓ Multimodal (text + images)
+- ✓ Generous free tier
 
 **Requirements:**
 - Google AI Studio API key
@@ -110,14 +108,11 @@ ollama pull phi3              # Lightweight
 2. **Configure in Settings:**
    - **Provider:** Google Gemini
    - **API Key:** Paste your key
-   - **Model:** `gemini-2.0-flash-exp` (recommended)
+   - **Model:** your preferred Gemini model
    - **Temperature:** 0.7
    - **Max Tokens:** 8192
 
-**Available models:**
-- `gemini-2.0-flash-exp` — Latest, fastest
-- `gemini-1.5-pro` — Most capable
-- `gemini-1.5-flash` — Fast and efficient
+**Available models:** See the official Gemini documentation for the most up-to-date model list and capabilities.
 
 **Pricing (as of 2024):**
 - Free tier: 15 requests/minute, 1M tokens/day
@@ -126,10 +121,10 @@ ollama pull phi3              # Lightweight
 ### OpenAI (GPT-4)
 
 **Advantages:**
-- ✅ Industry-leading quality
-- ✅ Extensive capabilities
-- ✅ Well-documented
-- ✅ Reliable infrastructure
+- ✓ Industry-leading quality
+- ✓ Extensive capabilities
+- ✓ Well-documented
+- ✓ Reliable infrastructure
 
 **Requirements:**
 - OpenAI API key
@@ -145,15 +140,9 @@ ollama pull phi3              # Lightweight
 2. **Configure in Settings:**
    - **Provider:** OpenAI
    - **API Key:** Paste your key
-   - **Model:** `gpt-4o` (recommended)
+   - **Model:** your preferred GPT-4 or newer model
    - **Temperature:** 0.7
    - **Max Tokens:** 4096
-
-**Available models:**
-- `gpt-4o` — Latest, multimodal
-- `gpt-4o-mini` — Fast and affordable
-- `gpt-4-turbo` — Previous generation
-- `gpt-3.5-turbo` — Budget option
 
 **Pricing:**
 - GPT-4o: $0.0025/1K input, $0.01/1K output
@@ -162,10 +151,10 @@ ollama pull phi3              # Lightweight
 ### Anthropic (Claude)
 
 **Advantages:**
-- ✅ Excellent reasoning
-- ✅ Long context (200K tokens)
-- ✅ Strong safety features
-- ✅ Helpful and harmless
+- ✓ Excellent reasoning
+- ✓ Long context (200K tokens)
+- ✓ Strong safety features
+- ✓ Helpful and harmless
 
 **Requirements:**
 - Anthropic API key
@@ -181,14 +170,11 @@ ollama pull phi3              # Lightweight
 2. **Configure in Settings:**
    - **Provider:** Anthropic
    - **API Key:** Paste your key
-   - **Model:** `claude-3-5-sonnet-20241022` (recommended)
+   - **Model:** your preferred Claude model
    - **Temperature:** 0.7
    - **Max Tokens:** 4096
 
-**Available models:**
-- `claude-3-5-sonnet-20241022` — Best overall
-- `claude-3-opus-20240229` — Most capable
-- `claude-3-haiku-20240307` — Fastest, cheapest
+**Available models:** See the Anthropic documentation for current Claude models and pricing.
 
 **Pricing:**
 - Sonnet: $0.003/1K input, $0.015/1K output
@@ -335,9 +321,9 @@ Headers: {"api-version": "2024-02-01"}
 **Best practices:**
 
 **Storage:**
-- ✅ Keys encrypted at rest
-- ✅ Never logged or displayed
-- ✅ Separate keys per environment
+- ✓ Keys encrypted at rest
+- ✓ Never logged or displayed
+- ✓ Separate keys per environment
 
 **Rotation:**
 - Rotate keys every 90 days
@@ -515,7 +501,7 @@ Headers: {"api-version": "2024-02-01"}
 
 ## Best Practices
 
-✅ **DO:**
+✓ **DO:**
 - Test provider configuration before use
 - Use separate API keys for dev/prod
 - Enable auto-save
@@ -524,7 +510,7 @@ Headers: {"api-version": "2024-02-01"}
 - Monitor API usage and costs
 - Export backups regularly
 
-❌ **DON'T:**
+✗ **DON'T:**
 - Share API keys publicly
 - Use production keys in development
 - Disable audit logging
@@ -554,11 +540,3 @@ Headers: {"api-version": "2024-02-01"}
 3. **Set up notifications** → Get alerted to important events
 4. **Explore advanced features** → Enable experimental options
 5. **Start creating** → Go to CREATE: Generator
-
----
-
-**Related Sections:**
-- [Generator](#) — Use configured providers
-- [Evaluation](#) — Test with different models
-- [Metrics](#) — Monitor provider costs
-- [Help](#) — Find more documentation

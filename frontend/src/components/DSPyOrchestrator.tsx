@@ -48,26 +48,6 @@ const QUALITY_PROFILES = [
     { value: 'HIGH_QUALITY', label: 'High Quality', tooltip: 'Maximum iterations, thorough optimization. Use for critical business tasks.' },
 ] as const;
 
-// Task templates for quick start
-const TASK_TEMPLATES = [
-    { 
-        label: 'Legal Analysis', 
-        task: 'Analyze legal contracts and documents to identify potential risks, compliance issues, and key clauses. Provide a structured risk assessment with severity levels and recommendations.',
-    },
-    { 
-        label: 'Customer Support', 
-        task: 'Handle customer inquiries by understanding their issue, checking relevant policies, and providing helpful solutions. Maintain a professional and empathetic tone.',
-    },
-    { 
-        label: 'Data Extraction', 
-        task: 'Extract structured information from unstructured text documents. Identify entities, relationships, and key data points. Output in a consistent JSON format.',
-    },
-    { 
-        label: 'Content Generation', 
-        task: 'Generate high-quality marketing content based on product descriptions and target audience. Create engaging copy that drives conversions while maintaining brand voice.',
-    },
-] as const;
-
 // ReAct step types
 type StepStatus = 'pending' | 'running' | 'success' | 'error' | 'skipped';
 
@@ -536,29 +516,16 @@ export function DSPyOrchestrator({ settings }: DSPyOrchestratorProps) {
             <div className="flex-1 min-w-0 flex flex-col gap-4 overflow-hidden">
                 {/* Task Input Card */}
                 <div className="bg-black/20 border border-white/5 rounded-2xl overflow-hidden flex flex-col">
-                    <div className="px-5 py-4 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
+                    <div className="px-6 py-5 border-b border-white/5 bg-white/[0.02] flex items-start justify-between gap-4">
                         <div>
-                            <h2 className="text-lg font-semibold text-white/90">Business Task</h2>
-                            <p className="text-[11px] text-white/40">Describe what you want the AI to do</p>
+                            <h2 className="text-xl font-semibold text-white/90 mb-1">DSPy Orchestrator</h2>
+                            <p className="text-xs text-white/45 mt-1">Describe the business task you want DSPy to optimize.</p>
                         </div>
                         <div className="text-[11px] px-2 py-1 rounded-md border border-white/10 text-white/50 bg-black/30">
                             Agent: GPT-5 → Target: {targetLM || 'Not selected'}
                         </div>
                     </div>
                     <div className="p-4 flex flex-col gap-3">
-                        {/* Task Templates */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-[10px] text-white/30 uppercase tracking-wider">Templates:</span>
-                            {TASK_TEMPLATES.map((template) => (
-                                <button
-                                    key={template.label}
-                                    onClick={() => setBusinessTask(template.task)}
-                                    className="text-[10px] px-2 py-1 rounded-md bg-white/5 hover:bg-white/10 text-white/50 hover:text-white/70 border border-white/5 hover:border-white/10 transition-all"
-                                >
-                                    {template.label}
-                                </button>
-                            ))}
-                        </div>
                         <textarea
                             value={businessTask}
                             onChange={(e) => setBusinessTask(e.target.value)}

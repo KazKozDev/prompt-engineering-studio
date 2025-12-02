@@ -1,7 +1,5 @@
 # Datasets: Upload and Manage Evaluation Data
 
-## Overview
-
 **Datasets** are collections of test cases used to systematically evaluate prompt performance. This section allows you to create, import, and manage datasets for comprehensive prompt testing.
 
 ## Quick Start
@@ -137,14 +135,14 @@ Include test cases that cover:
 
 **Example for code review dataset:**
 ```
-✅ GOOD COVERAGE:
+✓ GOOD COVERAGE:
 - Simple syntax error (easy)
 - SQL injection vulnerability (medium)
 - Race condition in async code (hard)
 - Memory leak in loop (medium)
 - Deprecated API usage (easy)
 
-❌ POOR COVERAGE:
+✗ POOR COVERAGE:
 - 50 different syntax errors
 - All easy cases
 - No security issues
@@ -380,7 +378,7 @@ After evaluation:
 
 ## Best Practices
 
-✅ **DO:**
+✓ **DO:**
 - Start with example datasets to understand structure
 - Include diverse, representative test cases
 - Add expected outputs for automated evaluation
@@ -388,7 +386,7 @@ After evaluation:
 - Version datasets when making significant changes
 - Test prompts on datasets before production
 
-❌ **DON'T:**
+✗ **DON'T:**
 - Create datasets with only easy cases
 - Use tiny datasets (<10 cases) for production decisions
 - Include personally identifiable information (PII)
@@ -416,10 +414,3 @@ After evaluation:
 2. **Run evaluation** → Go to TEST: Evaluation
 3. **Compare prompts** → Use dataset to A/B test
 4. **Monitor production** → Track dataset performance over time
-
----
-
-**Related Sections:**
-- [Evaluation](#) — Test prompts with datasets
-- [Generator](#) — Create prompts to test
-- [Library](#) — Save tested prompts

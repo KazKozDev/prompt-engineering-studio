@@ -1,7 +1,5 @@
 # Library: Save, Version, and Organize Prompts
 
-## Overview
-
 The **Prompt Library** is your central repository for managing, versioning, and organizing all your prompts. It provides version control, categorization, search, and deployment tracking to ensure you never lose a good prompt and can always roll back if needed.
 
 ## Quick Start
@@ -320,7 +318,7 @@ Day 4:
 
 ## Best Practices
 
-✅ **DO:**
+✓ **DO:**
 - Use descriptive names (not "Prompt 1", "Prompt 2")
 - Write clear descriptions explaining purpose
 - Add relevant tags for easy filtering
@@ -330,7 +328,7 @@ Day 4:
 - Archive old versions instead of deleting
 - Export backups regularly
 
-❌ **DON'T:**
+✗ **DON'T:**
 - Save every tiny variation (use versions instead)
 - Skip descriptions and tags (hard to find later)
 - Deploy untested prompts to production
@@ -434,12 +432,3 @@ Archived (23 prompts)
 3. **Deploy to production** → Use deployment tracking
 4. **Monitor performance** → Go to DEPLOY: Metrics
 5. **Track changes** → Go to DEPLOY: History
-
----
-
-**Related Sections:**
-- [Generator](#) — Create prompts to save
-- [Optimizer](#) — Improve saved prompts
-- [Evaluation](#) — Test before saving
-- [Metrics](#) — Monitor deployed prompts
-- [History](#) — Track all changes

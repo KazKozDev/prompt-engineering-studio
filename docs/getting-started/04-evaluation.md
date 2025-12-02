@@ -1,7 +1,5 @@
 # Evaluation: Run Quality Benchmarks and Robustness Tests
 
-## Overview
-
 The **Evaluation Lab** is your comprehensive testing environment for prompt quality assessment. It combines offline benchmarks, label-free evaluation, robustness testing, and unified reporting to give you confidence before deploying prompts to production.
 
 ## Quick Start
@@ -442,7 +440,7 @@ Baseline (50 tokens): "What is the capital of France?"
 
 ## Best Practices
 
-✅ **DO:**
+✓ **DO:**
 - Test on representative datasets (50+ cases)
 - Run multiple evaluation types before production
 - Compare prompts side-by-side
@@ -450,7 +448,7 @@ Baseline (50 tokens): "What is the capital of France?"
 - Export and archive evaluation results
 - Re-evaluate after prompt changes
 
-❌ **DON'T:**
+✗ **DON'T:**
 - Deploy without testing on real data
 - Rely on single metric (use multiple)
 - Skip robustness testing for production prompts
@@ -501,11 +499,3 @@ Baseline (50 tokens): "What is the capital of France?"
 2. **Save successful prompts** → Go to DEPLOY: Library
 3. **Deploy to production** → Go to DEPLOY: Metrics
 4. **Track performance** → Go to DEPLOY: History
-
----
-
-**Related Sections:**
-- [Datasets](#) — Create test cases
-- [Optimizer](#) — Improve failing prompts
-- [Library](#) — Save validated prompts
-- [Metrics](#) — Monitor production performance

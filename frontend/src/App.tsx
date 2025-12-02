@@ -222,7 +222,7 @@ function App() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           <Button
             onClick={() => setActiveSection('Help')}
             variant="ghost"
@@ -237,6 +237,7 @@ function App() {
           >
             Help
           </Button>
+          <div className="w-px h-4 bg-white/10" />
           <Button
             onClick={() => setActiveSection('Settings')}
             variant="ghost"
@@ -254,9 +255,10 @@ function App() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           </Button>
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-white/30 font-semibold">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]" />
-            <span>v2.0</span>
+          <div className="w-px h-4 bg-white/10" />
+          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-white/40 font-medium pl-1">
+            <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
+            <span>v2.0 • Beta</span>
           </div>
         </div>
       </header>

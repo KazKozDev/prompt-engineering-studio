@@ -1,73 +1,80 @@
 import { useState, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Button } from './ui/Button';
 
 // Map article titles to documentation file paths
 const articleDocs: Record<string, string> = {
-  'CREATE: Generator — Transform tasks into optimized prompts': '/docs/getting-started/01-generator.md',
-  'CREATE: Optimizer — Iteratively improve prompt performance': '/docs/getting-started/02-optimizer.md',
-  'TEST: Datasets — Upload and manage evaluation data': '/docs/getting-started/03-datasets.md',
-  'TEST: Evaluation — Run quality benchmarks and robustness tests': '/docs/getting-started/04-evaluation.md',
-  'DEPLOY: Library — Save, version, and organize prompts': '/docs/getting-started/05-library.md',
-  'DEPLOY: Metrics — Monitor production performance': '/docs/getting-started/06-metrics.md',
-  'DEPLOY: History — Track all prompt changes over time': '/docs/getting-started/07-history.md',
-  'Settings — Configure LLM providers and workspace': '/docs/getting-started/08-settings.md',
-  'Help — Search documentation and guides': '/docs/getting-started/09-help.md',
+  // Create
+  'Generator': '/docs/getting-started/01-generator.md',
+  'DSPy': '/docs/getting-started/02-dspy.md',
+  // Test
+  'Datasets': '/docs/getting-started/03-datasets.md',
+  'Evaluation': '/docs/getting-started/04-evaluation.md',
+  // Deploy
+  'Library': '/docs/getting-started/05-library.md',
+  'Metrics': '/docs/getting-started/06-metrics.md',
+  'History': '/docs/getting-started/07-history.md',
+  // Configuration
+  'Settings': '/docs/getting-started/08-settings.md',
+  'Help': '/docs/getting-started/09-help.md',
+  'DSPy Guide': '/docs/getting-started/10-dspy-guide.md',
+};
+
+// Article descriptions
+const articleDescriptions: Record<string, string> = {
+  'Generator': 'Create prompts from task descriptions',
+  'DSPy': 'Automated prompt optimization with DSPy',
+  'Datasets': 'Manage test data for evaluation',
+  'Evaluation': 'Test prompt quality and consistency',
+  'Library': 'Store and version your prompts',
+  'Metrics': 'Track performance over time',
+  'History': 'View past runs and results',
+  'Settings': 'Configure API keys and preferences',
+  'Help': 'Documentation and guides',
+  'DSPy Guide': 'Complete guide to DSPy framework',
 };
 
 const categories = [
   {
-    title: 'Getting Started',
-    articles: [
-      'CREATE: Generator — Transform tasks into optimized prompts',
-      'CREATE: Optimizer — Iteratively improve prompt performance',
-      'TEST: Datasets — Upload and manage evaluation data',
-      'TEST: Evaluation — Run quality benchmarks and robustness tests',
-      'DEPLOY: Library — Save, version, and organize prompts',
-      'DEPLOY: Metrics — Monitor production performance',
-      'DEPLOY: History — Track all prompt changes over time',
-      'Settings — Configure LLM providers and workspace',
-      'Help — Search documentation and guides',
-    ],
+    title: 'Create',
+    description: 'Generate and optimize prompts',
+    number: '1',
+    articles: ['Generator', 'DSPy'],
   },
   {
-    title: 'Evaluation & Benchmarks',
-    articles: [
-      'Configuring metrics in Evaluation Lab',
-      'Running Unified Report end-to-end',
-      'Label-free eval: self-consistency and mutual scoring',
-      'Robustness tests: format, length, adversarial',
-    ],
+    title: 'Test',
+    description: 'Evaluate prompt quality',
+    number: '2',
+    articles: ['Datasets', 'Evaluation'],
   },
   {
-    title: 'Prompt Engineering',
-    articles: [
-      'Techniques guide: CoT, Few-Shot, ReAct',
-      'Guardrails and safety patterns',
-      'Reducing hallucinations with structure',
-      'Designing evaluation datasets',
-    ],
+    title: 'Deploy',
+    description: 'Manage and monitor prompts',
+    number: '3',
+    articles: ['Library', 'Metrics', 'History'],
+  },
+  {
+    title: 'Configuration',
+    description: 'Settings and help',
+    number: '4',
+    articles: ['Settings'],
+  },
+  {
+    title: 'Resources',
+    description: 'Deep dive guides',
+    number: '5',
+    articles: ['DSPy Guide'],
   },
 ];
 
 // Flatten articles for next/prev navigation
 const allArticles = categories.flatMap(c => c.articles);
 
-// Helper to get short title for sidebar
-const getShortTitle = (title: string) => {
-  return title
-    .replace(/^(CREATE|TEST|DEPLOY): /, '') // Remove prefixes
-    .split('—')[0] // Remove description after em-dash
-    .split(':')[0] // Remove description after colon
-    .trim();
-};
 
 export function Help() {
   const [selectedArticle, setSelectedArticle] = useState<string | null>(null);
   const [articleContent, setArticleContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
-  const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   // Extract Table of Contents
   const toc = useMemo(() => {
@@ -92,7 +99,7 @@ export function Help() {
 
     if (!docPath) {
       setSelectedArticle(article);
-      setArticleContent(`# ${article}\n\n📝 **Documentation coming soon...**\n\nThis article is currently being written. Check back later for detailed information.`);
+      setArticleContent(`# ${article}\n\n**Documentation coming soon...**\n\nThis article is currently being written. Check back later for detailed information.`);
       return;
     }
 
@@ -100,13 +107,14 @@ export function Help() {
     setSelectedArticle(article);
 
     try {
-      const response = await fetch(docPath);
+      // Add timestamp to prevent caching
+      const response = await fetch(`${docPath}?v=${new Date().getTime()}`);
       if (!response.ok) throw new Error('Failed to load article');
       const content = await response.text();
       setArticleContent(content);
     } catch (error) {
       console.error('Error loading article:', error);
-      setArticleContent(`# ${article}\n\n⚠️ **Error loading article**\n\nCould not load the documentation file. Please try again later.`);
+      setArticleContent(`# ${article}\n\n**Error loading article**\n\nCould not load the documentation file. Please try again later.`);
     } finally {
       setIsLoading(false);
     }
@@ -115,12 +123,6 @@ export function Help() {
   const handleBack = () => {
     setSelectedArticle(null);
     setArticleContent('');
-  };
-
-  const handleCopyCode = (code: string) => {
-    navigator.clipboard.writeText(code);
-    setCopiedCode(code);
-    setTimeout(() => setCopiedCode(null), 2000);
   };
 
   const navigateArticle = (direction: 'next' | 'prev') => {
@@ -137,21 +139,26 @@ export function Help() {
   const currentIndex = selectedArticle ? allArticles.indexOf(selectedArticle) : -1;
   const prevArticle = currentIndex > 0 ? allArticles[currentIndex - 1] : null;
   const nextArticle = currentIndex >= 0 && currentIndex < allArticles.length - 1 ? allArticles[currentIndex + 1] : null;
+  const resourcesCategory = categories.find(c => c.title === 'Resources');
 
   return (
-    <div className="h-full flex gap-6 p-6 overflow-hidden">
+    <div className="h-full flex gap-6 p-6">
       {/* Left column - Navigation */}
       <div className="w-72 shrink-0 flex flex-col gap-4 hidden xl:flex">
+        <div>
+          <h2 className="text-[11px] font-bold text-white/30 uppercase tracking-widest mb-1">HELP</h2>
+          <p className="text-xs text-white/40 mb-4 mt-1">Documentation and guides for the application</p>
+        </div>
         <div className="bg-white/[0.02] border border-white/10 rounded-xl p-5 space-y-4 text-sm text-white/80 backdrop-blur-sm">
           <div className="space-y-1">
             <div className="text-sm font-bold text-white tracking-wide">Prompt Engineering Studio</div>
-            <div className="text-[11px] text-white/40 uppercase tracking-wider font-medium">Documentation v2.0</div>
+            <div className="text-[11px] text-white/40 tracking-wide">v2.0</div>
           </div>
 
           <div className="h-px bg-white/5 w-full" />
 
           <div className="space-y-2 text-[13px]">
-            <div>Copyright (c) 2025 Artem Kazakov</div>
+            <div>Copyright (c) 2025<br />Artem Kazakov Kozlov</div>
             <div className="text-white/50">Licensed under MIT License</div>
           </div>
 
@@ -171,242 +178,296 @@ export function Help() {
       {/* Main panel */}
       <div className="flex-1 min-w-0 bg-black/20 border border-white/5 rounded-2xl overflow-hidden flex flex-col backdrop-blur-sm relative">
         {/* Header Bar */}
-        <div className="px-6 py-4 border-b border-white/5 bg-white/[0.02] flex items-center gap-4 shrink-0">
-          {selectedArticle ? (
-            <Button
-              onClick={handleBack}
-              variant="secondary"
-              size="sm"
-              className="group flex items-center gap-2 px-3 py-1.5"
-            >
-              <svg className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              <span className="text-sm font-medium">Home</span>
-            </Button>
-          ) : (
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-white/20 to-white/5 border border-white/20 flex items-center justify-center text-white/70">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
+        <div className="px-6 py-5 border-b border-white/5 bg-white/[0.02] flex items-center justify-between shrink-0">
+          <div>
+            <h2 className="text-xl font-semibold text-white/90 mb-1">
+              {selectedArticle || 'Documentation'}
+            </h2>
+            <p className="text-xs text-white/45 mt-1">
+              {selectedArticle
+                ? categories.find(c => c.articles.includes(selectedArticle))?.description
+                : 'Learn how to use Prompt Engineering Studio'}
+            </p>
+          </div>
+          {selectedArticle && (
+            <div className="flex items-center gap-2">
+              {prevArticle && (
+                <button
+                  onClick={() => navigateArticle('prev')}
+                  className="p-2 rounded-lg border border-white/10 text-white/50 hover:text-white hover:border-white/20 transition-colors"
+                  title={`Previous: ${prevArticle} `}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+              )}
+              {nextArticle && (
+                <button
+                  onClick={() => navigateArticle('next')}
+                  className="p-2 rounded-lg border border-white/10 text-white/50 hover:text-white hover:border-white/20 transition-colors"
+                  title={`Next: ${nextArticle} `}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              )}
+              <button
+                onClick={handleBack}
+                className="p-2 rounded-lg text-white/50 hover:text-white transition-colors"
+                title="Close article"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
           )}
-
-          <div className="relative flex-1 max-w-xl">
-            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-              <svg className="w-4 h-4 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-            <input
-              className="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-12 py-2 text-sm text-white/90 placeholder:text-white/30 focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all"
-              placeholder="Search documentation (e.g., 'optimizer', 'datasets')..."
-            />
-            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-              <kbd className="hidden sm:inline-block px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-[10px] font-sans text-white/40">⌘K</kbd>
-            </div>
-          </div>
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar flex">
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
           {selectedArticle ? (
-            <>
-              <div className="flex-1 max-w-5xl p-6 pb-32">
-                <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-10">
-                  {isLoading ? (
-                    <div className="flex flex-col items-center justify-center py-32 gap-4">
-                      <div className="relative w-12 h-12">
-                        <div className="absolute inset-0 border-4 border-white/10 rounded-full"></div>
-                        <div className="absolute inset-0 border-4 border-transparent border-t-white/60 rounded-full animate-spin"></div>
-                      </div>
-                      <span className="text-sm text-white/50 font-medium animate-pulse">Loading article...</span>
+            <div className="p-6">
+              <div className="max-w-5xl">
+                {isLoading ? (
+                  <div className="flex flex-col items-center justify-center py-32 gap-4">
+                    <div className="relative w-12 h-12">
+                      <div className="absolute inset-0 border-4 border-white/10 rounded-full"></div>
+                      <div className="absolute inset-0 border-4 border-transparent border-t-white/60 rounded-full animate-spin"></div>
                     </div>
-                  ) : (
-                    <article className="prose prose-invert max-w-none">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        components={{
-                          h1: ({ node, ...props }) => (
-                            <div className="mb-12 pb-6 border-b border-white/10">
-                              <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-white/60 mb-4" {...props} />
-                            </div>
-                          ),
-                          h2: ({ node, children, ...props }) => {
-                            const id = String(children).toLowerCase().replace(/[^\w]+/g, '-');
-                            return <h2 id={id} className="text-2xl font-semibold text-white mt-12 mb-6 flex items-center gap-2 scroll-mt-20" {...props}>{children}</h2>;
-                          },
-                          h3: ({ node, children, ...props }) => {
-                            const id = String(children).toLowerCase().replace(/[^\w]+/g, '-');
-                            return <h3 id={id} className="text-xl font-medium text-white/90 mt-8 mb-4 scroll-mt-20" {...props}>{children}</h3>;
-                          },
-                          p: ({ node, ...props }) => <p className="text-sm text-white/70 leading-7 mb-6 font-light tracking-wide" {...props} />,
-                          ul: ({ node, ...props }) => <ul className="list-none ml-0 mb-6 space-y-3" {...props} />,
-                          ol: ({ node, ...props }) => <ol className="list-decimal list-outside ml-5 text-white/70 mb-6 space-y-3 marker:text-white/60 marker:font-semibold" {...props} />,
-                          li: ({ node, children, ...props }) => (
-                            <li className="pl-2 relative flex gap-3 text-sm text-white/70" {...props}>
-                              <span className="text-white/60 mt-2 w-1.5 h-1.5 rounded-full bg-white/60 shrink-0 block" />
-                              <span className="flex-1">{children}</span>
-                            </li>
-                          ),
-                          a: ({ node, ...props }) => <a className="text-[#5FA5F9] hover:text-white transition-colors underline decoration-[#5FA5F9]/30 hover:decoration-white/50 underline-offset-4" {...props} />,
-                          blockquote: ({ children }: any) => {
-                            // Check for admonitions
-                            const content = children?.[1]?.props?.children?.[0] || '';
-                            let type = 'info';
-                            let title = 'Note';
-
-                            if (typeof content === 'string') {
-                              if (content.startsWith('Warning') || content.startsWith('❌')) { type = 'warning'; title = 'Warning'; }
-                              else if (content.startsWith('Tip') || content.startsWith('✅')) { type = 'success'; title = 'Tip'; }
-                            }
-
-                            const styles = {
-                              info: 'border-white/30 bg-white/5 text-white/70',
-                              warning: 'border-amber-500 bg-amber-500/5 text-amber-500',
-                              success: 'border-emerald-500 bg-emerald-500/5 text-emerald-500'
-                            };
-
-                            return (
-                              <div className={`border-l-4 ${styles[type as keyof typeof styles]} pl-5 py-4 my-8 rounded-r-xl bg-gradient-to-r from-white/[0.02] to-transparent`}>
-                                <div className="font-semibold mb-1 opacity-90">{title}</div>
-                                <div className="text-white/70 italic">{children}</div>
-                              </div>
-                            );
-                          },
-                          code: ({ node, inline, className, children, ...props }: any) => {
-                            const match = /language-(\w+)/.exec(className || '');
-                            const codeText = String(children).replace(/\n$/, '');
-
-                            return !inline ? (
-                              <div className="relative group my-8 rounded-xl overflow-hidden border border-white/10 shadow-2xl bg-[#0d1117]">
-                                <div className="flex items-center justify-between px-4 py-2 bg-white/5 border-b border-white/5">
-                                  <div className="text-[11px] text-white/40 font-mono uppercase tracking-wider">
-                                    {match ? match[1] : 'code'}
-                                  </div>
-                                  <Button
-                                    onClick={() => handleCopyCode(codeText)}
-                                    variant="ghost"
-                                    size="icon"
-                                    className="text-white/60 hover:text-white"
-                                    title="Copy code"
-                                  >
-                                    {copiedCode === codeText ? (
-                                      <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                    ) : (
-                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                                    )}
-                                  </Button>
-                                </div>
-                                <pre className="p-5 overflow-x-auto">
-                                  <code className={`font-mono text-sm text-white/80 leading-relaxed ${className}`} {...props}>
-                                    {children}
-                                  </code>
-                                </pre>
-                              </div>
-                            ) : (
-                              <code className="bg-white/10 text-white/90 px-1.5 py-0.5 rounded font-mono text-[13px] border border-white/5" {...props}>
-                                {children}
-                              </code>
-                            );
-                          },
-                          table: ({ node, ...props }) => <div className="overflow-x-auto my-10 border border-white/10 rounded-xl shadow-lg"><table className="w-full text-left border-collapse bg-white/[0.02]" {...props} /></div>,
-                          th: ({ node, ...props }) => <th className="bg-white/5 border-b border-white/10 p-4 text-xs font-bold text-white uppercase tracking-wider" {...props} />,
-                          td: ({ node, ...props }) => <td className="border-b border-white/5 p-4 text-sm text-white/70" {...props} />,
-                          hr: ({ node, ...props }) => <hr className="border-white/10 my-12" {...props} />,
-                        }}
+                    <span className="text-sm text-white/50 font-medium animate-pulse">Loading article...</span>
+                  </div>
+                ) : (
+                  <article className="prose prose-invert max-w-3xl mb-32">
+                    {/* Breadcrumbs */}
+                    <div className="flex items-center gap-2 text-xs mb-6">
+                      <button
+                        onClick={handleBack}
+                        className="text-white/40 hover:text-white transition-colors"
                       >
-                        {articleContent}
-                      </ReactMarkdown>
+                        Documentation
+                      </button>
+                      <svg className="w-2.5 h-2.5 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                      <span className="text-white/40">
+                        {categories.find(c => c.articles.includes(selectedArticle))?.title}
+                      </span>
+                      <svg className="w-2.5 h-2.5 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                      <span className="text-white/60">{selectedArticle}</span>
+                    </div>
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        h1: () => null,
+                        h2: ({ node, children, ...props }) => {
+                          const id = String(children).toLowerCase().replace(/[^\w]+/g, '-');
+                          return <h2 id={id} className="text-lg font-semibold text-white mt-10 mb-4 scroll-mt-20 first:mt-0" {...props}>{children}</h2>;
+                        },
+                        h3: ({ node, children, ...props }) => {
+                          const id = String(children).toLowerCase().replace(/[^\w]+/g, '-');
+                          return <h3 id={id} className="text-sm font-semibold text-white/90 mt-6 mb-2 scroll-mt-20" {...props}>{children}</h3>;
+                        },
+                        p: ({ node, ...props }) => <p className="text-sm text-white/50 leading-relaxed mb-4" {...props} />,
+                        ul: ({ node, ...props }) => <ul className="space-y-2 mb-4" {...props} />,
+                        ol: ({ node, ...props }) => <ol className="space-y-2 mb-4 list-decimal list-inside marker:text-white/40" {...props} />,
+                        li: ({ node, children, ...props }) => (
+                          <li className="text-sm text-white/50 leading-relaxed flex gap-2" {...props}>
+                            <span className="text-white/30 mt-1.5">•</span>
+                            <span>{children}</span>
+                          </li>
+                        ),
+                        a: ({ node, href, children, ...props }) => {
+                          const text = typeof children?.[0] === 'string' ? children[0] : String(children);
+                          const isNumericRef = /^\d+$/.test(text.trim());
 
-                      {/* Article Footer Navigation */}
-                      <div className="mt-20 pt-8 border-t border-white/10 grid grid-cols-2 gap-4">
-                        {prevArticle ? (
-                          <Button
-                            onClick={() => navigateArticle('prev')}
-                            variant="subtle"
-                            size="md"
-                            fullWidth
-                            className="group text-left p-4 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/10 transition-all"
-                          >
-                            <div className="text-[11px] text-white/40 uppercase tracking-wider mb-1 group-hover:text-white transition-colors">Previous</div>
-                            <div className="text-sm font-medium text-white/80 group-hover:text-white truncate">{getShortTitle(prevArticle)}</div>
-                          </Button>
-                        ) : <div />}
+                          if (isNumericRef) {
+                            return (
+                              <sup>
+                                <a
+                                  href={href}
+                                  className="text-white/40 hover:text-white/70 text-[10px] no-underline align-super"
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  {...props}
+                                >
+                                  {text}
+                                </a>
+                              </sup>
+                            );
+                          }
 
-                        {nextArticle ? (
-                          <Button
-                            onClick={() => navigateArticle('next')}
-                            variant="subtle"
-                            size="md"
-                            fullWidth
-                            className="group text-right p-4 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/10 transition-all"
-                          >
-                            <div className="text-[11px] text-white/40 uppercase tracking-wider mb-1 group-hover:text-white transition-colors">Next</div>
-                            <div className="text-sm font-medium text-white/80 group-hover:text-white truncate">{getShortTitle(nextArticle)}</div>
-                          </Button>
-                        ) : <div />}
-                      </div>
-                    </article>
-                  )}
-                </div>
+                          return (
+                            <a
+                              href={href}
+                              className="text-white/60 hover:text-white underline underline-offset-2"
+                              target="_blank"
+                              rel="noreferrer"
+                              {...props}
+                            >
+                              {children}
+                            </a>
+                          );
+                        },
+                        blockquote: ({ children }: any) => (
+                          <div className="border-l-2 border-white/20 pl-4 my-4 text-sm text-white/40 italic">{children}</div>
+                        ),
+                        code: ({ inline, children }: any) => {
+                          return !inline ? (
+                            <div className="my-4 rounded bg-white/5 border border-white/10">
+                              <pre className="p-3 overflow-x-auto">
+                                <code className="font-mono text-xs text-white/60">{children}</code>
+                              </pre>
+                            </div>
+                          ) : (
+                            <code className="bg-white/10 text-white/70 px-1 py-0.5 rounded text-xs font-mono">{children}</code>
+                          );
+                        },
+                        table: ({ node, ...props }) => (
+                          <div className="overflow-x-auto my-6 rounded-xl border border-white/10 bg-black/30">
+                            <table className="w-full text-left text-sm border-collapse" {...props} />
+                          </div>
+                        ),
+                        th: ({ node, ...props }) => (
+                          <th
+                            className="bg-white/10 border-b border-white/15 px-4 py-3 text-[11px] font-semibold text-white/70 uppercase tracking-wide align-top text-left"
+                            {...props}
+                          />
+                        ),
+                        td: ({ node, ...props }) => (
+                          <td
+                            className="border-b border-white/5 px-4 py-3 text-sm text-white/60 align-top text-left"
+                            {...props}
+                          />
+                        ),
+                        hr: () => <hr className="border-white/10 my-8" />,
+                        strong: ({ node, ...props }) => <strong className="text-white/70 font-medium" {...props} />,
+                      }}
+                    >
+                      {articleContent}
+                    </ReactMarkdown>
+
+                  </article>
+                )}
               </div>
+            </div>
+          ) : (
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {categories
+                  .filter(cat => cat.title !== 'Resources')
+                  .map((cat) => (
+                  <div
+                    key={cat.title}
+                    className="bg-white/[0.02] border border-white/10 rounded-2xl p-5 space-y-4 hover:border-white/20 transition-all duration-300 hover:shadow-lg hover:shadow-black/20"
+                  >
+                    {/* Category Header */}
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-white/5 text-white/90 flex items-center justify-center text-2xl font-bold">
+                        {cat.number}
+                      </div>
+                      <div>
+                        <h3 className="text-base font-semibold text-white">{cat.title}</h3>
+                        <p className="text-[11px] text-white/40">{cat.description}</p>
+                      </div>
+                    </div>
 
-              {/* Right Column - Table of Contents */}
-              {!isLoading && toc.length > 0 && (
-                <div className="w-64 shrink-0 hidden 2xl:block p-8">
-                  <div className="sticky top-8">
-                    <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-4">On this page</h4>
-                    <div className="space-y-1 border-l border-white/10">
-                      {toc.map((item, i) => (
-                        <a
-                          key={i}
-                          href={`#${item.id}`}
-                          className={`block py-1 pl-4 text-[13px] border-l -ml-px transition-colors hover:text-white hover:border-white/40 ${item.level === 3 ? 'ml-2 text-white/40' : 'text-white/60 border-transparent'
-                            }`}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' });
-                          }}
+                    {/* Articles Grid */}
+                    <div className="space-y-2">
+                      {cat.articles.map((article) => (
+                        <button
+                          key={article}
+                          onClick={() => handleArticleClick(article)}
+                          className="w-full group flex items-center gap-3 py-2 px-3 rounded-xl bg-black/20 border border-white/5 hover:bg-black/40 hover:border-white/10 transition-all duration-200"
                         >
-                          {item.text}
-                        </a>
+                          <div className="flex-1 text-left">
+                            <div className="text-sm font-medium text-white/80 group-hover:text-white transition-colors">
+                              {article}
+                            </div>
+                            <div className="text-[11px] text-white/30 group-hover:text-white/50 transition-colors">
+                              {articleDescriptions[article]}
+                            </div>
+                          </div>
+                          <svg className="w-4 h-4 text-white/20 group-hover:text-white/50 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </button>
                       ))}
                     </div>
                   </div>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {categories.map((cat) => (
-                <div key={cat.title} className="bg-white/[0.02] border border-white/10 rounded-xl p-4 space-y-3 hover:border-white/20 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold text-white">{cat.title}</h3>
-                      <p className="text-[12px] text-white/40">Curated articles in this area</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {cat.articles.map((article) => (
-                      <Button
-                        key={article}
-                        onClick={() => handleArticleClick(article)}
-                        variant="subtle"
-                        size="sm"
-                        fullWidth
-                        className="text-left bg-black/30 border border-white/5 rounded-lg px-3 py-2 text-sm text-white/80 hover:border-white/20 hover:text-white transition-colors flex items-center justify-between"
-                      >
-                        <span className="pr-2 truncate">{article}</span>
-                        <svg className="w-4 h-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </Button>
-                    ))}
-                  </div>
-                </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      {/* Right: Summary / Table of Contents */}
+      <div className="w-[320px] bg-[#0a0a0a] border border-white/10 rounded-2xl flex flex-col shrink-0 overflow-hidden hidden xl:flex">
+        <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+          <div>
+            <h2 className="text-sm font-semibold text-white/80">
+              {selectedArticle ? 'On This Page' : 'Quick Links'}
+            </h2>
+            <p className="text-[10px] text-white/40">
+              {selectedArticle ? 'Jump to section' : 'Deep dive guides'}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+          {selectedArticle && !isLoading && toc.length > 0 ? (
+            /* Table of Contents for selected article */
+            <div className="space-y-1">
+              {toc.map((item, i) => (
+                <a
+                  key={i}
+                  href={`#${item.id} `}
+                  className={`block py - 2 px - 3 text - [13px] rounded - lg transition - colors hover: bg - white / 5 hover: text - white ${item.level === 3 ? 'ml-3 text-white/40' : 'text-white/60'
+                    } `}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                >
+                  {item.text}
+                </a>
               ))}
             </div>
+          ) : selectedArticle && isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="w-5 h-5 border-2 border-white/10 border-t-white/50 rounded-full animate-spin"></div>
+            </div>
+          ) : (
+            /* Resources section in quick links when no article selected */
+            resourcesCategory && (
+              <div className="bg-white/[0.02] border border-white/10 rounded-xl p-4">
+                <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-3">
+                  {resourcesCategory.title}
+                </div>
+                <div className="space-y-2">
+                  {resourcesCategory.articles.map((article) => (
+                    <button
+                      key={article}
+                      onClick={() => handleArticleClick(article)}
+                      className="w-full text-left py-2 px-3 rounded-lg bg-black/40 border border-white/5 hover:bg-black/60 hover:border-white/20 transition-colors"
+                    >
+                      <div className="text-xs font-medium text-white/80">
+                        {article}
+                      </div>
+                      {articleDescriptions[article] && (
+                        <div className="text-[11px] text-white/40 mt-0.5">
+                          {articleDescriptions[article]}
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )
           )}
         </div>
       </div>

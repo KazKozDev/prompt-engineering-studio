@@ -1,155 +1,119 @@
-# Generator: Transform Tasks into Optimized Prompts
+# Generator: Create Sophisticated Prompts
 
-## Overview
+The **Generator** is the core of the studio. It transforms your simple task description into sophisticated, technique-enhanced prompts using methodologies derived from **scientific papers (arXiv.org)**.
 
-The **Generator** is the starting point of your prompt engineering workflow. It transforms your simple task description into sophisticated, technique-enhanced prompts using 30+ state-of-the-art prompting methods.
+The transformation is performed by the **LLM currently selected in your Settings**, ensuring that the logic is applied using your preferred model's capabilities.
+
+## Interface Guide
+
+The Generator interface is divided into three main panels, designed to guide you through the prompt engineering workflow:
+
+### 1. Techniques Panel (Left)
+Choose the scientific method for your prompt.
+- **Filters:** Narrow down techniques by category (Reasoning, Coding, Writing, etc.).
+- **Technique List:** Select one or more techniques. Each item represents a specific paper or methodology (e.g., "Chain of Thought", "Tree of Thoughts").
+- **Multi-select:** You can select multiple techniques to generate several variants at once.
+
+### 2. Task Input (Center)
+Define what you want to achieve.
+- **Task Description:** Enter your raw, simple instruction here. Be specific about your goal.
+- **Model Indicator:** Located at the top right of this panel. Shows which LLM (Provider/Model) will be used for the generation. *To change this, go to Settings.*
+- **Generate Button:** Starts the transformation process using the selected model and techniques.
+
+### 3. Preview & Results (Right)
+- **The Black Square (Preview):** When you select a technique *before* generating, this panel shows the **Prompt Skeleton**. This is the exact schema or template extracted from the scientific paper that will be used to structure your prompt. It helps you understand how the technique works.
+- **Results:** After generation, this area displays the final, optimized prompts ready for use.
 
 ## Quick Start
 
-### 1. Select Techniques
+### Step 1: Select Techniques
+Open the **left panel** and choose from 30+ prompting techniques.
+*   **Reasoning tasks?** Try *Chain-of-Thought (CoT)* or *Tree of Thoughts (ToT)*.
+*   **Coding tasks?** Try *Program-Aided Language Models (PAL)* or *Chain of Code*.
+*   **Creative tasks?** Try *Role Prompting* or *Few-Shot*.
 
-**Location:** Left panel → Techniques list
+### Step 2: Describe Your Task
+Write a clear task description in the **center panel**.
+*   **Be specific:** Clearly describe what you want the LLM to do.
+*   **Upload files:** You can upload text/code files to include as context.
 
-- **Filter by category:** Use tabs at the top (All, General, Reasoning, Coding, Summary, Writing, Extraction)
-- **Browse techniques:** Scroll through the categorized list
-- **Select techniques:** Click checkboxes next to desired techniques
-- **Multi-select:** Choose multiple techniques to generate variants
+### Step 3: Generate
+Click **"Generate"** or press `⌘/Ctrl + Enter`.
+*   The system will use your **selected LLM** to apply the technique's schema to your task.
+*   Generation typically takes 5-30 seconds.
 
-**Popular techniques:**
-- **Chain-of-Thought (CoT)** — Step-by-step reasoning
-- **Few-Shot** — Learning from examples
-- **ReAct** — Reasoning + Acting cycles
-- **Tree of Thoughts (ToT)** — Explore multiple solution paths
-- **Meta-Prompting** — LLM conducts expert queries
-
-### 2. Describe Your Task
-
-**Location:** Center panel → Task Description textarea
-
-- **Be specific:** Clearly describe what you want the LLM to do
-- **Include context:** Add relevant background information
-- **Specify format:** Mention desired output structure if needed
-- **Upload files:** Click "Upload" to import text/JSON/CSV files
-
-**Example tasks:**
-```
-Create a customer support chatbot that handles refund requests with empathy
-```
-```
-Analyze code for security vulnerabilities and suggest fixes
-```
-```
-Summarize research papers into 3-bullet executive summaries
-```
-
-### 3. Generate Enhanced Prompts
-
-**Location:** Center panel → Bottom right
-
-- **Click "Generate"** or press **⌘/Ctrl + Enter**
-- **Wait for processing:** Generation typically takes 5-30 seconds
-- **View results:** Enhanced prompts appear in the right panel
-
-### 4. Review and Use Results
-
-**Location:** Right panel → Results
-
-Each generated prompt shows:
-- **Token count:** Size of the enhanced prompt
-- **Expansion ratio:** How much larger than your original (e.g., "3.5x")
-- **Actions:**
-  - **Copy** — Copy to clipboard for use in any LLM
-  - **Save** — Add to Library for versioning
-  - **Edit** — Modify before saving
+### Step 4: Review Results
+View the enhanced prompts in the **right panel**.
+*   **Token count:** See the size of the enhanced prompt.
+*   **Expansion ratio:** See how much detail was added (e.g., "3.5x").
+*   **Actions:** Copy, Save to Library, or Edit.
 
 ## Workflow Tips
 
 ### Preview Before Generating
-
-- **Select a technique** → See preview in right panel
-- **Review structure hints** — Understand how the technique works
-- **Switch preview** — Use dropdown to preview different selected techniques
+*   **Select a technique** → Look at the **black square** in the right panel.
+*   **Review the Schema:** You will see the structural template (the "skeleton") that the LLM will use. This gives you insight into the "scientific logic" behind the technique.
 
 ### Optimize Your Selections
-
-- **Start small:** Try 1-3 techniques first
-- **Compare results:** Generate multiple variants to find best approach
-- **Task-specific:** Match techniques to your task type
-  - **Reasoning tasks** → CoT, ToT, Step-Back
-  - **Creative tasks** → Few-Shot, Role Prompting
-  - **Code tasks** → Program-Aided, Chain of Code
-  - **Analysis tasks** → Self-Critique, Metacognitive
+*   **Start small:** Try 1-3 techniques first.
+*   **Compare results:** Generate multiple variants to find the best approach for your specific model.
+*   **Match techniques to tasks:**
+    *   *Reasoning* → CoT, ToT, Step-Back
+    *   *Creative* → Few-Shot, Role Prompting
+    *   *Code* → Program-Aided, Chain of Code
 
 ### Save Successful Prompts
-
-- **Individual save:** Click "Save" on specific results
-- **Batch save:** Click "Save All" to add all results to Library
-- **Auto-naming:** Prompts are named with technique + task snippet
-- **Status:** Saved prompts marked with green "Saved" badge
+*   **Individual save:** Click "Save" on specific results.
+*   **Batch save:** Click "Save All" to add all results to Library.
+*   **Auto-naming:** Prompts are automatically named based on the technique and task.
 
 ## Advanced Features
 
 ### Technique Categories
-
 Techniques are organized by primary use case:
-
-1. **General** — Universal techniques (Zero-Shot, Few-Shot, Role)
-2. **Reasoning** — Logic and analysis (CoT, ToT, GoT)
-3. **Coding** — Programming tasks (PAL, Chain of Code, PoT)
-4. **Summarization** — Condensing information (Chain of Density)
-5. **Creative Writing** — Content generation
-6. **Data Extraction** — Structured output (Chain of Table)
+*   **General** — Universal techniques (Zero-Shot, Few-Shot, Role)
+*   **Reasoning** — Logic and analysis (CoT, ToT, GoT)
+*   **Coding** — Programming tasks (PAL, Chain of Code, PoT)
+*   **Summarization** — Condensing information (Chain of Density)
+*   **Creative Writing** — Content generation
+*   **Data Extraction** — Structured output (Chain of Table)
 
 ### File Upload Support
-
-Supported formats:
-- `.txt`, `.md` — Plain text and Markdown
-- `.json` — Structured data
-- `.csv` — Tabular data
-- Content is appended to your task description
+Supported formats: `.txt`, `.md`, `.json`, `.csv`. Content is appended to your task description.
 
 ### Keyboard Shortcuts
-
-- **⌘/Ctrl + Enter** — Generate prompts
-- **Click checkbox** — Toggle technique selection
-
-## Next Steps
-
-After generating prompts:
-
-1. **Test in Evaluation Lab** → Go to TEST: Evaluation
-2. **Save to Library** → Go to DEPLOY: Library
-3. **Optimize further** → Go to CREATE: Optimizer
-4. **Create test dataset** → Go to TEST: Datasets
+*   `⌘/Ctrl + Enter` — Generate prompts
+*   **Click checkbox** — Toggle technique selection
 
 ## Common Issues
 
 **Problem:** "No prompts generated"
-- **Solution:** Ensure you've selected at least one technique and entered a task description
+*   **Solution:** Ensure you've selected at least one technique and entered a task description.
 
 **Problem:** "Generation takes too long"
-- **Solution:** Check your LLM provider settings (Settings → LLM Configuration). Local models (Ollama) may be slower.
+*   **Solution:** Check your LLM provider settings (Settings → LLM Configuration). Local models (Ollama) may be slower.
 
 **Problem:** "Results are too generic"
-- **Solution:** Provide more specific task descriptions with examples and constraints
+*   **Solution:** Provide more specific task descriptions with examples and constraints.
 
 ## Best Practices
 
-✅ **DO:**
-- Start with clear, specific task descriptions
-- Select 2-4 techniques for comparison
-- Save successful prompts to Library
-- Test prompts in Evaluation Lab before production
+✓ **DO:**
+*   Start with clear, specific task descriptions.
+*   Select 2-4 techniques for comparison.
+*   Save successful prompts to Library.
+*   Test prompts in Evaluation Lab before production.
 
-❌ **DON'T:**
-- Use vague task descriptions like "help me with coding"
-- Select all 30+ techniques at once (slow, overwhelming)
-- Skip saving good results (hard to reproduce)
-- Deploy without testing on datasets
+✗ **DON'T:**
+*   Use vague task descriptions like "help me with coding".
+*   Select all 30+ techniques at once (slow, overwhelming).
+*   Skip saving good results (hard to reproduce).
+*   Deploy without testing on datasets.
 
----
+## Next Steps
 
-**Related Sections:**
-- [Optimizer](#) — Improve generated prompts
-- [Evaluation](#) — Test prompt quality
-- [Library](#) — Organize saved prompts
+After generating prompts:
+1.  **Test in Evaluation Lab** → Go to TEST: Evaluation
+2.  **Save to Library** → Go to DEPLOY: Library
+3.  **Optimize further** → Go to CREATE: Optimizer
+4.  **Create test dataset** → Go to TEST: Datasets

@@ -1,7 +1,5 @@
 # Help: Search Documentation and Guides
 
-## Overview
-
 The **Help** section is your gateway to all documentation, guides, tutorials, and support resources for Prompt Engineering Studio. Find answers quickly with powerful search and curated content.
 
 ## Quick Start
@@ -232,28 +230,28 @@ The **Help** section is your gateway to all documentation, guides, tutorials, an
 **Curated recommendations:**
 
 **Prompt Creation:**
-- ✅ Be specific and clear
-- ✅ Include examples when possible
-- ✅ Specify output format
-- ✅ Add constraints and guardrails
-- ❌ Don't be vague or ambiguous
-- ❌ Don't skip testing
+- ✓ Be specific and clear
+- ✓ Include examples when possible
+- ✓ Specify output format
+- ✓ Add constraints and guardrails
+- ✗ Don't be vague or ambiguous
+- ✗ Don't skip testing
 
 **Evaluation:**
-- ✅ Test on representative datasets (50+ cases)
-- ✅ Use multiple metrics
-- ✅ Include edge cases
-- ✅ Run robustness tests
-- ❌ Don't rely on single metric
-- ❌ Don't skip production testing
+- ✓ Test on representative datasets (50+ cases)
+- ✓ Use multiple metrics
+- ✓ Include edge cases
+- ✓ Run robustness tests
+- ✗ Don't rely on single metric
+- ✗ Don't skip production testing
 
 **Deployment:**
-- ✅ Evaluate before deploying
-- ✅ Monitor metrics closely
-- ✅ Have rollback plan
-- ✅ Version everything
-- ❌ Don't deploy untested prompts
-- ❌ Don't ignore alerts
+- ✓ Evaluate before deploying
+- ✓ Monitor metrics closely
+- ✓ Have rollback plan
+- ✓ Version everything
+- ✗ Don't deploy untested prompts
+- ✗ Don't ignore alerts
 
 ## Support Resources
 
@@ -441,11 +439,3 @@ The **Help** section is your gateway to all documentation, guides, tutorials, an
 - 💬 **Community:** [Discord](https://discord.gg/promptstudio)
 - 📧 **Email:** support@promptstudio.ai
 - 🐛 **Bug Report:** [GitHub Issues](https://github.com/KazKozDev/prompt-engineering-studio/issues)
-
----
-
-**Related Sections:**
-- [Settings](#) — Configure your workspace
-- [Generator](#) — Start creating prompts
-- [Evaluation](#) — Test your prompts
-- [Library](#) — Organize your work

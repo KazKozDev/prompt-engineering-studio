@@ -1,7 +1,5 @@
 # Metrics: Monitor Production Performance
 
-## Overview
-
 **Production Metrics** provides real-time monitoring and analytics for your deployed prompts. Track performance, identify issues, and optimize based on actual usage data from production environments.
 
 ## Quick Start
@@ -420,7 +418,7 @@ GET /api/metrics?prompt_id=abc123&start=2024-01-01&end=2024-01-31
 
 ## Best Practices
 
-✅ **DO:**
+✓ **DO:**
 - Monitor all production prompts
 - Set up alerts for critical metrics
 - Review metrics daily
@@ -429,7 +427,7 @@ GET /api/metrics?prompt_id=abc123&start=2024-01-01&end=2024-01-31
 - Compare prompt versions
 - Export data for long-term analysis
 
-❌ **DON'T:**
+✗ **DON'T:**
 - Ignore warning alerts
 - Deploy without monitoring
 - Rely only on success rate (check latency too)
@@ -533,11 +531,3 @@ Day 7:
 3. **Optimize costs** → Identify and reduce expensive prompts
 4. **Track changes** → Go to DEPLOY: History
 5. **Improve prompts** → Go to CREATE: Optimizer
-
----
-
-**Related Sections:**
-- [Library](#) — Manage deployed prompts
-- [History](#) — Track deployment history
-- [Evaluation](#) — Test before deploying
-- [Settings](#) — Configure monitoring

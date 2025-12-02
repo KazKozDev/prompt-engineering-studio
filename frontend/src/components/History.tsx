@@ -139,9 +139,7 @@ export function History() {
                         </div>
                     ) : (
                         <div className="space-y-2">
-                            {filteredHistory.map((item) => {
-                                const status = item.status || (item.error ? 'failed' : 'success');
-                                return (
+                            {filteredHistory.map((item) => (
                                     <button
                                         key={item.id}
                                         onClick={() => setSelectedItem(item)}
@@ -153,7 +151,6 @@ export function History() {
                                     >
                                         <div className="flex items-center justify-between gap-3 mb-2">
                                             <div className="flex items-center gap-3 min-w-0">
-                                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${status === 'success' ? 'bg-white/50' : 'bg-red-400'}`}></span>
                                                 <span className="text-xs text-white/50">{formatTime(item.timestamp)}</span>
                                                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/40 font-mono shrink-0">{item.model || 'model'}</span>
                                             </div>
@@ -161,8 +158,7 @@ export function History() {
                                         </div>
                                         <p className="text-sm text-white/70 line-clamp-2">{item.prompt || '—'}</p>
                                     </button>
-                                );
-                            })}
+                            ))}
                         </div>
                     )}
                 </div>

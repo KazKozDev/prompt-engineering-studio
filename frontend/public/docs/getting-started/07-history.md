@@ -1,7 +1,5 @@
 # History: Track All Prompt Changes Over Time
 
-## Overview
-
 **History** provides a comprehensive audit trail of all changes to your prompts, datasets, and evaluations. Track who changed what, when, and why, with the ability to compare, restore, and analyze changes over time.
 
 ## Quick Start
@@ -433,7 +431,7 @@ Compare versions: [Link]
 
 ## Best Practices
 
-✅ **DO:**
+✓ **DO:**
 - Review history regularly (daily for production)
 - Add descriptive change descriptions
 - Use filters to focus on relevant changes
@@ -442,7 +440,7 @@ Compare versions: [Link]
 - Document major changes thoroughly
 - Use rollback cautiously (test first)
 
-❌ **DON'T:**
+✗ **DON'T:**
 - Ignore history entries (they tell a story)
 - Make changes without descriptions
 - Delete history entries (audit trail)
@@ -529,11 +527,3 @@ Compare versions: [Link]
 3. **Export audit log** → Backup for compliance
 4. **Analyze patterns** → Use Change Analytics
 5. **Configure retention** → Set policies for your needs
-
----
-
-**Related Sections:**
-- [Library](#) — Manage versioned prompts
-- [Metrics](#) — Monitor deployed changes
-- [Settings](#) — Configure history settings
-- [Evaluation](#) — Track evaluation history
