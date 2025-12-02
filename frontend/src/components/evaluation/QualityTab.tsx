@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { PromptSelector } from './PromptSelector';
-import { DatasetGenerator } from '../DatasetGenerator';
+import { DatasetSelector } from './DatasetSelector';
 import { Button } from '../ui/Button';
 
 interface QualityTabProps {
@@ -19,7 +19,7 @@ export type QualityMode = 'reference' | 'judge';
 
 const variantLabel = (index: number) => String.fromCharCode(65 + index);
 
-export function QualityTab({ settings, datasets, onModeChange, onDatasetCreated }: QualityTabProps) {
+export function QualityTab({ settings, datasets, onModeChange }: QualityTabProps) {
     const [mode, setMode] = useState<QualityMode>('reference');
     const [selectedDataset, setSelectedDataset] = useState<string>('');
     const [prompts, setPrompts] = useState<string[]>(['']);
@@ -28,19 +28,17 @@ export function QualityTab({ settings, datasets, onModeChange, onDatasetCreated 
     const [judgeResponse, setJudgeResponse] = useState('');
     const [results, setResults] = useState<any>(null);
     const [loading, setLoading] = useState(false);
-    const [showGenerator, setShowGenerator] = useState(false);
     const [logs, setLogs] = useState<string[]>([]);
 
     // Selector state
     const [showSelector, setShowSelector] = useState(false);
+    const [showDatasetSelector, setShowDatasetSelector] = useState(false);
     const [selectorTarget, setSelectorTarget] = useState<'prompt' | 'judge' | 'response'>('prompt');
     const [selectorIndex, setSelectorIndex] = useState(0);
 
-    useEffect(() => {
-        if (datasets.length > 0 && !selectedDataset) {
-            setSelectedDataset(datasets[0].id);
-        }
-    }, [datasets, selectedDataset]);
+    const selectedDatasetMeta = datasets.find(d => d.id === selectedDataset);
+
+    // Don't auto-select dataset - let user choose
 
     useEffect(() => {
         if (variantModels.length !== prompts.length) {
@@ -225,29 +223,34 @@ export function QualityTab({ settings, datasets, onModeChange, onDatasetCreated 
             {/* Reference-Based Mode */}
             {mode === 'reference' && (
                 <>
+                    {/* Description */}
+                    <div className="text-[11px] text-white/50 bg-white/[0.02] border border-white/5 rounded-lg px-3 py-2">
+                        Compare model outputs against ground truth labels using BLEU, ROUGE, and Exact Match. Best for translation, Q&A, and summarization tasks.
+                    </div>
+
                     {/* Dataset Selection */}
                     <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
-                        <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center justify-between mb-2">
                             <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Dataset</span>
-                            <button
-                                onClick={() => setShowGenerator(true)}
-                                className="text-[10px] text-white/40 hover:text-white/70 flex items-center gap-1"
+                            <Button
+                                onClick={() => setShowDatasetSelector(true)}
+                                variant="secondary"
+                                size="xs"
+                                className="text-[10px] px-2 py-1 text-white/50"
                             >
                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
                                 </svg>
-                                Create Dataset
-                            </button>
+                                Dataset
+                            </Button>
                         </div>
-                        <select
-                            value={selectedDataset}
-                            onChange={e => setSelectedDataset(e.target.value)}
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80"
-                        >
-                            {datasets.map(d => (
-                                <option key={d.id} value={d.id}>{d.name} ({d.size || d.data?.length || 0} samples)</option>
-                            ))}
-                        </select>
+                        <textarea
+                            readOnly
+                            onClick={() => setShowDatasetSelector(true)}
+                            value={selectedDatasetMeta?.data ? JSON.stringify(selectedDatasetMeta.data.slice(0, 3), null, 2) : ''}
+                            placeholder="Select a dataset to import..."
+                            className="w-full bg-black/30 border border-white/5 rounded-xl px-4 py-3 text-sm text-white/90 focus:outline-none focus:border-white/15 hover:border-white/15 cursor-pointer min-h-[80px] resize-none placeholder-white/30 font-mono text-xs"
+                        />
                     </div>
 
                     {/* Prompt Variants */}
@@ -256,39 +259,43 @@ export function QualityTab({ settings, datasets, onModeChange, onDatasetCreated 
                             <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Prompt Variants</span>
                             <button
                                 onClick={addPrompt}
-                                className="text-[10px] text-white/40 hover:text-white/70 flex items-center gap-1"
+                                className="w-5 h-5 flex items-center justify-center rounded bg-white/5 border border-white/10 text-white/40 hover:text-white/70 hover:bg-white/10"
                             >
                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                                 </svg>
-                                Add Variant
                             </button>
                         </div>
                         <div className="space-y-3">
                             {prompts.map((p, idx) => (
                                 <div key={idx} className="relative">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <span className="text-[10px] font-medium text-white/50">Variant {variantLabel(idx)}</span>
-                                        {prompts.length > 1 && (
-                                            <button
-                                                onClick={() => removePrompt(idx)}
-                                                className="text-white/30 hover:text-red-400 text-[10px]"
-                                            >
-                                                Remove
-                                            </button>
-                                        )}
-                                        <button
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-medium text-white/50">Variant {variantLabel(idx)}</span>
+                                            {prompts.length > 1 && (
+                                                <button
+                                                    onClick={() => removePrompt(idx)}
+                                                    className="text-white/30 hover:text-red-400 text-[10px]"
+                                                >
+                                                    Remove
+                                                </button>
+                                            )}
+                                        </div>
+                                        <Button
                                             onClick={() => handleOpenSelector('prompt', idx)}
-                                            className="text-white/30 hover:text-white/60 text-[10px] ml-auto"
+                                            variant="secondary"
+                                            size="xs"
+                                            className="text-[10px] px-2 py-1 text-white/50"
                                         >
-                                            From Library
-                                        </button>
+                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" /></svg>
+                                            Library
+                                        </Button>
                                     </div>
                                     <textarea
                                         value={p}
                                         onChange={e => updatePrompt(idx, e.target.value)}
                                         placeholder="Enter prompt template..."
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder-white/30 min-h-[80px] resize-none"
+                                        className="w-full bg-black/30 border border-white/5 rounded-xl px-4 py-3 text-sm text-white/90 focus:outline-none focus:border-white/15 hover:border-white/15 placeholder-white/30 min-h-[80px] resize-none"
                                     />
                                 </div>
                             ))}
@@ -300,21 +307,29 @@ export function QualityTab({ settings, datasets, onModeChange, onDatasetCreated 
             {/* LLM-as-Judge Mode */}
             {mode === 'judge' && (
                 <>
+                    {/* Description */}
+                    <div className="text-[11px] text-white/50 bg-white/[0.02] border border-white/5 rounded-lg px-3 py-2">
+                        Use an LLM to evaluate outputs on relevance, coherence, and accuracy. No ground truth needed — ideal for creative and open-ended tasks.
+                    </div>
+
                     <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Prompt</span>
-                            <button
+                            <Button
                                 onClick={() => handleOpenSelector('judge')}
-                                className="text-[10px] text-white/40 hover:text-white/70"
+                                variant="secondary"
+                                size="xs"
+                                className="text-[10px] px-2 py-1 text-white/50"
                             >
-                                From Library
-                            </button>
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" /></svg>
+                                Library
+                            </Button>
                         </div>
                         <textarea
                             value={judgePrompt}
                             onChange={e => setJudgePrompt(e.target.value)}
                             placeholder="The prompt that was used..."
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder-white/30 min-h-[80px] resize-none"
+                            className="w-full bg-black/30 border border-white/5 rounded-xl px-4 py-3 text-sm text-white/90 focus:outline-none focus:border-white/15 hover:border-white/15 placeholder-white/30 min-h-[80px] resize-none"
                         />
                     </div>
 
@@ -326,20 +341,24 @@ export function QualityTab({ settings, datasets, onModeChange, onDatasetCreated 
                             value={judgeResponse}
                             onChange={e => setJudgeResponse(e.target.value)}
                             placeholder="Paste the model response to evaluate..."
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder-white/30 min-h-[120px] resize-none"
+                            className="w-full bg-black/30 border border-white/5 rounded-xl px-4 py-3 text-sm text-white/90 focus:outline-none focus:border-white/15 hover:border-white/15 placeholder-white/30 min-h-[120px] resize-none"
                         />
                     </div>
                 </>
             )}
 
             {/* Run Button */}
-            <Button
-                onClick={runTest}
-                disabled={loading}
-                className="w-full"
-            >
-                {loading ? 'Evaluating...' : mode === 'reference' ? 'Run Reference Evaluation' : 'Run Judge Evaluation'}
-            </Button>
+            <div className="flex items-center gap-2">
+                <Button
+                    onClick={runTest}
+                    disabled={loading}
+                    variant="primary"
+                    size="sm"
+                    className={`min-w-[140px] ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                >
+                    {loading ? 'Evaluating...' : 'Run Evaluation'}
+                </Button>
+            </div>
 
             {/* Results */}
             {results && (
@@ -465,14 +484,12 @@ export function QualityTab({ settings, datasets, onModeChange, onDatasetCreated 
                 />
             )}
 
-            {/* Dataset Generator Modal */}
-            {showGenerator && (
-                <DatasetGenerator
-                    settings={settings}
-                    onClose={() => {
-                        setShowGenerator(false);
-                        onDatasetCreated?.();
-                    }}
+            {/* Dataset Selector Modal */}
+            {showDatasetSelector && (
+                <DatasetSelector
+                    datasets={datasets}
+                    onSelect={(dataset) => { setSelectedDataset(dataset.id); setShowDatasetSelector(false); }}
+                    onClose={() => setShowDatasetSelector(false)}
                 />
             )}
         </div>

@@ -432,6 +432,235 @@ class APIService {
       body: JSON.stringify(request),
     });
   }
+  // ==================== DSPy Orchestrator ====================
+
+  // Types for DSPy Orchestrator
+  public DSPyStep = {
+    id: '',
+    name: '',
+    tool: '',
+    status: '' as 'pending' | 'running' | 'success' | 'error',
+    thought: undefined as string | undefined,
+    action: undefined as string | undefined,
+    observation: undefined as string | undefined,
+    duration_ms: undefined as number | undefined,
+    error: undefined as string | undefined,
+  };
+
+  /**
+   * Run DSPy Orchestrator with SSE streaming for real-time step updates.
+   */
+  streamDSPyOrchestrator(
+    request: {
+      business_task: string;
+      target_lm: string;
+      dataset: { input: string; output: string }[];
+      quality_profile: string;
+      optimizer_strategy: string;
+      provider: string;
+      model: string;
+    },
+    callbacks: {
+      onStep: (step: {
+        id: string;
+        name: string;
+        tool: string;
+        status: string;
+        thought?: string;
+        action?: string;
+        observation?: string;
+        duration_ms?: number;
+        error?: string;
+      }) => void;
+      onComplete: (result: {
+        success: boolean;
+        artifact_version_id: string;
+        compiled_program_id: string;
+        signature_id: string;
+        eval_results: {
+          metric_name: string;
+          metric_value: number;
+          num_iterations: number;
+        };
+        task_analysis: {
+          task_type: string;
+          domain: string;
+          input_roles: string[];
+          output_roles: string[];
+          needs_retrieval: boolean;
+          needs_chain_of_thought: boolean;
+          complexity_level: string;
+          safety_level: string;
+        };
+        program_code: string;
+        deployment_package: {
+          path: string;
+          instructions: string;
+        };
+        react_iterations: number;
+        total_cost_usd: number;
+        steps: Array<{
+          id: string;
+          name: string;
+          tool: string;
+          status: string;
+          thought?: string;
+          action?: string;
+          observation?: string;
+          duration_ms?: number;
+          error?: string;
+        }>;
+      }) => void;
+      onError: (error: string) => void;
+    }
+  ): () => void {
+    const controller = new AbortController();
+    
+    fetch(`${this.baseURL}/api/dspy/orchestrate/stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          const error = await response.json();
+          callbacks.onError(error.detail || 'Request failed');
+          return;
+        }
+        
+        const reader = response.body?.getReader();
+        if (!reader) {
+          callbacks.onError('No response body');
+          return;
+        }
+        
+        const decoder = new TextDecoder();
+        let buffer = '';
+        
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n\n');
+          buffer = lines.pop() || '';
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                
+                if (data.type === 'step') {
+                  callbacks.onStep(data.step);
+                } else if (data.type === 'complete') {
+                  callbacks.onComplete(data.result);
+                } else if (data.type === 'error') {
+                  callbacks.onError(data.error);
+                }
+                // Ignore 'keepalive' type
+              } catch (e) {
+                console.error('Failed to parse SSE data:', e);
+              }
+            }
+          }
+        }
+      })
+      .catch((error) => {
+        if (error.name !== 'AbortError') {
+          callbacks.onError(error.message || 'Connection failed');
+        }
+      });
+    
+    // Return abort function
+    return () => controller.abort();
+  }
+
+  async runDSPyOrchestrator(request: {
+    business_task: string;
+    target_lm: string;
+    dataset: { input: string; output: string }[];
+    quality_profile: string;
+    optimizer_strategy: string;
+    provider: string;
+    model: string;
+  }): Promise<{
+    success: boolean;
+    artifact_version_id: string;
+    compiled_program_id: string;
+    signature_id: string;
+    eval_results: {
+      metric_name: string;
+      metric_value: number;
+      num_iterations: number;
+    };
+    task_analysis: {
+      task_type: string;
+      domain: string;
+      input_roles: string[];
+      output_roles: string[];
+      needs_retrieval: boolean;
+      needs_chain_of_thought: boolean;
+      complexity_level: string;
+      safety_level: string;
+    };
+    program_code: string;
+    deployment_package: {
+      path: string;
+      instructions: string;
+    };
+    react_iterations: number;
+    total_cost_usd: number;
+    steps: Array<{
+      id: string;
+      name: string;
+      tool: string;
+      status: string;
+      thought?: string;
+      action?: string;
+      observation?: string;
+      duration_ms?: number;
+      error?: string;
+    }>;
+  }> {
+    return this.request('/api/dspy/orchestrate', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  async listDSPyArtifacts(): Promise<{
+    artifacts: Array<{
+      artifact_version_id: string;
+      created_at: string;
+      target_lm: string;
+      task_analysis: any;
+      eval_results: any;
+    }>;
+  }> {
+    return this.request('/api/dspy/artifacts');
+  }
+
+  async getDSPyArtifact(artifactId: string): Promise<{
+    metadata: any;
+    program_code: string;
+  }> {
+    return this.request(`/api/dspy/artifacts/${artifactId}`);
+  }
+
+  async testArtifact(request: {
+    artifact_id: string;
+    input: string;
+    target_lm: string;
+    program_code: string;
+  }): Promise<{ output: string }> {
+    return this.request('/api/dspy/test', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
 }
 
 export const api = new APIService();

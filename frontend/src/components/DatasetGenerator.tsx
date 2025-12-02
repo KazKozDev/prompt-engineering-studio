@@ -196,10 +196,48 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
             const result = await api.generateDataset(request);
             setGeneratedData(result.data);
 
-            // Auto-generate dataset name if not set
+            // Auto-generate dataset name using LLM (same logic as prompt titles)
             if (!datasetName) {
-                const modeLabel = modeInfo[mode].title;
-                setDatasetName(`Generated: ${modeLabel} (${result.generated_count} items)`);
+                try {
+                    // Build context text for title generation based on mode
+                    let contextText = '';
+                    if (mode === 'from_task' && taskDescription) {
+                        contextText = `Dataset for task: ${taskDescription}`;
+                    } else if (mode === 'from_prompt' && promptToTest) {
+                        contextText = `Test dataset for prompt: ${promptToTest.substring(0, 200)}`;
+                    } else if (mode === 'from_examples' && seedExamples.length > 0) {
+                        const exampleText = seedExamples
+                            .filter(e => e.input.trim())
+                            .map(e => e.input)
+                            .slice(0, 2)
+                            .join('; ');
+                        contextText = `Dataset based on examples: ${exampleText}`;
+                    } else if (mode === 'edge_cases') {
+                        contextText = `Edge cases and adversarial inputs for ${domain || taskType} testing`;
+                    }
+
+                    if (contextText) {
+                        const titleResponse = await api.generateTitle({
+                            prompt_text: contextText,
+                            provider: 'local',
+                            model: 'google/flan-t5-small'
+                        });
+                        if (titleResponse.title) {
+                            setDatasetName(titleResponse.title);
+                        } else {
+                            // Fallback to simple name
+                            const modeLabel = modeInfo[mode].title;
+                            setDatasetName(`${modeLabel} Dataset`);
+                        }
+                    } else {
+                        const modeLabel = modeInfo[mode].title;
+                        setDatasetName(`${modeLabel} Dataset`);
+                    }
+                } catch {
+                    // Fallback if title generation fails
+                    const modeLabel = modeInfo[mode].title;
+                    setDatasetName(`${modeLabel} Dataset`);
+                }
             }
         } catch (err: any) {
             setError(err.message || 'Failed to generate dataset');

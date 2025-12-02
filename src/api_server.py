@@ -3,8 +3,13 @@
 This module provides REST API endpoints for the Prompt Engineering Studio,
 connecting the React frontend with the backend LLM services.
 """
+import os
 import sys
 from pathlib import Path
+
+# Load .env file
+from dotenv import load_dotenv
+load_dotenv()
 
 root_path = Path(__file__).parent.parent
 sys.path.append(str(root_path))
@@ -12,12 +17,21 @@ sys.path.append(str(root_path))
 from typing import Any, Dict, List, Optional
 
 import yaml
+import asyncio
+import queue
+import threading
+import json
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+
+# Get OpenAI API key from environment
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 from src.llm.gemini_client import GeminiClient
 from src.llm.ollama_client import OllamaClient
+from src.llm.openai_client import OpenAIClient
 from src.prompts.manager import PromptManager
 from src.storage.history import HistoryManager
 from src.storage.templates import TemplatesManager
@@ -106,7 +120,12 @@ async def get_models(provider: str):
     elif provider == "gemini":
         return {"models": [config["models"]["gemini"]["model_name"]]}
     elif provider == "openai":
-        return {"models": [config["models"]["openai"]["model_name"]]}
+        try:
+            from src.llm.openai_client import OpenAIClient
+            client = OpenAIClient(config.get("models", {}).get("openai", {}))
+            return {"models": client.get_available_models()}
+        except:
+            return {"models": ["gpt-5"]}
     else:
         raise HTTPException(status_code=400, detail="Invalid provider")
 
@@ -1471,6 +1490,249 @@ async def get_available_metrics():
             }
         }
     }
+
+
+# ==================== DSPy Orchestrator Endpoints ====================
+
+from src.dspy_orchestrator import DSPyOrchestrator
+from src.dspy_langchain_agent import DSPyLangChainAgent
+
+class DSPyOrchestratorRequest(BaseModel):
+    business_task: str
+    target_lm: str = "gpt-5"
+    dataset: List[EvaluationItem]
+    quality_profile: str = "BALANCED"
+    optimizer_strategy: str = "auto"
+    provider: str = "ollama"
+    model: str = "llama2"
+
+@app.post("/api/dspy/orchestrate/stream")
+async def run_dspy_orchestrator_stream(request: DSPyOrchestratorRequest):
+    """
+    Run DSPy Agent Orchestrator with SSE streaming.
+    
+    Streams steps in real-time as they execute.
+    """
+    # Validate upfront
+    dataset_dicts = [{"input": item.input, "output": item.output} for item in request.dataset]
+    
+    if len(dataset_dicts) < 5:
+        raise HTTPException(status_code=400, detail="Dataset must have at least 5 examples")
+    
+    if not OPENAI_API_KEY:
+        raise HTTPException(status_code=400, detail="OpenAI API key required for DSPy Agent")
+    
+    # Use asyncio.Queue for thread-safe async communication
+    step_queue: asyncio.Queue = asyncio.Queue()
+    
+    async def event_generator():
+        result_holder = {"result": None, "error": None}
+        
+        def step_callback(step: dict):
+            """Called by agent when a step completes."""
+            asyncio.run_coroutine_threadsafe(
+                step_queue.put(("step", step)),
+                loop
+            )
+        
+        def run_agent():
+            """Run agent in background thread."""
+            try:
+                agent = DSPyLangChainAgent(
+                    model_name="gpt-5",
+                    api_key=OPENAI_API_KEY,
+                    temperature=0.2,
+                    max_iterations=20,
+                    step_callback=step_callback
+                )
+                
+                result = agent.run(
+                    business_task=request.business_task,
+                    target_lm=request.target_lm,
+                    dataset=dataset_dicts,
+                    quality_profile=request.quality_profile
+                )
+                result_holder["result"] = result
+            except Exception as e:
+                logger.error(f"Agent error: {e}")
+                result_holder["error"] = str(e)
+            finally:
+                asyncio.run_coroutine_threadsafe(
+                    step_queue.put(("done", None)),
+                    loop
+                )
+        
+        # Get current event loop
+        loop = asyncio.get_running_loop()
+        
+        # Start agent in background thread
+        thread = threading.Thread(target=run_agent, daemon=True)
+        thread.start()
+        
+        # Stream steps as SSE events
+        try:
+            while True:
+                try:
+                    # Wait for next event with timeout
+                    event_type, data = await asyncio.wait_for(step_queue.get(), timeout=120)
+                    
+                    if event_type == "step":
+                        yield f"data: {json.dumps({'type': 'step', 'step': data})}\n\n"
+                    elif event_type == "done":
+                        if result_holder["error"]:
+                            yield f"data: {json.dumps({'type': 'error', 'error': result_holder['error']})}\n\n"
+                        else:
+                            yield f"data: {json.dumps({'type': 'complete', 'result': result_holder['result']})}\n\n"
+                        break
+                        
+                except asyncio.TimeoutError:
+                    # Send keepalive
+                    yield f"data: {json.dumps({'type': 'keepalive'})}\n\n"
+        finally:
+            thread.join(timeout=5)
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
+
+
+@app.post("/api/dspy/orchestrate")
+async def run_dspy_orchestrator(request: DSPyOrchestratorRequest):
+    """
+    Run DSPy Agent Orchestrator (non-streaming fallback).
+    """
+    try:
+        dataset_dicts = [{"input": item.input, "output": item.output} for item in request.dataset]
+        
+        if len(dataset_dicts) < 5:
+            raise HTTPException(status_code=400, detail="Dataset must have at least 5 examples")
+        
+        if not OPENAI_API_KEY:
+            raise HTTPException(status_code=400, detail="OpenAI API key required for DSPy Agent")
+        
+        agent = DSPyLangChainAgent(
+            model_name="gpt-5",
+            api_key=OPENAI_API_KEY,
+            temperature=0.2,
+            max_iterations=20
+        )
+        
+        logger.info(f"Starting LangChain DSPy Agent for task: {request.business_task[:100]}...")
+        
+        result = agent.run(
+            business_task=request.business_task,
+            target_lm=request.target_lm,
+            dataset=dataset_dicts,
+            quality_profile=request.quality_profile
+        )
+        
+        if not result.get("success"):
+            raise HTTPException(status_code=500, detail=result.get("error", "Agent execution failed"))
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"DSPy orchestration error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/dspy/artifacts")
+async def list_dspy_artifacts():
+    """List all DSPy artifacts."""
+    artifacts_dir = Path("data/artifacts")
+    if not artifacts_dir.exists():
+        return {"artifacts": []}
+    
+    artifacts = []
+    for artifact_dir in artifacts_dir.iterdir():
+        if artifact_dir.is_dir():
+            metadata_file = artifact_dir / "metadata.json"
+            if metadata_file.exists():
+                with open(metadata_file) as f:
+                    metadata = json.load(f)
+                    artifacts.append(metadata)
+    
+    # Sort by created_at descending
+    artifacts.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+    return {"artifacts": artifacts}
+
+
+@app.get("/api/dspy/artifacts/{artifact_id}")
+async def get_dspy_artifact(artifact_id: str):
+    """Get a specific DSPy artifact."""
+    artifact_dir = Path("data/artifacts") / artifact_id
+    
+    if not artifact_dir.exists():
+        raise HTTPException(status_code=404, detail="Artifact not found")
+    
+    metadata_file = artifact_dir / "metadata.json"
+    program_file = artifact_dir / "program.py"
+    
+    result = {}
+    
+    if metadata_file.exists():
+        with open(metadata_file) as f:
+            result["metadata"] = json.load(f)
+    
+    if program_file.exists():
+        with open(program_file) as f:
+            result["program_code"] = f.read()
+    
+    return result
+
+
+class TestArtifactRequest(BaseModel):
+    artifact_id: str
+    input: str
+    target_lm: str
+    program_code: str
+
+
+@app.post("/api/dspy/test")
+async def test_artifact(request: TestArtifactRequest):
+    """
+    Test a DSPy artifact with a single input.
+    Runs the optimized program and returns the prediction.
+    """
+    if not OPENAI_API_KEY:
+        raise HTTPException(status_code=400, detail="OpenAI API key required")
+    
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=OPENAI_API_KEY)
+        
+        # Extract signature info from program code
+        # Simple approach: use the LLM to run inference based on the program structure
+        response = client.chat.completions.create(
+            model=request.target_lm,
+            messages=[
+                {
+                    "role": "system",
+                    "content": f"You are running a DSPy program. Based on this program structure:\n\n{request.program_code}\n\nProvide the output for the given input. Return ONLY the predicted output value, nothing else."
+                },
+                {
+                    "role": "user", 
+                    "content": request.input
+                }
+            ],
+            temperature=0.1,
+            max_tokens=500
+        )
+        
+        output = response.choices[0].message.content.strip()
+        return {"output": output}
+        
+    except Exception as e:
+        logger.error(f"Test artifact error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":

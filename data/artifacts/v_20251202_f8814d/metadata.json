@@ -1,0 +1,29 @@
+{
+  "artifact_version_id": "v_20251202_f8814d",
+  "created_at": "2025-12-02T11:38:33.085238",
+  "target_lm": "gemma3:4b",
+  "task_analysis": {
+    "task_type": "classification",
+    "domain": "general",
+    "input_roles": [
+      "customer_reviews"
+    ],
+    "output_roles": [
+      "sentiment_label",
+      "emotional_tone"
+    ],
+    "needs_retrieval": false,
+    "needs_chain_of_thought": false,
+    "complexity_level": "medium",
+    "safety_level": "normal"
+  },
+  "signature_id": "sig_4667e2b5",
+  "program_id": "prog_ee7e4955",
+  "eval_results": {
+    "status": "success",
+    "metric_value": 0.852,
+    "metric_name": "accuracy",
+    "iterations": 3
+  },
+  "react_iterations": 15
+}

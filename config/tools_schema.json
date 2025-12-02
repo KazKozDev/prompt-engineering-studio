@@ -1,0 +1,723 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DSPy LLM Agent Tools Schema",
+  "description": "JSON Schema для всех 19 инструментов LLM-Агента оркестратора",
+  "version": "1.0",
+  "tools": [
+    {
+      "name": "analyze_business_goal",
+      "description": "Преобразовать текст бизнес-задачи в структурированный объект с типом задачи, доменом, ролями входа/выхода и требованиями.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "task_description": {
+            "type": "string",
+            "description": "Текстовое описание бизнес-задачи",
+            "minLength": 10,
+            "maxLength": 8000
+          }
+        },
+        "required": ["task_description"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "task_type": {
+            "type": "string",
+            "enum": ["RAG", "classification", "extraction", "summarization", "reasoning", "routing", "hybrid"]
+          },
+          "domain": { "type": "string" },
+          "input_roles": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "output_roles": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 1
+          },
+          "needs_retrieval": { "type": "boolean", "default": false },
+          "needs_chain_of_thought": { "type": "boolean", "default": false },
+          "needs_tool_use": { "type": "boolean", "default": false },
+          "complexity_level": {
+            "type": "string",
+            "enum": ["low", "medium", "high"]
+          },
+          "safety_level": {
+            "type": "string",
+            "enum": ["normal", "high_risk"]
+          }
+        },
+        "required": ["task_type", "domain", "output_roles", "complexity_level", "safety_level"]
+      }
+    },
+    {
+      "name": "register_target_lm",
+      "description": "Зарегистрировать выбранную пользователем модель в DSPy.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "target_lm_name": {
+            "type": "string",
+            "description": "Идентификатор целевой модели",
+            "enum": ["gpt-5"]
+          }
+        },
+        "required": ["target_lm_name"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "registered": { "type": "boolean" },
+          "settings_summary": {
+            "type": "object",
+            "properties": {
+              "max_context_tokens": { "type": "integer" },
+              "recommended_temperature": { "type": "number" },
+              "provider": {
+                "type": "string",
+                "enum": ["openai", "together", "anthropic", "mistral", "local"]
+              }
+            }
+          }
+        },
+        "required": ["registered", "settings_summary"]
+      }
+    },
+    {
+      "name": "configure_lm_profile",
+      "description": "Настроить глобальные параметры LLM в DSPy.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "profile": {
+            "type": "string",
+            "description": "Профиль настроек LLM",
+            "enum": ["FAST_CHEAP", "BALANCED", "HIGH_QUALITY"]
+          },
+          "overrides": {
+            "type": "object",
+            "description": "Переопределение параметров профиля",
+            "properties": {
+              "temperature": { "type": "number", "minimum": 0, "maximum": 1 },
+              "max_tokens": { "type": "integer", "minimum": 128 },
+              "top_p": { "type": "number", "minimum": 0, "maximum": 1 },
+              "context_length": { "type": "integer" },
+              "timeout": { "type": "integer", "description": "Таймаут в секундах" }
+            }
+          }
+        },
+        "required": ["profile"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "lm_config": {
+            "type": "object",
+            "properties": {
+              "profile": { "type": "string" },
+              "temperature": { "type": "number" },
+              "max_tokens": { "type": "integer" },
+              "top_p": { "type": "number" },
+              "context_length": { "type": "integer" },
+              "timeout": { "type": "integer" }
+            }
+          }
+        },
+        "required": ["lm_config"]
+      }
+    },
+    {
+      "name": "define_contract_signature",
+      "description": "Создать DSPy Signature на основе бизнес-анализа.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "input_roles": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "type": {
+                  "type": "string",
+                  "enum": ["string", "text", "list[string]", "json"]
+                },
+                "description": { "type": "string" },
+                "required": { "type": "boolean", "default": true }
+              },
+              "required": ["name", "type", "description"]
+            },
+            "minItems": 1
+          },
+          "output_roles": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "type": {
+                  "type": "string",
+                  "enum": ["string", "label", "score", "json", "boolean"]
+                },
+                "description": { "type": "string" },
+                "required": { "type": "boolean", "default": true },
+                "format": {
+                  "type": "string",
+                  "enum": ["free_text", "json_object", "json_array", "enum"]
+                }
+              },
+              "required": ["name", "type", "description"]
+            },
+            "minItems": 1
+          },
+          "task_type": { "type": "string" },
+          "domain": { "type": "string" }
+        },
+        "required": ["input_roles", "output_roles", "task_type", "domain"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "signature_id": { "type": "string" },
+          "signature_code": { "type": "string", "description": "Python код класса Signature" },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "role": { "type": "string", "enum": ["input", "output"] },
+                "type": { "type": "string" },
+                "description": { "type": "string" },
+                "required": { "type": "boolean" }
+              }
+            }
+          }
+        },
+        "required": ["signature_id", "signature_code", "fields"]
+      }
+    },
+    {
+      "name": "assemble_program_pipeline",
+      "description": "Создать стартовый spec программы DSPy.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "task_type": { "type": "string" },
+          "needs_retrieval": { "type": "boolean", "default": false },
+          "needs_tool_use": { "type": "boolean", "default": false },
+          "needs_chain_of_thought": { "type": "boolean", "default": false },
+          "complexity_level": {
+            "type": "string",
+            "enum": ["low", "medium", "high"]
+          }
+        },
+        "required": ["task_type", "complexity_level"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "program_spec": {
+            "type": "object",
+            "properties": {
+              "modules": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "type": { "type": "string" },
+                    "signature": { "type": "string" },
+                    "params": { "type": "object" }
+                  },
+                  "required": ["name", "type"]
+                }
+              },
+              "connections": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "from": { "type": "string" },
+                    "to": { "type": "string" }
+                  },
+                  "required": ["from", "to"]
+                }
+              }
+            },
+            "required": ["modules", "connections"]
+          }
+        },
+        "required": ["program_spec"]
+      }
+    },
+    {
+      "name": "add_tactic_to_program",
+      "description": "Добавить/заменить модуль в конвейере DSPy.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "program_spec": {
+            "type": "object",
+            "description": "Текущая спецификация программы"
+          },
+          "tactic_type": {
+            "type": "string",
+            "description": "Тип тактики/модуля DSPy",
+            "enum": ["Predict", "ChainOfThought", "ReAct", "Retrieve", "ProgramOfThought", "MultiChainComparison", "Retry"]
+          },
+          "position": {
+            "type": "string",
+            "enum": ["before", "after", "replace", "append"]
+          },
+          "anchor_module_name": {
+            "type": ["string", "null"],
+            "description": "Имя модуля-якоря для позиционирования"
+          },
+          "module_params": {
+            "type": "object",
+            "description": "Параметры нового модуля"
+          }
+        },
+        "required": ["program_spec", "tactic_type", "position"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "program_spec": { "type": "object" }
+        },
+        "required": ["program_spec"]
+      }
+    },
+    {
+      "name": "finalize_program_assembly",
+      "description": "Сгенерировать реальную DSPy-программу из спецификации.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "program_spec": { "type": "object" },
+          "signature_id": { "type": "string" }
+        },
+        "required": ["program_spec", "signature_id"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "program_id": { "type": "string" },
+          "program_code": { "type": "string", "description": "Python код класса Program" },
+          "module_class_name": { "type": "string" }
+        },
+        "required": ["program_id", "program_code", "module_class_name"]
+      }
+    },
+    {
+      "name": "load_eval_data",
+      "description": "Загрузить JSON файл с eval данными.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "eval_data_path": {
+            "type": "string",
+            "description": "Путь к JSON файлу с данными"
+          }
+        },
+        "required": ["eval_data_path"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "dataset_summary": {
+            "type": "object",
+            "properties": {
+              "num_examples": { "type": "integer" },
+              "input_fields": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "output_fields": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            },
+            "required": ["num_examples", "input_fields", "output_fields"]
+          }
+        },
+        "required": ["dataset_summary"]
+      }
+    },
+    {
+      "name": "prepare_eval_splits",
+      "description": "Сделать train/dev/test split данных.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "strategy": {
+            "type": "string",
+            "enum": ["simple_split", "kfold", "bootstrap"],
+            "default": "simple_split"
+          },
+          "train_ratio": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "default": 0.7
+          },
+          "dev_ratio": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "default": 0.2
+          },
+          "test_ratio": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "default": 0.1
+          },
+          "shuffle": { "type": "boolean", "default": true },
+          "seed": { "type": "integer", "default": 42 }
+        },
+        "required": []
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "split_summary": {
+            "type": "object",
+            "properties": {
+              "train": { "type": "integer" },
+              "dev": { "type": "integer" },
+              "test": { "type": "integer" }
+            },
+            "required": ["train", "dev", "test"]
+          }
+        },
+        "required": ["split_summary"]
+      }
+    },
+    {
+      "name": "set_evaluation_metric",
+      "description": "Выбрать метрику оценки под задачу.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "task_type": { "type": "string" },
+          "domain": { "type": "string" }
+        },
+        "required": ["task_type", "domain"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "metric_name": {
+            "type": "string",
+            "enum": ["semantic_f1", "accuracy", "rouge_l", "bleu", "exact_match", "llm_judge"]
+          },
+          "metric_config": {
+            "type": "object",
+            "properties": {
+              "threshold": { "type": "number" },
+              "use_embedding_model": { "type": "string" }
+            }
+          }
+        },
+        "required": ["metric_name", "metric_config"]
+      }
+    },
+    {
+      "name": "select_compiler_strategy",
+      "description": "Выбрать оптимизатор DSPy.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "task_type": { "type": "string" },
+          "complexity_level": {
+            "type": "string",
+            "enum": ["low", "medium", "high"]
+          },
+          "eval_data_size": { "type": "integer" },
+          "profile": {
+            "type": "string",
+            "enum": ["FAST_CHEAP", "BALANCED", "HIGH_QUALITY"]
+          }
+        },
+        "required": ["task_type", "complexity_level", "eval_data_size", "profile"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "optimizer_type": {
+            "type": "string",
+            "enum": ["BootstrapFewShot", "BootstrapFewShotWithRandomSearch", "MIPRO", "MIPROv2", "COPRO", "BootstrapFinetune"]
+          },
+          "optimizer_params": {
+            "type": "object",
+            "properties": {
+              "max_bootstrapped_demos": { "type": "integer" },
+              "max_labeled_demos": { "type": "integer" },
+              "num_candidate_programs": { "type": "integer" },
+              "num_threads": { "type": "integer" }
+            }
+          }
+        },
+        "required": ["optimizer_type", "optimizer_params"]
+      }
+    },
+    {
+      "name": "configure_compiler",
+      "description": "Создать конкретный конфиг оптимизатора.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "optimizer_type": { "type": "string" },
+          "optimizer_params": { "type": "object" },
+          "metric_name": { "type": "string" }
+        },
+        "required": ["optimizer_type", "optimizer_params", "metric_name"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "compiler_config_id": { "type": "string" },
+          "compiler_config_summary": {
+            "type": "object",
+            "properties": {
+              "optimizer_type": { "type": "string" },
+              "metric_name": { "type": "string" },
+              "params": { "type": "object" }
+            }
+          }
+        },
+        "required": ["compiler_config_id", "compiler_config_summary"]
+      }
+    },
+    {
+      "name": "run_compilation",
+      "description": "Запустить компиляцию (оптимизацию) DSPy программы.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "program_id": { "type": "string" },
+          "compiler_config_id": { "type": "string" }
+        },
+        "required": ["program_id", "compiler_config_id"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "compiled_program_id": { "type": "string" },
+          "eval_results": {
+            "type": "object",
+            "properties": {
+              "metric_value": { "type": "number" },
+              "metric_name": { "type": "string" },
+              "best_demos": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "num_iterations": { "type": "integer" }
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": ["success", "failure"]
+          },
+          "error_log": { "type": ["string", "null"] }
+        },
+        "required": ["status"]
+      }
+    },
+    {
+      "name": "log_artifacts",
+      "description": "Сохранить артефакты и метаданные версии.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "program_id": { "type": "string" },
+          "signature_id": { "type": "string" },
+          "compiler_config_id": { "type": "string" },
+          "eval_results": { "type": "object" },
+          "target_lm": { "type": "string" }
+        },
+        "required": ["program_id", "signature_id", "compiler_config_id", "eval_results", "target_lm"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "artifact_version_id": { "type": "string" },
+          "logged": { "type": "boolean" },
+          "storage_path": { "type": "string" }
+        },
+        "required": ["artifact_version_id", "logged"]
+      }
+    },
+    {
+      "name": "export_deployment_package",
+      "description": "Подготовить пакет для продакшен деплоя.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "compiled_program_id": { "type": "string" },
+          "target_lm": { "type": "string" },
+          "format": {
+            "type": "string",
+            "enum": ["python_module", "fastapi_endpoint", "langserve_spec", "docker_image"]
+          }
+        },
+        "required": ["compiled_program_id", "target_lm", "format"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "package_path": { "type": "string" },
+          "deployment_instructions": { "type": "string" },
+          "files": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "required": ["package_path", "deployment_instructions"]
+      }
+    },
+    {
+      "name": "validate_output_policy",
+      "description": "Проверка безопасности и соответствия политикам.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "domain": { "type": "string" },
+          "candidate_output": { "type": "string" }
+        },
+        "required": ["domain", "candidate_output"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "is_safe": { "type": "boolean" },
+          "issues": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "sanitized_output": { "type": "string" },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+        },
+        "required": ["is_safe", "issues"]
+      }
+    },
+    {
+      "name": "monitor_runtime_metrics",
+      "description": "Логирование метрик продовых вызовов.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "artifact_version_id": { "type": "string" },
+          "latency_ms": { "type": "number" },
+          "request_metadata": {
+            "type": "object",
+            "properties": {
+              "user_id": { "type": ["string", "null"] },
+              "request_id": { "type": ["string", "null"] },
+              "session_id": { "type": ["string", "null"] }
+            }
+          },
+          "user_feedback": {
+            "type": "object",
+            "properties": {
+              "rating": { "type": "integer", "minimum": 1, "maximum": 5 },
+              "comment": { "type": "string" }
+            }
+          }
+        },
+        "required": ["artifact_version_id", "latency_ms"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "logged": { "type": "boolean" },
+          "log_id": { "type": "string" }
+        },
+        "required": ["logged"]
+      }
+    },
+    {
+      "name": "analyze_failure",
+      "description": "Анализ ошибок для ReAct самокоррекции.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "error_log": { "type": "string" },
+          "context": {
+            "type": "object",
+            "properties": {
+              "program_id": { "type": ["string", "null"] },
+              "signature_id": { "type": ["string", "null"] },
+              "last_action": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "required": ["error_log"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "error_type": {
+            "type": "string",
+            "enum": ["signature_mismatch", "missing_field", "invalid_format", "optimizer_failure", "low_metric", "runtime_error", "timeout"]
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical"]
+          },
+          "suggested_fix": { "type": "string" },
+          "affected_components": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["Signature", "Program", "Optimizer", "Data", "LM"]
+            }
+          },
+          "root_cause": { "type": "string" }
+        },
+        "required": ["error_type", "severity", "suggested_fix", "affected_components"]
+      }
+    },
+    {
+      "name": "propose_pipeline_fix",
+      "description": "Предложить конкретный план исправлений для ReAct.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "error_type": { "type": "string" },
+          "current_program_spec": { "type": "object" },
+          "current_signature": { "type": "object" },
+          "eval_results": { "type": "object" }
+        },
+        "required": ["error_type", "current_program_spec"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "fix_plan": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": ["fix_signature", "add_tactic", "remove_tactic", "change_metric", "adjust_optimizer", "increase_data", "change_lm"]
+                },
+                "parameters": { "type": "object" },
+                "priority": { "type": "integer", "minimum": 1 }
+              },
+              "required": ["action", "parameters", "priority"]
+            }
+          },
+          "estimated_improvement": { "type": "number" },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+        },
+        "required": ["fix_plan"]
+      }
+    }
+  ]
+}

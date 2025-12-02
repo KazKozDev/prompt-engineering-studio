@@ -1,0 +1,28 @@
+{
+  "artifact_version_id": "v_20251202_4dad79",
+  "created_at": "2025-12-02T12:03:58.802442",
+  "target_lm": "gpt-5",
+  "task_analysis": {
+    "task_type": "classification",
+    "domain": "general",
+    "input_roles": [
+      "review_text"
+    ],
+    "output_roles": [
+      "label"
+    ],
+    "needs_retrieval": false,
+    "needs_chain_of_thought": false,
+    "complexity_level": "low",
+    "safety_level": "normal"
+  },
+  "signature_id": "sig_f26a5fcc",
+  "program_id": "prog_b4e8e55a",
+  "eval_results": {
+    "status": "success",
+    "metric_value": 0.851,
+    "metric_name": "accuracy",
+    "iterations": 3
+  },
+  "react_iterations": 15
+}

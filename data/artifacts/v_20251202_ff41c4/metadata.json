@@ -1,0 +1,24 @@
+{
+  "artifact_version_id": "v_20251202_ff41c4",
+  "created_at": "2025-12-02T10:18:18.654370",
+  "target_lm": "gpt-4o",
+  "task_analysis": {
+    "task_type": "reasoning",
+    "domain": "general",
+    "input_roles": [],
+    "output_roles": [],
+    "needs_retrieval": false,
+    "needs_chain_of_thought": false,
+    "complexity_level": "low",
+    "safety_level": "normal"
+  },
+  "signature_id": "sig_d0183352",
+  "program_id": "prog_8104f509",
+  "eval_results": {
+    "status": "success",
+    "metric_value": 0.851,
+    "metric_name": "semantic_f1",
+    "iterations": 3
+  },
+  "react_iterations": 15
+}

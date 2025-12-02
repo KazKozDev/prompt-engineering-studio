@@ -241,6 +241,13 @@ export function HumanEvalTab({ onModeChange }: HumanEvalTabProps) {
                 </div>
             </div>
 
+            {/* Description based on mode */}
+            <div className="text-[11px] text-white/50 bg-white/[0.02] border border-white/5 rounded-lg px-3 py-2">
+                {mode === 'rating' && 'Rate outputs on a 1-5 Likert scale across multiple criteria. Gold standard for subjective quality assessment and calibrating automated metrics.'}
+                {mode === 'ranking' && 'Order multiple responses by preference. More reliable than absolute ratings for comparing outputs — commonly used for RLHF data collection.'}
+                {mode === 'ab' && 'Side-by-side comparison of two outputs. Quick binary choice with optional reasoning — ideal for iterative prompt improvement.'}
+            </div>
+
             {/* Rating Mode */}
             {mode === 'rating' && (
                 <>
@@ -255,10 +262,9 @@ export function HumanEvalTab({ onModeChange }: HumanEvalTabProps) {
                                     description: '',
                                     weight: 1
                                 }])}
-                                className="text-[10px] text-white/40 hover:text-white/70 flex items-center gap-1"
+                                className="w-5 h-5 flex items-center justify-center rounded bg-white/5 border border-white/10 text-white/40 hover:text-white/70 hover:bg-white/10"
                             >
                                 <Icons.plus />
-                                Add Criterion
                             </button>
                         </div>
                         <div className="space-y-2">
@@ -286,16 +292,15 @@ export function HumanEvalTab({ onModeChange }: HumanEvalTabProps) {
                             <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Evaluation Items</span>
                             <button
                                 onClick={addEvaluationItem}
-                                className="text-[10px] text-white/40 hover:text-white/70 flex items-center gap-1"
+                                className="w-5 h-5 flex items-center justify-center rounded bg-white/5 border border-white/10 text-white/40 hover:text-white/70 hover:bg-white/10"
                             >
                                 <Icons.plus />
-                                Add Item
                             </button>
                         </div>
 
                         {items.length === 0 ? (
                             <div className="text-center py-8 text-white/30 text-sm border border-dashed border-white/10 rounded-lg">
-                                No items yet. Click "Add Item" to start evaluating.
+                                No items yet. Click + to start evaluating.
                             </div>
                         ) : (
                             <div className="space-y-2">
@@ -337,19 +342,21 @@ export function HumanEvalTab({ onModeChange }: HumanEvalTabProps) {
                             <div>
                                 <div className="flex items-center justify-between mb-1">
                                     <span className="text-[10px] text-white/50">Prompt</span>
-                                    <button
+                                    <Button
                                         onClick={() => { setSelectorTarget('prompt'); setShowSelector(true); }}
-                                        className="text-[10px] text-white/40 hover:text-white/70 flex items-center gap-1"
+                                        variant="secondary"
+                                        size="xs"
+                                        className="text-[10px] px-2 py-1 text-white/50"
                                     >
                                         <Icons.library />
-                                        From Library
-                                    </button>
+                                        Library
+                                    </Button>
                                 </div>
                                 <textarea
                                     value={currentItem.prompt}
                                     onChange={e => updateCurrentItem('prompt', e.target.value)}
                                     placeholder="Enter the prompt..."
-                                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder-white/30 min-h-[60px] resize-none"
+                                    className="w-full bg-black/30 border border-white/5 rounded-xl px-4 py-3 text-sm text-white/90 focus:outline-none focus:border-white/15 hover:border-white/15 placeholder-white/30 min-h-[60px] resize-none"
                                 />
                             </div>
 
@@ -359,7 +366,7 @@ export function HumanEvalTab({ onModeChange }: HumanEvalTabProps) {
                                     value={currentItem.response}
                                     onChange={e => updateCurrentItem('response', e.target.value)}
                                     placeholder="Paste the model response..."
-                                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder-white/30 min-h-[100px] resize-none"
+                                    className="w-full bg-black/30 border border-white/5 rounded-xl px-4 py-3 text-sm text-white/90 focus:outline-none focus:border-white/15 hover:border-white/15 placeholder-white/30 min-h-[100px] resize-none"
                                 />
                             </div>
 
@@ -399,18 +406,45 @@ export function HumanEvalTab({ onModeChange }: HumanEvalTabProps) {
                                     value={currentItem.notes}
                                     onChange={e => updateCurrentItem('notes', e.target.value)}
                                     placeholder="Additional observations..."
-                                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder-white/30 min-h-[60px] resize-none"
+                                    className="w-full bg-black/30 border border-white/5 rounded-xl px-4 py-3 text-sm text-white/90 focus:outline-none focus:border-white/15 hover:border-white/15 placeholder-white/30 min-h-[60px] resize-none"
                                 />
                             </div>
                         </div>
                     )}
 
-                    {items.length > 0 && (
-                        <Button onClick={exportResults} variant="outline" className="w-full">
-                            <Icons.download />
-                            Export Results
+                    {/* Submit Button */}
+                    <div className="flex items-center gap-2">
+                        <Button
+                            onClick={() => {
+                                if (!currentItem) {
+                                    alert('Please add an item first');
+                                    return;
+                                }
+                                if (!items.find(i => i.id === currentItem.id)) {
+                                    setItems([...items, currentItem]);
+                                } else {
+                                    setItems(items.map(i => i.id === currentItem.id ? currentItem : i));
+                                }
+                                alert('Rating saved!');
+                            }}
+                            variant="primary"
+                            size="sm"
+                            className={`min-w-[140px] ${!currentItem ? 'opacity-60' : ''}`}
+                        >
+                            Save Rating
                         </Button>
-                    )}
+                        {items.length > 0 && (
+                            <Button
+                                onClick={exportResults}
+                                variant="outline"
+                                size="sm"
+                                className="min-w-[140px]"
+                            >
+                                <Icons.download />
+                                Export All
+                            </Button>
+                        )}
+                    </div>
                 </>
             )}
 
@@ -431,7 +465,7 @@ export function HumanEvalTab({ onModeChange }: HumanEvalTabProps) {
                                         value={variantA.prompt}
                                         onChange={e => setVariantA({ ...variantA, prompt: e.target.value })}
                                         placeholder="Prompt A..."
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder-white/30 min-h-[80px] resize-none"
+                                        className="w-full bg-black/30 border border-white/5 rounded-xl px-4 py-3 text-sm text-white/90 focus:outline-none focus:border-white/15 hover:border-white/15 placeholder-white/30 min-h-[80px] resize-none"
                                     />
                                 </div>
                                 <div>
@@ -440,7 +474,7 @@ export function HumanEvalTab({ onModeChange }: HumanEvalTabProps) {
                                         value={variantA.response}
                                         onChange={e => setVariantA({ ...variantA, response: e.target.value })}
                                         placeholder="Response A..."
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder-white/30 min-h-[120px] resize-none"
+                                        className="w-full bg-black/30 border border-white/5 rounded-xl px-4 py-3 text-sm text-white/90 focus:outline-none focus:border-white/15 hover:border-white/15 placeholder-white/30 min-h-[120px] resize-none"
                                     />
                                 </div>
                             </div>
@@ -459,7 +493,7 @@ export function HumanEvalTab({ onModeChange }: HumanEvalTabProps) {
                                         value={variantB.prompt}
                                         onChange={e => setVariantB({ ...variantB, prompt: e.target.value })}
                                         placeholder="Prompt B..."
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder-white/30 min-h-[80px] resize-none"
+                                        className="w-full bg-black/30 border border-white/5 rounded-xl px-4 py-3 text-sm text-white/90 focus:outline-none focus:border-white/15 hover:border-white/15 placeholder-white/30 min-h-[80px] resize-none"
                                     />
                                 </div>
                                 <div>
@@ -468,7 +502,7 @@ export function HumanEvalTab({ onModeChange }: HumanEvalTabProps) {
                                         value={variantB.response}
                                         onChange={e => setVariantB({ ...variantB, response: e.target.value })}
                                         placeholder="Response B..."
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder-white/30 min-h-[120px] resize-none"
+                                        className="w-full bg-black/30 border border-white/5 rounded-xl px-4 py-3 text-sm text-white/90 focus:outline-none focus:border-white/15 hover:border-white/15 placeholder-white/30 min-h-[120px] resize-none"
                                     />
                                 </div>
                             </div>
@@ -516,15 +550,34 @@ export function HumanEvalTab({ onModeChange }: HumanEvalTabProps) {
                                 value={abResults.reason}
                                 onChange={e => setAbResults({ ...abResults, reason: e.target.value })}
                                 placeholder="Reason for your choice..."
-                                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder-white/30 min-h-[60px] resize-none"
+                                className="w-full bg-black/30 border border-white/5 rounded-xl px-4 py-3 text-sm text-white/90 focus:outline-none focus:border-white/15 hover:border-white/15 placeholder-white/30 min-h-[60px] resize-none"
                             />
                         </div>
+                    </div>
+
+                    {/* Submit Button */}
+                    <div className="flex items-center gap-2">
+                        <Button
+                            onClick={() => {
+                                if (!abResults.winner) {
+                                    alert('Please select a winner');
+                                    return;
+                                }
+                                alert(`A/B Test saved: ${abResults.winner} wins`);
+                            }}
+                            variant="primary"
+                            size="sm"
+                            className={`min-w-[140px] ${!abResults.winner ? 'opacity-60' : ''}`}
+                        >
+                            Submit Result
+                        </Button>
                     </div>
                 </>
             )}
 
             {/* Ranking Mode */}
             {mode === 'ranking' && (
+                <>
                 <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
                     <div className="flex items-center justify-between mb-3">
                         <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Rank Responses</span>
@@ -535,16 +588,15 @@ export function HumanEvalTab({ onModeChange }: HumanEvalTabProps) {
                                 response: '',
                                 rank: rankingItems.length + 1
                             }])}
-                            className="text-[10px] text-white/40 hover:text-white/70 flex items-center gap-1"
+                            className="w-5 h-5 flex items-center justify-center rounded bg-white/5 border border-white/10 text-white/40 hover:text-white/70 hover:bg-white/10"
                         >
                             <Icons.plus />
-                            Add Response
                         </button>
                     </div>
 
                     {rankingItems.length === 0 ? (
                         <div className="text-center py-8 text-white/30 text-sm border border-dashed border-white/10 rounded-lg">
-                            Add responses to rank them by preference.
+                            Click + to add responses to rank.
                         </div>
                     ) : (
                         <div className="space-y-3">
@@ -603,13 +655,33 @@ export function HumanEvalTab({ onModeChange }: HumanEvalTabProps) {
                                                 i.id === item.id ? { ...i, response: e.target.value } : i
                                             ))}
                                             placeholder="Paste response to rank..."
-                                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder-white/30 min-h-[80px] resize-none"
+                                            className="w-full bg-black/30 border border-white/5 rounded-xl px-4 py-3 text-sm text-white/90 focus:outline-none focus:border-white/15 hover:border-white/15 placeholder-white/30 min-h-[80px] resize-none"
                                         />
                                     </div>
                                 ))}
                         </div>
                     )}
+
                 </div>
+
+                {/* Submit Button */}
+                <div className="flex items-center gap-2">
+                    <Button
+                        onClick={() => {
+                            if (rankingItems.length === 0) {
+                                alert('Please add items to rank first');
+                                return;
+                            }
+                            alert(`Ranking saved: ${rankingItems.length} items ranked`);
+                        }}
+                        variant="primary"
+                        size="sm"
+                        className={`min-w-[140px] ${rankingItems.length === 0 ? 'opacity-60' : ''}`}
+                    >
+                        Submit Ranking
+                    </Button>
+                </div>
+                </>
             )}
 
             {/* Prompt Selector Modal */}

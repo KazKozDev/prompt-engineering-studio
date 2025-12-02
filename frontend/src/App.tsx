@@ -9,7 +9,7 @@ import { Datasets } from './components/Datasets';
 import { Settings } from './components/Settings';
 import { EvaluationLab } from './components/EvaluationLab';
 // import { ProductionMetrics } from './components/ProductionMetrics'; // Hidden for now
-import { PromptOptimizer } from './components/PromptOptimizer';
+import { DSPyOrchestrator } from './components/DSPyOrchestrator';
 import { Help } from './components/Help';
 import { Button } from './components/ui/Button';
 
@@ -19,7 +19,7 @@ const NAV_GROUPS = [
     label: 'Create',
     items: [
       { id: 'Prompt Generator', label: 'Generator' },
-      { id: 'Prompt Optimizer', label: 'Optimizer' },
+      { id: 'DSPy Orchestrator', label: 'DSPy' },
     ]
   },
   {
@@ -39,7 +39,7 @@ const NAV_GROUPS = [
 ] as const;
 
 type SectionId =
-  | 'Prompt Generator' | 'Prompt Optimizer'
+  | 'Prompt Generator' | 'DSPy Orchestrator'
   | 'Prompt Library' | 'Datasets'
   | 'Evaluation Lab' | 'History'
   | 'Settings'
@@ -101,6 +101,28 @@ function App() {
   const handleEvaluatePrompt = (prompt: LibraryPrompt) => {
     setPromptToEvaluate(prompt);
     setActiveSection('Evaluation Lab');
+  };
+
+  const handleSaveEvaluation = (promptId: string, evaluation: {
+    qualityScore: number;
+    robustnessScore: number;
+    consistencyScore: number;
+    overallScore: number;
+    lastTested: string;
+  }) => {
+    // Update prompt in localStorage
+    const stored = localStorage.getItem('prompt-library');
+    if (stored) {
+      const prompts = JSON.parse(stored);
+      const updatedPrompts = prompts.map((p: LibraryPrompt) => {
+        if (p.id === promptId) {
+          return { ...p, evaluation };
+        }
+        return p;
+      });
+      localStorage.setItem('prompt-library', JSON.stringify(updatedPrompts));
+      alert('Evaluation scores saved to prompt!');
+    }
   };
 
   // Splash Screen
@@ -245,15 +267,15 @@ function App() {
           <Studio settings={settings} />
         </div>
         <div style={{ display: activeSection === 'Evaluation Lab' ? 'block' : 'none', height: '100%' }}>
-          <EvaluationLab settings={settings} promptToEvaluate={promptToEvaluate} />
+          <EvaluationLab settings={settings} promptToEvaluate={promptToEvaluate} onSaveEvaluation={handleSaveEvaluation} />
         </div>
 {/* Production Metrics hidden for now
         <div style={{ display: activeSection === 'Production Metrics' ? 'block' : 'none', height: '100%' }}>
           <ProductionMetrics />
         </div>
 */}
-        <div style={{ display: activeSection === 'Prompt Optimizer' ? 'block' : 'none', height: '100%' }}>
-          <PromptOptimizer settings={settings} />
+        <div style={{ display: activeSection === 'DSPy Orchestrator' ? 'block' : 'none', height: '100%' }}>
+          <DSPyOrchestrator settings={settings} />
         </div>
         <div style={{ display: activeSection === 'History' ? 'block' : 'none', height: '100%' }}>
           <History />

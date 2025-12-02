@@ -19,24 +19,35 @@ interface SettingsState {
   autoSave: boolean;
 }
 
+interface EvaluationResults {
+  qualityScore: number;
+  robustnessScore: number;
+  consistencyScore: number;
+  overallScore: number;
+  lastTested: string;
+  datasetId?: string;
+  datasetName?: string;
+}
+
 interface EvaluationLabProps {
   settings: SettingsState;
   promptToEvaluate?: LibraryPrompt | null;
+  onSaveEvaluation?: (promptId: string, evaluation: EvaluationResults) => void;
 }
 
 type TabType = 'quality' | 'consistency' | 'robustness' | 'performance' | 'human' | 'overview';
 type RobustnessTestType = 'format' | 'length' | 'adversarial';
 
 const EVAL_CATEGORIES = [
-  { id: 'quality' as TabType, label: 'Quality', desc: 'BLEU, ROUGE, G-Eval' },
-  { id: 'consistency' as TabType, label: 'Consistency', desc: 'Self & Mutual' },
-  { id: 'robustness' as TabType, label: 'Robustness', desc: 'Format, Length, Adversarial' },
-  { id: 'performance' as TabType, label: 'Performance', desc: 'Latency, Cost, Reliability' },
-  { id: 'human' as TabType, label: 'Human', desc: 'Rating, Ranking, A/B' },
-  { id: 'overview' as TabType, label: 'Overview', desc: 'Aggregated Report' },
+  { id: 'quality' as TabType, label: 'Quality', desc: 'BLEU, ROUGE, G-Eval', info: 'Check if your chatbot answers match the knowledge base, or if generated emails follow the approved template. Essential for customer support, content generation, and data extraction tasks.' },
+  { id: 'consistency' as TabType, label: 'Consistency', desc: 'Self & Mutual', info: 'Ensure your pricing assistant gives the same quote for identical requests, or your legal summarizer produces stable outputs. Critical for finance, healthcare, and compliance use cases.' },
+  { id: 'robustness' as TabType, label: 'Robustness', desc: 'Format, Length, Adversarial', info: 'Test if your prompt handles typos, unusual formatting, or attempts to bypass instructions. Important for public-facing chatbots, moderation systems, and security-sensitive applications.' },
+  { id: 'performance' as TabType, label: 'Performance', desc: 'Latency, Cost, Reliability', info: 'Measure response time for real-time applications and estimate API costs at scale. Key for production deployment, SLA compliance, and budget planning.' },
+  { id: 'human' as TabType, label: 'Human', desc: 'Rating, Ranking, A/B', info: 'Let your team rate output quality or compare prompt variants side-by-side. Best for creative writing, marketing copy, and cases where automated metrics fall short.' },
+  { id: 'overview' as TabType, label: 'Overview', desc: 'Aggregated Report', info: 'See all evaluation results in one place with scores and recommendations. Use before deploying to production or when presenting results to stakeholders.' },
 ];
 
-export function EvaluationLab({ settings, promptToEvaluate }: EvaluationLabProps) {
+export function EvaluationLab({ settings, promptToEvaluate, onSaveEvaluation }: EvaluationLabProps) {
   const [activeTab, setActiveTab] = useState<TabType>('quality');
   const [datasets, setDatasets] = useState<any[]>([]);
   const [qualityMode, setQualityMode] = useState<QualityMode>('reference');
@@ -127,46 +138,8 @@ export function EvaluationLab({ settings, promptToEvaluate }: EvaluationLabProps
             {/* Selected Category Info */}
             <div className="flex-1 p-4 space-y-4">
               <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
-                <div className="text-sm font-semibold text-white/80 mb-1">{getActiveCategory()?.label}</div>
-                <div className="text-[11px] text-white/40">{getActiveCategory()?.desc}</div>
-              </div>
-
-              {/* Quick Stats */}
-              <div className="space-y-2">
-                <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Progress</div>
-                {EVAL_CATEGORIES.filter(c => c.id !== 'overview').map(cat => {
-                  const hasResults = 
-                    (cat.id === 'quality' && qualityResults) ||
-                    (cat.id === 'consistency' && consistencyResults) ||
-                    (cat.id === 'robustness' && robustnessResults);
-                  return (
-                    <div key={cat.id} className="flex items-center justify-between text-xs">
-                      <span className={hasResults ? 'text-white/70' : 'text-white/30'}>{cat.label}</span>
-                      {hasResults ? (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 border border-green-500/30">Done</span>
-                      ) : (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/30 border border-white/10">—</span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Model Info */}
-              <div className="space-y-2 pt-2 border-t border-white/5">
-                <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Model</div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-white/50">Provider</span>
-                  <span className="text-white/70">{settings.provider || '—'}</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-white/50">Model</span>
-                  <span className="text-white/70 truncate max-w-[120px]">{settings.model || '—'}</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-white/50">Datasets</span>
-                  <span className="text-white/70">{datasets.length}</span>
-                </div>
+                <div className="text-sm font-semibold text-white/80 mb-2">{getActiveCategory()?.label}</div>
+                <div className="text-[11px] text-white/50 leading-relaxed">{getActiveCategory()?.info}</div>
               </div>
             </div>
 
@@ -191,15 +164,13 @@ export function EvaluationLab({ settings, promptToEvaluate }: EvaluationLabProps
               <div className="text-[11px] px-2 py-1 rounded-md border border-white/10 text-white/50 bg-black/30">
                 {settings.provider} · {settings.model}
               </div>
-              <Button
+              <button
                 onClick={() => setGuideOpen(true)}
-                variant="secondary"
-                size="xs"
-                className="inline-flex items-center gap-1 text-[11px]"
+                className="px-2 py-1.5 rounded-lg border border-amber-500/30 bg-amber-900/20 text-amber-300 hover:bg-amber-900/30 transition-all"
+                title="Guide"
               >
-                <MethodologyIcon className="w-3.5 h-3.5 text-amber-300" />
-                Guide
-              </Button>
+                <MethodologyIcon className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
 
@@ -244,6 +215,12 @@ export function EvaluationLab({ settings, promptToEvaluate }: EvaluationLabProps
                 qualityResults={qualityResults}
                 consistencyResults={consistencyResults}
                 robustnessResults={robustnessResults}
+                promptId={promptToEvaluate?.id}
+                onSaveToPrompt={(promptId, scores) => {
+                  if (onSaveEvaluation) {
+                    onSaveEvaluation(promptId, scores);
+                  }
+                }}
               />
             )}
           </div>
@@ -318,6 +295,25 @@ export function EvaluationLab({ settings, promptToEvaluate }: EvaluationLabProps
               </div>
             </div>
 
+            {/* Configuration */}
+            <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
+              <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-3">Configuration</div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-white/50">Provider</span>
+                  <span className="text-white/70">{settings.provider || '—'}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-white/50">Model</span>
+                  <span className="text-white/70 truncate max-w-[180px]">{settings.model || '—'}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-white/50">Datasets</span>
+                  <span className="text-white/70">{datasets.length}</span>
+                </div>
+              </div>
+            </div>
+
             {/* Quick Actions */}
             <div className="space-y-2 pt-2">
               <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Actions</div>
@@ -373,84 +369,335 @@ export function EvaluationLab({ settings, promptToEvaluate }: EvaluationLabProps
             </div>
             <div className="flex-1 overflow-y-auto p-5 space-y-4 text-sm text-white/80 leading-relaxed custom-scrollbar">
               {/* Quality Guide */}
-              {activeTab === 'quality' && (
+              {activeTab === 'quality' && qualityMode === 'reference' && (
                 <>
                   <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
-                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">What It Does</div>
-                    {qualityMode === 'reference' ? (
-                      <p className="text-[11px] text-white/60">
-                        Compares model outputs against <span className="text-white/80 font-medium">ground truth</span> using BLEU, ROUGE, and Exact Match metrics.
-                      </p>
-                    ) : (
-                      <p className="text-[11px] text-white/60">
-                        Uses <span className="text-white/80 font-medium">LLM-as-Judge</span> (G-Eval) to score outputs on relevance, coherence, and accuracy.
-                      </p>
-                    )}
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Description</div>
+                    <p className="text-[11px] text-white/60 mb-3">
+                      Reference-based evaluation compares model outputs against <span className="text-white/80 font-medium">ground truth labels</span> using automated metrics like BLEU, ROUGE, and Exact Match.
+                    </p>
+                    <a href="https://arxiv.org/abs/2002.05202" target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                      BLEU: A Method for Automatic Evaluation (Papineni et al.)
+                    </a>
                   </div>
                   <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
-                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Metrics</div>
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">When to Use</div>
                     <ul className="text-[11px] text-white/60 space-y-1.5">
-                      <li>• <span className="text-white/80">BLEU:</span> N-gram precision</li>
-                      <li>• <span className="text-white/80">ROUGE:</span> Recall-based overlap</li>
-                      <li>• <span className="text-white/80">Exact Match:</span> Binary correctness</li>
-                      <li>• <span className="text-white/80">G-Eval:</span> LLM-scored quality</li>
+                      <li>• Translation, summarization, Q&A tasks</li>
+                      <li>• When you have labeled test datasets</li>
+                      <li>• Comparing prompt variants objectively</li>
                     </ul>
+                  </div>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Who Benefits</div>
+                    <p className="text-[11px] text-white/60">ML engineers, QA teams, researchers needing reproducible metrics.</p>
+                  </div>
+                </>
+              )}
+
+              {activeTab === 'quality' && qualityMode === 'judge' && (
+                <>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Description</div>
+                    <p className="text-[11px] text-white/60 mb-3">
+                      G-Eval uses an <span className="text-white/80 font-medium">LLM as a judge</span> to evaluate outputs on criteria like relevance, coherence, fluency, and accuracy without reference labels.
+                    </p>
+                    <a href="https://arxiv.org/abs/2303.16634" target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                      G-Eval: NLG Evaluation using GPT-4 (Liu et al., 2023)
+                    </a>
+                  </div>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">When to Use</div>
+                    <ul className="text-[11px] text-white/60 space-y-1.5">
+                      <li>• Creative writing, open-ended generation</li>
+                      <li>• No ground truth available</li>
+                      <li>• Evaluating subjective quality</li>
+                    </ul>
+                  </div>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Who Benefits</div>
+                    <p className="text-[11px] text-white/60">Content teams, product managers, anyone evaluating generative outputs.</p>
                   </div>
                 </>
               )}
 
               {/* Consistency Guide */}
-              {activeTab === 'consistency' && (
+              {activeTab === 'consistency' && consistencyMode === 'self' && (
                 <>
                   <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
-                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">What It Does</div>
-                    {consistencyMode === 'self' ? (
-                      <p className="text-[11px] text-white/60">
-                        Runs the same prompt <span className="text-white/80 font-medium">N times</span> and measures output consistency.
-                      </p>
-                    ) : (
-                      <p className="text-[11px] text-white/60">
-                        Compares <span className="text-white/80 font-medium">multiple prompt variants</span> on the same inputs (GLaPE).
-                      </p>
-                    )}
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Description</div>
+                    <p className="text-[11px] text-white/60 mb-3">
+                      Self-Consistency runs the <span className="text-white/80 font-medium">same prompt multiple times</span> and measures how often the model produces consistent answers. High variance indicates unreliable prompts.
+                    </p>
+                    <a href="https://arxiv.org/abs/2203.11171" target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                      Self-Consistency Improves CoT Reasoning (Wang et al., 2022)
+                    </a>
+                  </div>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">When to Use</div>
+                    <ul className="text-[11px] text-white/60 space-y-1.5">
+                      <li>• Testing prompt reliability</li>
+                      <li>• Before deploying to production</li>
+                      <li>• Debugging inconsistent outputs</li>
+                    </ul>
+                  </div>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Who Benefits</div>
+                    <p className="text-[11px] text-white/60">DevOps, SRE teams, anyone deploying LLMs in production.</p>
+                  </div>
+                </>
+              )}
+
+              {activeTab === 'consistency' && consistencyMode === 'mutual' && (
+                <>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Description</div>
+                    <p className="text-[11px] text-white/60 mb-3">
+                      GLaPE (Generative Language Prompt Evaluation) compares <span className="text-white/80 font-medium">multiple prompt variants</span> on the same inputs to find which produces more consistent results.
+                    </p>
+                    <a href="https://arxiv.org/abs/2402.07927" target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                      GLaPE: Gold Label-agnostic Prompt Evaluation (2024)
+                    </a>
+                  </div>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">When to Use</div>
+                    <ul className="text-[11px] text-white/60 space-y-1.5">
+                      <li>• A/B testing prompt variants</li>
+                      <li>• Prompt optimization without labels</li>
+                      <li>• Finding the most stable prompt</li>
+                    </ul>
+                  </div>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Who Benefits</div>
+                    <p className="text-[11px] text-white/60">Prompt engineers, researchers comparing prompt strategies.</p>
                   </div>
                 </>
               )}
 
               {/* Robustness Guide */}
-              {activeTab === 'robustness' && (
-                <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
-                  <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Test Types</div>
-                  <ul className="text-[11px] text-white/60 space-y-1.5">
-                    <li>• <span className="text-white/80">Format:</span> JSON vs plain text</li>
-                    <li>• <span className="text-white/80">Length:</span> Context window limits</li>
-                    <li>• <span className="text-white/80">Adversarial:</span> Injection attacks</li>
-                  </ul>
-                </div>
+              {activeTab === 'robustness' && robustnessTestType === 'format' && (
+                <>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Description</div>
+                    <p className="text-[11px] text-white/60 mb-3">
+                      Tests how prompt performance changes with different <span className="text-white/80 font-medium">output formats</span> (JSON, markdown, plain text). Reveals format-dependent failures.
+                    </p>
+                  </div>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">When to Use</div>
+                    <ul className="text-[11px] text-white/60 space-y-1.5">
+                      <li>• Building APIs with structured output</li>
+                      <li>• Testing JSON parsing reliability</li>
+                      <li>• Multi-format output requirements</li>
+                    </ul>
+                  </div>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Who Benefits</div>
+                    <p className="text-[11px] text-white/60">Backend developers, API designers, integration engineers.</p>
+                  </div>
+                </>
+              )}
+
+              {activeTab === 'robustness' && robustnessTestType === 'length' && (
+                <>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Description</div>
+                    <p className="text-[11px] text-white/60 mb-3">
+                      Tests how prompt quality degrades as <span className="text-white/80 font-medium">context length increases</span>. Identifies the point where performance drops.
+                    </p>
+                    <a href="https://arxiv.org/abs/2307.03172" target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                      Lost in the Middle (Liu et al., 2023)
+                    </a>
+                  </div>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">When to Use</div>
+                    <ul className="text-[11px] text-white/60 space-y-1.5">
+                      <li>• RAG systems with long contexts</li>
+                      <li>• Document processing pipelines</li>
+                      <li>• Finding optimal chunk sizes</li>
+                    </ul>
+                  </div>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Who Benefits</div>
+                    <p className="text-[11px] text-white/60">RAG developers, document AI teams, search engineers.</p>
+                  </div>
+                </>
+              )}
+
+              {activeTab === 'robustness' && robustnessTestType === 'adversarial' && (
+                <>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Description</div>
+                    <p className="text-[11px] text-white/60 mb-3">
+                      Tests prompt resistance to <span className="text-white/80 font-medium">injection attacks</span>, jailbreaks, and malicious inputs. Essential for security-critical applications.
+                    </p>
+                    <a href="https://arxiv.org/abs/2302.12173" target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                      Ignore This Title and HackAPrompt (Perez & Ribeiro, 2023)
+                    </a>
+                  </div>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">When to Use</div>
+                    <ul className="text-[11px] text-white/60 space-y-1.5">
+                      <li>• User-facing chatbots</li>
+                      <li>• Security audits</li>
+                      <li>• Before production deployment</li>
+                    </ul>
+                  </div>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Who Benefits</div>
+                    <p className="text-[11px] text-white/60">Security teams, red teamers, compliance officers.</p>
+                  </div>
+                </>
               )}
 
               {/* Performance Guide */}
-              {activeTab === 'performance' && (
-                <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
-                  <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Metrics</div>
-                  <ul className="text-[11px] text-white/60 space-y-1.5">
-                    <li>• <span className="text-white/80">Latency:</span> Avg, P50, P95, P99</li>
-                    <li>• <span className="text-white/80">Cost:</span> Token usage, $ per request</li>
-                    <li>• <span className="text-white/80">Reliability:</span> Success/failure rate</li>
-                  </ul>
-                </div>
+              {activeTab === 'performance' && performanceMode === 'latency' && (
+                <>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Description</div>
+                    <p className="text-[11px] text-white/60 mb-3">
+                      Measures <span className="text-white/80 font-medium">response time</span> across multiple requests. Reports avg, P50, P95, P99 latencies for SLA planning.
+                    </p>
+                  </div>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">When to Use</div>
+                    <ul className="text-[11px] text-white/60 space-y-1.5">
+                      <li>• Real-time applications</li>
+                      <li>• SLA definition and monitoring</li>
+                      <li>• Comparing model providers</li>
+                    </ul>
+                  </div>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Who Benefits</div>
+                    <p className="text-[11px] text-white/60">Platform engineers, SREs, product managers defining UX requirements.</p>
+                  </div>
+                </>
+              )}
+
+              {activeTab === 'performance' && performanceMode === 'cost' && (
+                <>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Description</div>
+                    <p className="text-[11px] text-white/60 mb-3">
+                      Tracks <span className="text-white/80 font-medium">token usage and costs</span> per request. Helps optimize prompts for budget efficiency.
+                    </p>
+                  </div>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">When to Use</div>
+                    <ul className="text-[11px] text-white/60 space-y-1.5">
+                      <li>• Budget planning and forecasting</li>
+                      <li>• Optimizing prompt length</li>
+                      <li>• Comparing model cost-efficiency</li>
+                    </ul>
+                  </div>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Who Benefits</div>
+                    <p className="text-[11px] text-white/60">Finance teams, engineering managers, cost-conscious startups.</p>
+                  </div>
+                </>
+              )}
+
+              {activeTab === 'performance' && performanceMode === 'reliability' && (
+                <>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Description</div>
+                    <p className="text-[11px] text-white/60 mb-3">
+                      Measures <span className="text-white/80 font-medium">success/failure rates</span> across requests. Identifies timeout, rate limit, and error patterns.
+                    </p>
+                  </div>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">When to Use</div>
+                    <ul className="text-[11px] text-white/60 space-y-1.5">
+                      <li>• Production monitoring setup</li>
+                      <li>• Choosing reliable providers</li>
+                      <li>• Designing retry strategies</li>
+                    </ul>
+                  </div>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Who Benefits</div>
+                    <p className="text-[11px] text-white/60">SREs, DevOps, platform reliability engineers.</p>
+                  </div>
+                </>
               )}
 
               {/* Human Eval Guide */}
-              {activeTab === 'human' && (
-                <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
-                  <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Methods</div>
-                  <ul className="text-[11px] text-white/60 space-y-1.5">
-                    <li>• <span className="text-white/80">Rating:</span> Likert scale (1-5)</li>
-                    <li>• <span className="text-white/80">Ranking:</span> Order by preference</li>
-                    <li>• <span className="text-white/80">A/B:</span> Side-by-side comparison</li>
-                  </ul>
-                </div>
+              {activeTab === 'human' && humanEvalMode === 'rating' && (
+                <>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Description</div>
+                    <p className="text-[11px] text-white/60 mb-3">
+                      <span className="text-white/80 font-medium">Likert scale (1-5)</span> rating on multiple criteria. Gold standard for subjective quality assessment.
+                    </p>
+                    <a href="https://arxiv.org/abs/2301.13298" target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                      Human Evaluation of Text Generation (van der Lee et al.)
+                    </a>
+                  </div>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">When to Use</div>
+                    <ul className="text-[11px] text-white/60 space-y-1.5">
+                      <li>• Final quality validation</li>
+                      <li>• Calibrating automated metrics</li>
+                      <li>• User research studies</li>
+                    </ul>
+                  </div>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Who Benefits</div>
+                    <p className="text-[11px] text-white/60">UX researchers, content strategists, quality assurance teams.</p>
+                  </div>
+                </>
+              )}
+
+              {activeTab === 'human' && humanEvalMode === 'ranking' && (
+                <>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Description</div>
+                    <p className="text-[11px] text-white/60 mb-3">
+                      <span className="text-white/80 font-medium">Order responses by preference</span>. More reliable than absolute ratings for comparing multiple outputs.
+                    </p>
+                  </div>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">When to Use</div>
+                    <ul className="text-[11px] text-white/60 space-y-1.5">
+                      <li>• Comparing 3+ prompt variants</li>
+                      <li>• RLHF data collection</li>
+                      <li>• Preference learning</li>
+                    </ul>
+                  </div>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Who Benefits</div>
+                    <p className="text-[11px] text-white/60">ML researchers, RLHF teams, preference optimization engineers.</p>
+                  </div>
+                </>
+              )}
+
+              {activeTab === 'human' && humanEvalMode === 'ab' && (
+                <>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Description</div>
+                    <p className="text-[11px] text-white/60 mb-3">
+                      <span className="text-white/80 font-medium">Side-by-side comparison</span> of two outputs. Simple binary choice with optional reasoning.
+                    </p>
+                  </div>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">When to Use</div>
+                    <ul className="text-[11px] text-white/60 space-y-1.5">
+                      <li>• Quick prompt comparisons</li>
+                      <li>• Model selection decisions</li>
+                      <li>• Iterative prompt improvement</li>
+                    </ul>
+                  </div>
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">
+                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Who Benefits</div>
+                    <p className="text-[11px] text-white/60">Product teams, prompt engineers, anyone iterating on prompts.</p>
+                  </div>
+                </>
               )}
 
               {/* Overview Guide */}
@@ -475,6 +722,25 @@ export function EvaluationLab({ settings, promptToEvaluate }: EvaluationLabProps
                   </div>
                 </>
               )}
+
+              {/* Model Info - always visible */}
+              <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4 mt-4">
+                <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-3">Configuration</div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-white/50">Provider</span>
+                    <span className="text-white/70">{settings.provider || '—'}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-white/50">Model</span>
+                    <span className="text-white/70 truncate max-w-[180px]">{settings.model || '—'}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-white/50">Datasets</span>
+                    <span className="text-white/70">{datasets.length}</span>
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="px-5 py-3 border-t border-white/10 flex justify-end">
               <Button onClick={() => setGuideOpen(false)} variant="secondary" size="sm" className="px-4">

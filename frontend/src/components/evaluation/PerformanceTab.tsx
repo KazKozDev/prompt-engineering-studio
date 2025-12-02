@@ -214,23 +214,32 @@ export function PerformanceTab({ settings, onModeChange }: PerformanceTabProps) 
                 </div>
             </div>
 
+            {/* Description based on mode */}
+            <div className="text-[11px] text-white/50 bg-white/[0.02] border border-white/5 rounded-lg px-3 py-2">
+                {mode === 'latency' && 'Measure response time across multiple requests. Get avg, P50, P95, P99 latencies for SLA planning and real-time application requirements.'}
+                {mode === 'cost' && 'Track token usage and costs per request. Optimize prompt length and compare model cost-efficiency for budget planning.'}
+                {mode === 'reliability' && 'Measure success/failure rates, timeouts, and error patterns. Essential for designing retry strategies and choosing reliable providers.'}
+            </div>
+
             {/* Prompt Input */}
             <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-2">
                     <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Prompt</span>
-                    <button
+                    <Button
                         onClick={() => setShowSelector(true)}
-                        className="text-[10px] text-white/40 hover:text-white/70 flex items-center gap-1"
+                        variant="secondary"
+                        size="xs"
+                        className="text-[10px] px-2 py-1 text-white/50"
                     >
                         <Icons.library />
-                        From Library
-                    </button>
+                        Library
+                    </Button>
                 </div>
                 <textarea
                     value={prompt}
                     onChange={e => setPrompt(e.target.value)}
                     placeholder="Enter prompt to benchmark..."
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder-white/30 min-h-[100px] resize-none"
+                    className="w-full bg-black/30 border border-white/5 rounded-xl px-4 py-3 text-sm text-white/90 focus:outline-none focus:border-white/15 hover:border-white/15 placeholder-white/30 min-h-[100px] resize-none"
                 />
             </div>
 
@@ -244,7 +253,7 @@ export function PerformanceTab({ settings, onModeChange }: PerformanceTabProps) 
                     value={testInput}
                     onChange={e => setTestInput(e.target.value)}
                     placeholder="Sample input to use for testing..."
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder-white/30 min-h-[60px] resize-none"
+                    className="w-full bg-black/30 border border-white/5 rounded-xl px-4 py-3 text-sm text-white/90 focus:outline-none focus:border-white/15 hover:border-white/15 placeholder-white/30 min-h-[100px] resize-none"
                 />
             </div>
 
@@ -269,9 +278,17 @@ export function PerformanceTab({ settings, onModeChange }: PerformanceTabProps) 
             </div>
 
             {/* Run Button */}
-            <Button onClick={runTest} disabled={loading} className="w-full">
-                {loading ? `Running ${nRuns} requests...` : 'Run Performance Test'}
-            </Button>
+            <div className="flex items-center gap-2">
+                <Button
+                    onClick={runTest}
+                    disabled={loading}
+                    variant="primary"
+                    size="sm"
+                    className={`min-w-[140px] ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                >
+                    {loading ? 'Running...' : 'Run Test'}
+                </Button>
+            </div>
 
             {/* Results */}
             {results && (

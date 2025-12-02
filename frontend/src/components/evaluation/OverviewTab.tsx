@@ -1,4 +1,10 @@
-import { Button } from '../ui/Button';
+interface EvaluationScores {
+    qualityScore: number;
+    robustnessScore: number;
+    consistencyScore: number;
+    overallScore: number;
+    lastTested: string;
+}
 
 interface OverviewTabProps {
     settings: {
@@ -10,9 +16,11 @@ interface OverviewTabProps {
     qualityResults?: any;
     consistencyResults?: any;
     robustnessResults?: any;
+    promptId?: string;
+    onSaveToPrompt?: (promptId: string, scores: EvaluationScores) => void;
 }
 
-export function OverviewTab({ qualityResults, consistencyResults, robustnessResults }: OverviewTabProps) {
+export function OverviewTab({ qualityResults, consistencyResults, robustnessResults, promptId, onSaveToPrompt }: OverviewTabProps) {
 
     // Aggregate metrics from all tabs
     const hasAnyResults = qualityResults || consistencyResults || robustnessResults;
@@ -227,30 +235,48 @@ export function OverviewTab({ qualityResults, consistencyResults, robustnessResu
                     <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Quick Actions</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                    <Button variant="outline" size="sm" className="justify-start">
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <button className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-white/10 bg-white/[0.02] text-white/60 text-xs font-medium hover:bg-white/[0.05] hover:border-white/20 transition-all">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
                         Export Report
-                    </Button>
-                    <Button variant="outline" size="sm" className="justify-start">
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    </button>
+                    <button 
+                        onClick={() => {
+                            if (promptId && onSaveToPrompt && overallScore !== null) {
+                                onSaveToPrompt(promptId, {
+                                    qualityScore: qualityScore !== null ? Math.round(qualityScore * 100) : 0,
+                                    robustnessScore: robustnessScore !== null ? Math.round(robustnessScore * 100) : 0,
+                                    consistencyScore: consistencyScore !== null ? Math.round(consistencyScore * 100) : 0,
+                                    overallScore: Math.round(overallScore * 100),
+                                    lastTested: new Date().toISOString(),
+                                });
+                            }
+                        }}
+                        disabled={!promptId || !hasAnyResults}
+                        className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl border text-xs font-medium transition-all ${
+                            promptId && hasAnyResults 
+                                ? 'border-white/20 bg-white/10 text-white hover:bg-white/15' 
+                                : 'border-white/10 bg-white/[0.02] text-white/40 cursor-not-allowed'
+                        }`}
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                         </svg>
-                        Save to Library
-                    </Button>
-                    <Button variant="outline" size="sm" className="justify-start">
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {promptId ? 'Save Scores to Prompt' : 'Select Prompt First'}
+                    </button>
+                    <button className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-white/10 bg-white/[0.02] text-white/60 text-xs font-medium hover:bg-white/[0.05] hover:border-white/20 transition-all">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                         </svg>
                         Compare Versions
-                    </Button>
-                    <Button variant="outline" size="sm" className="justify-start">
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    </button>
+                    <button className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-white/10 bg-white/[0.02] text-white/60 text-xs font-medium hover:bg-white/[0.05] hover:border-white/20 transition-all">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
                         Re-run All Tests
-                    </Button>
+                    </button>
                 </div>
             </div>
 

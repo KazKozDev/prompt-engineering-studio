@@ -167,21 +167,29 @@ export function ConsistencyTab({ settings, onModeChange }: ConsistencyTabProps) 
             {/* Self-Consistency Mode */}
             {mode === 'self' && (
                 <>
+                    {/* Description */}
+                    <div className="text-[11px] text-white/50 bg-white/[0.02] border border-white/5 rounded-lg px-3 py-2">
+                        Run the same prompt multiple times to measure output stability. High variance = unreliable prompt. Use before production deployment.
+                    </div>
+
                     <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Prompt</span>
-                            <button
+                            <Button
                                 onClick={() => handleOpenSelector('single')}
-                                className="text-[10px] text-white/40 hover:text-white/70"
+                                variant="secondary"
+                                size="xs"
+                                className="text-[10px] px-2 py-1 text-white/50"
                             >
-                                From Library
-                            </button>
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" /></svg>
+                                Library
+                            </Button>
                         </div>
                         <textarea
                             value={prompt}
                             onChange={e => setPrompt(e.target.value)}
                             placeholder="Enter prompt to test for consistency..."
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder-white/30 min-h-[100px] resize-none"
+                            className="w-full bg-black/30 border border-white/5 rounded-xl px-4 py-3 text-sm text-white/90 focus:outline-none focus:border-white/15 hover:border-white/15 placeholder-white/30 min-h-[100px] resize-none"
                         />
                     </div>
 
@@ -208,59 +216,74 @@ export function ConsistencyTab({ settings, onModeChange }: ConsistencyTabProps) 
 
             {/* Mutual-Consistency Mode */}
             {mode === 'mutual' && (
+                <>
+                {/* Description */}
+                <div className="text-[11px] text-white/50 bg-white/[0.02] border border-white/5 rounded-lg px-3 py-2">
+                    Compare multiple prompt variants on the same inputs (GLaPE method). Find which prompt produces more consistent results without ground truth labels.
+                </div>
+
                 <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
                     <div className="flex items-center justify-between mb-3">
                         <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Prompt Variants to Compare</span>
                         <button
                             onClick={addPrompt}
-                            className="text-[10px] text-white/40 hover:text-white/70 flex items-center gap-1"
+                            className="w-5 h-5 flex items-center justify-center rounded bg-white/5 border border-white/10 text-white/40 hover:text-white/70 hover:bg-white/10"
                         >
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                             </svg>
-                            Add Variant
                         </button>
                     </div>
                     <div className="space-y-3">
                         {prompts.map((p, idx) => (
                             <div key={idx} className="relative">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-[10px] font-medium text-white/50">Variant {variantLabel(idx)}</span>
-                                    {prompts.length > 2 && (
-                                        <button
-                                            onClick={() => removePrompt(idx)}
-                                            className="text-white/30 hover:text-red-400 text-[10px]"
-                                        >
-                                            Remove
-                                        </button>
-                                    )}
-                                    <button
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-medium text-white/50">Variant {variantLabel(idx)}</span>
+                                        {prompts.length > 2 && (
+                                            <button
+                                                onClick={() => removePrompt(idx)}
+                                                className="text-white/30 hover:text-red-400 text-[10px]"
+                                            >
+                                                Remove
+                                            </button>
+                                        )}
+                                    </div>
+                                    <Button
                                         onClick={() => handleOpenSelector('multi', idx)}
-                                        className="text-white/30 hover:text-white/60 text-[10px] ml-auto"
+                                        variant="secondary"
+                                        size="xs"
+                                        className="text-[10px] px-2 py-1 text-white/50"
                                     >
-                                        From Library
-                                    </button>
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" /></svg>
+                                        Library
+                                    </Button>
                                 </div>
                                 <textarea
                                     value={p}
                                     onChange={e => updatePrompt(idx, e.target.value)}
                                     placeholder={`Enter prompt variant ${variantLabel(idx)}...`}
-                                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder-white/30 min-h-[80px] resize-none"
+                                    className="w-full bg-black/30 border border-white/5 rounded-xl px-4 py-3 text-sm text-white/90 focus:outline-none focus:border-white/15 hover:border-white/15 placeholder-white/30 min-h-[80px] resize-none"
                                 />
                             </div>
                         ))}
                     </div>
                 </div>
+                </>
             )}
 
             {/* Run Button */}
-            <Button
-                onClick={runTest}
-                disabled={loading}
-                className="w-full"
-            >
-                {loading ? 'Evaluating...' : mode === 'self' ? 'Run Self-Consistency Check' : 'Run Mutual-Consistency Check'}
-            </Button>
+            <div className="flex items-center gap-2">
+                <Button
+                    onClick={runTest}
+                    disabled={loading}
+                    variant="primary"
+                    size="sm"
+                    className={`min-w-[140px] ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                >
+                    {loading ? 'Evaluating...' : 'Run Evaluation'}
+                </Button>
+            </div>
 
             {/* Results */}
             {results && (

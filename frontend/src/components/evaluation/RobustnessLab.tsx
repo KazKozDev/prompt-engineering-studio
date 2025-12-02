@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { PromptSelector } from './PromptSelector';
-import { DatasetGenerator } from '../DatasetGenerator';
+import { DatasetSelector } from './DatasetSelector';
 import { Button } from '../ui/Button';
 
 interface RobustnessLabProps {
@@ -17,7 +17,31 @@ interface RobustnessLabProps {
 
 type TestType = 'format' | 'length' | 'adversarial';
 
-export function RobustnessLab({ settings, datasets, onTestTypeChange, onDatasetCreated }: RobustnessLabProps) {
+// Icons
+const Icons = {
+    format: () => (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
+        </svg>
+    ),
+    length: () => (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+        </svg>
+    ),
+    adversarial: () => (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+    ),
+    library: () => (
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+        </svg>
+    ),
+};
+
+export function RobustnessLab({ settings, datasets, onTestTypeChange }: RobustnessLabProps) {
     const [selectedDataset, setSelectedDataset] = useState<string>('');
     const [prompt, setPrompt] = useState('');
     const [results, setResults] = useState<any>(null);
@@ -25,31 +49,21 @@ export function RobustnessLab({ settings, datasets, onTestTypeChange, onDatasetC
     const [testType, setTestType] = useState<TestType>('format');
     const [contextLength, setContextLength] = useState(1000);
     const [adversarialLevel, setAdversarialLevel] = useState<'light' | 'medium' | 'heavy'>('medium');
-
-    // Selector state
     const [showSelector, setShowSelector] = useState(false);
-    const [showGenerator, setShowGenerator] = useState(false);
+    const [showDatasetSelector, setShowDatasetSelector] = useState(false);
+
+    const selectedDatasetMeta = datasets.find(d => d.id === selectedDataset);
+
+    // Don't auto-select dataset - let user choose
 
     useEffect(() => {
-        if (datasets.length > 0 && !selectedDataset) {
-            setSelectedDataset(datasets[0].id);
-        }
-    }, [datasets, selectedDataset]);
-
-    useEffect(() => {
-        if (onTestTypeChange) {
-            onTestTypeChange(testType);
-        }
+        onTestTypeChange?.(testType);
         setResults(null);
     }, [testType, onTestTypeChange]);
 
-    const selectedDatasetMeta = datasets.find(d => d.id === selectedDataset);
-    const datasetSize = selectedDatasetMeta?.size ?? selectedDatasetMeta?.data?.length ?? 0;
-    const datasetName = selectedDatasetMeta?.name || 'Not set';
-
-    const handleSelectPrompt = (text: string) => {
-        setPrompt(text);
-        setShowSelector(false);
+    const handleModeChange = (newMode: TestType) => {
+        setTestType(newMode);
+        setResults(null);
     };
 
     const runTest = async () => {
@@ -96,324 +110,296 @@ export function RobustnessLab({ settings, datasets, onTestTypeChange, onDatasetC
         }
     };
 
+    const getScoreColor = (score: number) => {
+        if (score >= 0.8) return 'text-green-400';
+        if (score >= 0.5) return 'text-yellow-400';
+        return 'text-red-400';
+    };
+
+    const getScoreBg = (score: number) => {
+        if (score >= 0.8) return 'bg-green-500/20 border-green-500/30';
+        if (score >= 0.5) return 'bg-yellow-500/20 border-yellow-500/30';
+        return 'bg-red-500/20 border-red-500/30';
+    };
+
     return (
-        <div className="relative space-y-6 pb-20">
+        <div className="space-y-6">
+            {/* Mode Selector */}
+            <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                    <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Test Type</span>
+                </div>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => handleModeChange('format')}
+                        className={`flex-1 px-4 py-2.5 rounded-lg text-xs font-medium transition-all ${
+                            testType === 'format'
+                                ? 'bg-white/10 text-white border border-white/20'
+                                : 'bg-white/[0.02] text-white/50 border border-white/5 hover:bg-white/5'
+                        }`}
+                    >
+                        <div className="flex items-center justify-center gap-2">
+                            <Icons.format />
+                            Format
+                        </div>
+                        <div className="text-[10px] text-white/40 mt-1">JSON, text, markdown</div>
+                    </button>
+                    <button
+                        onClick={() => handleModeChange('length')}
+                        className={`flex-1 px-4 py-2.5 rounded-lg text-xs font-medium transition-all ${
+                            testType === 'length'
+                                ? 'bg-white/10 text-white border border-white/20'
+                                : 'bg-white/[0.02] text-white/50 border border-white/5 hover:bg-white/5'
+                        }`}
+                    >
+                        <div className="flex items-center justify-center gap-2">
+                            <Icons.length />
+                            Length
+                        </div>
+                        <div className="text-[10px] text-white/40 mt-1">Context window</div>
+                    </button>
+                    <button
+                        onClick={() => handleModeChange('adversarial')}
+                        className={`flex-1 px-4 py-2.5 rounded-lg text-xs font-medium transition-all ${
+                            testType === 'adversarial'
+                                ? 'bg-white/10 text-white border border-white/20'
+                                : 'bg-white/[0.02] text-white/50 border border-white/5 hover:bg-white/5'
+                        }`}
+                    >
+                        <div className="flex items-center justify-center gap-2">
+                            <Icons.adversarial />
+                            Adversarial
+                        </div>
+                        <div className="text-[10px] text-white/40 mt-1">Attack resistance</div>
+                    </button>
+                </div>
+            </div>
+
+            {/* Description based on test type */}
+            <div className="text-[11px] text-white/50 bg-white/[0.02] border border-white/5 rounded-lg px-3 py-2">
+                {testType === 'format' && 'Test how your prompt handles different output formats (JSON, markdown, plain text). Reveals format-dependent failures in structured output tasks.'}
+                {testType === 'length' && 'Test how quality degrades with longer contexts. Find the point where your prompt starts losing information — critical for RAG and document processing.'}
+                {testType === 'adversarial' && 'Test resistance to prompt injection, jailbreaks, and malicious inputs. Essential security check before deploying user-facing applications.'}
+            </div>
+
+            {/* Dataset Selection */}
+            <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Dataset</span>
+                    <Button
+                        onClick={() => setShowDatasetSelector(true)}
+                        variant="secondary"
+                        size="xs"
+                        className="text-[10px] px-2 py-1 text-white/50"
+                    >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+                        </svg>
+                        Dataset
+                    </Button>
+                </div>
+                <textarea
+                    readOnly
+                    onClick={() => setShowDatasetSelector(true)}
+                    value={selectedDatasetMeta?.data ? JSON.stringify(selectedDatasetMeta.data.slice(0, 3), null, 2) : ''}
+                    placeholder="Select a dataset to import..."
+                    className="w-full bg-black/30 border border-white/5 rounded-xl px-4 py-3 text-sm text-white/90 focus:outline-none focus:border-white/15 hover:border-white/15 cursor-pointer min-h-[100px] resize-none placeholder-white/30 font-mono text-xs"
+                />
+            </div>
+
+            {/* Prompt Input */}
+            <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Prompt</span>
+                    <Button
+                        onClick={() => setShowSelector(true)}
+                        variant="secondary"
+                        size="xs"
+                        className="text-[10px] px-2 py-1 text-white/50"
+                    >
+                        <Icons.library />
+                        Library
+                    </Button>
+                </div>
+                <textarea
+                    value={prompt}
+                    onChange={e => setPrompt(e.target.value)}
+                    placeholder="Enter prompt to test for robustness..."
+                    className="w-full bg-black/30 border border-white/5 rounded-xl px-4 py-3 text-sm text-white/90 focus:outline-none focus:border-white/15 hover:border-white/15 placeholder-white/30 min-h-[100px] resize-none"
+                />
+            </div>
+
+            {/* Test-specific Options */}
+            {testType === 'length' && (
+                <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Max Context Length</span>
+                        <span className="text-xs text-white/60 font-medium">{contextLength} tokens</span>
+                    </div>
+                    <input
+                        type="range"
+                        min={500}
+                        max={8000}
+                        step={500}
+                        value={contextLength}
+                        onChange={e => setContextLength(Number(e.target.value))}
+                        className="w-full accent-white/50"
+                    />
+                    <div className="flex justify-between text-[10px] text-white/30 mt-1">
+                        <span>500</span>
+                        <span>8000</span>
+                    </div>
+                </div>
+            )}
+
+            {testType === 'adversarial' && (
+                <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-3">
+                        <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Attack Level</span>
+                    </div>
+                    <div className="flex gap-2">
+                        {(['light', 'medium', 'heavy'] as const).map(level => (
+                            <button
+                                key={level}
+                                onClick={() => setAdversarialLevel(level)}
+                                className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                                    adversarialLevel === level
+                                        ? 'bg-white/10 text-white border border-white/20'
+                                        : 'bg-white/[0.02] text-white/50 border border-white/5 hover:bg-white/5'
+                                }`}
+                            >
+                                {level.charAt(0).toUpperCase() + level.slice(1)}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Run Button */}
+            <div className="flex items-center gap-2">
+                <Button
+                    onClick={runTest}
+                    disabled={loading}
+                    variant="primary"
+                    size="sm"
+                    className={`min-w-[140px] ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                >
+                    {loading ? 'Running...' : 'Run Test'}
+                </Button>
+            </div>
+
+            {/* Results */}
+            {results && (
+                <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-4">
+                        <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Results</span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full border ${getScoreBg(results.robustness_score || 0)}`}>
+                            <span className={getScoreColor(results.robustness_score || 0)}>
+                                {((results.robustness_score || 0) * 100).toFixed(0)}% robust
+                            </span>
+                        </span>
+                    </div>
+
+                    {/* Summary Metrics */}
+                    <div className="grid grid-cols-3 gap-3 mb-4">
+                        <div className="bg-white/[0.03] border border-white/5 rounded-lg p-3 text-center">
+                            <div className={`text-xl font-semibold ${getScoreColor(results.robustness_score || 0)}`}>
+                                {((results.robustness_score || 0) * 100).toFixed(0)}%
+                            </div>
+                            <div className="text-[10px] text-white/40 uppercase mt-1">Robustness</div>
+                        </div>
+                        <div className="bg-white/[0.03] border border-white/5 rounded-lg p-3 text-center">
+                            <div className="text-xl font-semibold text-amber-400">
+                                {((results.performance_delta || 0) * 100).toFixed(1)}%
+                            </div>
+                            <div className="text-[10px] text-white/40 uppercase mt-1">Delta</div>
+                        </div>
+                        <div className="bg-white/[0.03] border border-white/5 rounded-lg p-3 text-center">
+                            <div className="text-xl font-semibold text-white">
+                                {results.variations?.length || results.format_variations?.length || results.length_tests?.length || results.adversarial_tests?.length || 0}
+                            </div>
+                            <div className="text-[10px] text-white/40 uppercase mt-1">Variations</div>
+                        </div>
+                    </div>
+
+                    {/* Format Results */}
+                    {testType === 'format' && results.format_variations && (
+                        <div className="space-y-2">
+                            <div className="text-[10px] font-bold text-white/30 uppercase mb-2">Format Variations</div>
+                            {results.format_variations.map((v: any, i: number) => (
+                                <div key={i} className="bg-white/[0.03] border border-white/5 rounded-lg p-3">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <span className="text-xs text-white/70">{v.name}</span>
+                                        <span className={`text-xs font-medium ${getScoreColor(v.score)}`}>
+                                            {(v.score * 100).toFixed(0)}%
+                                        </span>
+                                    </div>
+                                    <div className="text-[10px] text-white/40">
+                                        Delta: {(v.delta * 100).toFixed(1)}%
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Length Results */}
+                    {testType === 'length' && results.length_tests && (
+                        <div className="space-y-2">
+                            <div className="text-[10px] font-bold text-white/30 uppercase mb-2">Length Tests</div>
+                            {results.length_tests.map((t: any, i: number) => (
+                                <div key={i} className="bg-white/[0.03] border border-white/5 rounded-lg p-3 flex items-center justify-between">
+                                    <span className="text-xs text-white/70">{t.context_length} tokens</span>
+                                    <span className={`text-xs font-medium ${getScoreColor(t.score)}`}>
+                                        {(t.score * 100).toFixed(0)}%
+                                    </span>
+                                </div>
+                            ))}
+                            {results.degradation_point && (
+                                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
+                                    <div className="text-xs text-yellow-400">
+                                        Performance degrades beyond {results.degradation_point} tokens
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Adversarial Results */}
+                    {testType === 'adversarial' && results.adversarial_tests && (
+                        <div className="space-y-2">
+                            <div className="text-[10px] font-bold text-white/30 uppercase mb-2">Attack Results</div>
+                            {results.adversarial_tests.map((a: any, i: number) => (
+                                <div key={i} className="bg-white/[0.03] border border-white/5 rounded-lg p-3">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <span className="text-xs text-white/70">{a.type}</span>
+                                        <span className={`text-xs font-medium ${getScoreColor(a.score)}`}>
+                                            {(a.score * 100).toFixed(0)}%
+                                        </span>
+                                    </div>
+                                    <div className="text-[10px] text-white/40">{a.description}</div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Prompt Selector Modal */}
             {showSelector && (
                 <PromptSelector
-                    onSelect={handleSelectPrompt}
+                    onSelect={(text) => { setPrompt(text); setShowSelector(false); }}
                     onClose={() => setShowSelector(false)}
                 />
             )}
 
-            {showGenerator && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-8">
-                    <div className="bg-[#0d0d0d] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                        <DatasetGenerator
-                            settings={settings}
-                            context="robustness"
-                            title="Generate Robustness Dataset"
-                            description="Create edge cases and adversarial inputs to stress-test your prompt"
-                            initialPrompt={prompt || ''}
-                            onGenerated={async (data, name) => {
-                                try {
-                                    const result = await api.createDataset({
-                                        name: name || `Robustness Dataset ${new Date().toLocaleDateString()}`,
-                                        description: 'Generated for robustness testing',
-                                        category: 'robustness',
-                                        data
-                                    });
-                                    if (result?.id) {
-                                        setSelectedDataset(result.id);
-                                    }
-                                    onDatasetCreated?.();
-                                    setShowGenerator(false);
-                                } catch (err) {
-                                    console.error('Failed to save dataset:', err);
-                                }
-                            }}
-                            onClose={() => setShowGenerator(false)}
-                        />
-                    </div>
-                </div>
+            {/* Dataset Selector Modal */}
+            {showDatasetSelector && (
+                <DatasetSelector
+                    datasets={datasets}
+                    onSelect={(dataset) => { setSelectedDataset(dataset.id); setShowDatasetSelector(false); }}
+                    onClose={() => setShowDatasetSelector(false)}
+                />
             )}
-
-            <div className="flex p-1 bg-black/40 rounded-lg border border-white/5 w-fit">
-                <Button
-                    onClick={() => setTestType('format')}
-                    variant={testType === 'format' ? 'secondary' : 'ghost'}
-                    size="xs"
-                    className="px-3 py-1.5 text-xs font-medium rounded-md"
-                >
-                    Format Sensitivity
-                </Button>
-                <Button
-                    onClick={() => setTestType('length')}
-                    variant={testType === 'length' ? 'secondary' : 'ghost'}
-                    size="xs"
-                    className="px-3 py-1.5 text-xs font-medium rounded-md"
-                >
-                    Context Length
-                </Button>
-                <Button
-                    onClick={() => setTestType('adversarial')}
-                    variant={testType === 'adversarial' ? 'secondary' : 'ghost'}
-                    size="xs"
-                    className="px-3 py-1.5 text-xs font-medium rounded-md"
-                >
-                    Adversarial Tests
-                </Button>
-            </div>
-
-            <div className="bg-black/25 p-5 rounded-xl border border-white/5 shadow-lg shadow-black/30 space-y-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <p className="text-[11px] uppercase tracking-[0.2em] text-white/30 font-semibold mb-1">Test Configuration</p>
-                        <h3 className="text-lg font-semibold text-white">
-                            {testType === 'format' ? 'Format Sensitivity' : testType === 'length' ? 'Context Length Robustness' : 'Adversarial Tests'}
-                        </h3>
-                    </div>
-                </div>
-
-                <div className="bg-white/[0.02] border border-white/5 rounded-lg p-4 flex flex-col gap-4">
-                    <div className="flex items-center justify-between gap-3">
-                        <div>
-                            <p className="text-[11px] uppercase tracking-[0.18em] text-white/30 font-semibold">Dataset</p>
-                            <p className="text-sm text-white/70">Labeled set used to probe robustness.</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            {selectedDataset && (
-                                <span className="px-3 py-1 rounded-full text-[11px] bg-white/[0.06] border border-white/10 text-white/70">
-                                    {datasetSize} items
-                                </span>
-                            )}
-                            <Button
-                                onClick={() => setShowGenerator(true)}
-                                variant="secondary"
-                                size="xs"
-                                className="px-3 py-1.5 text-[11px] font-medium"
-                            >
-                                Generate
-                            </Button>
-                        </div>
-                    </div>
-                    <select
-                        value={selectedDataset}
-                        onChange={(e) => setSelectedDataset(e.target.value)}
-                        className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-3 text-sm text-white/90 focus:outline-none focus:border-white/20"
-                    >
-                        {datasets.map(d => (
-                            <option key={d.id} value={d.id}>{d.name}</option>
-                        ))}
-                    </select>
-                </div>
-
-                <div className="bg-black/50 border border-white/10 rounded-xl p-4 flex flex-col gap-3 shadow-inner shadow-black/30">
-                    <div className="flex items-center justify-between gap-3">
-                        <div>
-                            <p className="text-[11px] uppercase tracking-[0.16em] text-white/30 font-semibold">Base Prompt</p>
-                            <h4 className="text-sm font-semibold text-white">Instruction to test</h4>
-                        </div>
-                        <Button
-                            onClick={() => setShowSelector(true)}
-                        variant="secondary"
-                        size="xs"
-                        className="inline-flex items-center gap-1 text-[11px]"
-                        >
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-                            Library
-                        </Button>
-                    </div>
-                    <textarea
-                        value={prompt}
-                        onChange={(e) => setPrompt(e.target.value)}
-                        className="w-full min-h-[180px] bg-black/60 border border-white/10 rounded-lg px-3 py-3 text-sm text-white/90 font-mono resize-none focus:outline-none focus:border-white/20"
-                        placeholder="Enter prompt to test for robustness..."
-                    />
-
-                    {testType === 'length' && (
-                        <div className="flex items-center gap-3 flex-wrap">
-                            <span className="text-[11px] text-white/40">Max context length</span>
-                            <input
-                                type="number"
-                                min={100}
-                                max={8000}
-                                step={100}
-                                value={contextLength}
-                                onChange={(e) => setContextLength(parseInt(e.target.value) || 1000)}
-                                className="bg-black/60 border border-white/10 rounded-lg px-3 py-2 text-xs text-white/80 focus:outline-none focus:border-white/20"
-                            />
-                        </div>
-                    )}
-
-                    {testType === 'adversarial' && (
-                        <div className="flex items-center gap-3 flex-wrap">
-                            <span className="text-[11px] text-white/40">Adversarial level</span>
-                            <div className="flex items-center gap-2">
-                                {['light', 'medium', 'heavy'].map(level => (
-                                    <Button
-                                        key={level}
-                                        onClick={() => setAdversarialLevel(level as any)}
-                                        variant={adversarialLevel === level ? 'secondary' : 'outline'}
-                                        size="xs"
-                                        className={`px-3 py-1.5 text-xs rounded-lg ${adversarialLevel === level ? '' : 'text-white/60'}`}
-                                    >
-                                        {level.charAt(0).toUpperCase() + level.slice(1)}
-                                    </Button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {results && (
-                <div className="bg-black/30 p-4 rounded-lg border border-white/10">
-                    <h3 className="text-lg font-medium text-white/90 mb-4">
-                        {testType === 'format' ? 'Format Sensitivity Results' :
-                            testType === 'length' ? 'Context Length Robustness Results' :
-                                'Adversarial Robustness Results'}
-                    </h3>
-
-                    {/* Summary Metrics */}
-                    <div className="grid grid-cols-3 gap-4 mb-6">
-                        <div className="bg-black/40 p-3 rounded">
-                            <div className="text-xs text-white/40">Robustness Score</div>
-                            <div className="text-lg font-mono text-white/70">
-                                {results.robustness_score?.toFixed(3) || 'N/A'}
-                            </div>
-                        </div>
-                        <div className="bg-black/40 p-3 rounded">
-                            <div className="text-xs text-white/40">Performance Delta</div>
-                            <div className="text-lg font-mono text-amber-400">
-                                {results.performance_delta?.toFixed(3) || 'N/A'}
-                            </div>
-                        </div>
-                        <div className="bg-black/40 p-3 rounded">
-                            <div className="text-xs text-white/40">Variations Tested</div>
-                            <div className="text-lg font-mono text-white/70">
-                                {results.variations?.length || results.format_variations?.length || results.length_tests?.length || results.adversarial_tests?.length || 0}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Detailed Results */}
-                    {testType === 'format' && results.format_variations && (
-                        <div className="space-y-4">
-                            <h4 className="text-sm font-medium text-white/80 mb-3">Format Variations</h4>
-                            <div className="space-y-2 max-h-64 overflow-y-auto">
-                                {results.format_variations.map((variation: any, idx: number) => (
-                                    <div key={idx} className="bg-black/20 p-3 rounded border border-white/10">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <span className="text-sm font-medium text-white/80">{variation.name}</span>
-                                            <span className="text-sm font-mono text-white/70">{variation.score.toFixed(3)}</span>
-                                        </div>
-                                        <div className="text-xs text-white/40 font-mono bg-black/30 p-2 rounded truncate">
-                                            {variation.example?.substring(0, 100)}...
-                                        </div>
-                                        <div className="mt-2 text-xs text-white/30">
-                                            Delta: {variation.delta?.toFixed(3)} ({variation.delta_percent?.toFixed(1)}%)
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {testType === 'length' && results.length_tests && (
-                        <div className="space-y-4">
-                            <h4 className="text-sm font-medium text-white/80 mb-3">Context Length Tests</h4>
-                            <div className="bg-black/20 p-3 rounded">
-                                <div className="text-xs text-white/40 mb-2">Performance by Context Length</div>
-                                <div className="space-y-1">
-                                    {results.length_tests.map((test: any, idx: number) => (
-                                        <div key={idx} className="flex justify-between text-xs">
-                                            <span className="text-white/80">{test.context_length} tokens</span>
-                                            <span className="text-white/70 font-mono">{test.score.toFixed(3)}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="bg-yellow-900/20 p-3 rounded border border-yellow-700">
-                                <div className="text-xs text-amber-400">
-                                    ⚠️ Performance degrades significantly beyond {results.degradation_point || 'N/A'} tokens
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {testType === 'adversarial' && results.adversarial_tests && (
-                        <div className="space-y-4">
-                            <h4 className="text-sm font-medium text-white/80 mb-3">Adversarial Attack Results</h4>
-                            <div className="space-y-2 max-h-64 overflow-y-auto">
-                                {results.adversarial_tests.map((attack: any, idx: number) => (
-                                    <div key={idx} className="bg-black/20 p-3 rounded border border-white/10">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <span className="text-sm font-medium text-white/80">{attack.type}</span>
-                                            <span className="text-sm font-mono text-red-400">{attack.score.toFixed(3)}</span>
-                                        </div>
-                                        <div className="text-xs text-white/40 mb-2">{attack.description}</div>
-                                        <div className="text-xs text-white/30">
-                                            Impact: {attack.impact?.toFixed(1)}% degradation
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    <details className="text-xs mt-4">
-                        <summary className="cursor-pointer text-white/40 hover:text-gray-300">View Raw JSON</summary>
-                        <pre className="mt-2 text-white/30 overflow-auto max-h-64">
-                            {JSON.stringify(results, null, 2)}
-                        </pre>
-                    </details>
-                </div>
-            )}
-
-            <div className="sticky bottom-0 z-10">
-                <div className="flex items-center justify-between gap-4 bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3 shadow-lg shadow-black/30 backdrop-blur">
-                    <div className="flex items-center gap-3 text-xs text-white/60 flex-wrap">
-                        <div className="px-2 py-1 rounded-lg bg-white/[0.02] border border-white/5">
-                            Dataset: {datasetName}
-                        </div>
-                        <div className="px-2 py-1 rounded-lg bg-white/[0.02] border border-white/5">
-                            Mode: {testType === 'format' ? 'Format' : testType === 'length' ? 'Length' : 'Adversarial'}
-                        </div>
-                        {testType === 'length' && (
-                            <div className="px-2 py-1 rounded-lg bg-white/[0.02] border border-white/5">
-                                Max ctx: {contextLength} tokens
-                            </div>
-                        )}
-                        {testType === 'adversarial' && (
-                            <div className="px-2 py-1 rounded-lg bg-white/[0.02] border border-white/5">
-                                Level: {adversarialLevel}
-                            </div>
-                        )}
-                        <div className="px-2 py-1 rounded-lg bg-white/[0.02] border border-white/5">
-                            Variations: {results?.variations?.length || datasetSize || 0}
-                        </div>
-                    </div>
-                    <Button
-                        onClick={runTest}
-                        disabled={loading}
-                        variant="primary"
-                        size="md"
-                        className={loading ? 'opacity-60 cursor-not-allowed' : ''}
-                    >
-                        {loading ? (
-                            <>
-                                <span className="w-2 h-2 rounded-full bg-white/80 animate-ping" />
-                                Running...
-                            </>
-                        ) : (
-                            <>
-                                Run Test
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" /></svg>
-                            </>
-                        )}
-                    </Button>
-                </div>
-            </div>
         </div>
     );
 }
