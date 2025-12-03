@@ -60,7 +60,7 @@
           "target_lm_name": {
             "type": "string",
             "description": "Идентификатор целевой модели",
-            "enum": ["gpt-5"]
+            "enum": ["gpt-5-mini"]
           }
         },
         "required": ["target_lm_name"]

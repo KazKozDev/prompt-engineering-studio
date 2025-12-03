@@ -392,6 +392,31 @@ export function Studio({ settings }: StudioProps) {
                     <div className="space-y-2 flex-1 flex flex-col">
                         <div className="flex items-center justify-between">
                             <label className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Task Description</label>
+                            <label className="flex items-center gap-2 px-3 py-0.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer bg-white/5 hover:bg-white/10 border border-white/10 text-white/50">
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                </svg>
+                                <span className="text-[11px]">Upload</span>
+                                <input
+                                    type="file"
+                                    accept=".txt,.md,.json,.csv,.pdf,.doc,.docx,.xls,.xlsx"
+                                    className="hidden"
+                                    onChange={async (e) => {
+                                        setUploadError(null);
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+                                        const ext = file.name.toLowerCase().split('.').pop() || '';
+                                        const textLike = ['txt', 'md', 'json', 'csv'];
+                                        if (textLike.includes(ext) || file.type.startsWith('text/')) {
+                                            const text = await file.text();
+                                            setUserPrompt(prev => prev ? `${prev}\n\n${text}` : text);
+                                        } else {
+                                            setUploadError('Unsupported file type for inline extraction. Please convert to text.');
+                                        }
+                                        e.target.value = '';
+                                    }}
+                                />
+                            </label>
                         </div>
                         <textarea
                             value={userPrompt}
@@ -405,42 +430,15 @@ export function Studio({ settings }: StudioProps) {
                             </div>
                         )}
                         <div className="flex items-center text-[11px] text-white/40">
-                            <div className="flex items-center gap-2">
-                                <Button
-                                    onClick={handleGenerate}
-                                    disabled={isGenerating || !userPrompt || selectedTechniques.length === 0}
-                                    variant="primary"
-                                    size="sm"
-                                    className={`min-w-[140px] ${isGenerating || !userPrompt || selectedTechniques.length === 0 ? 'opacity-60 cursor-not-allowed' : ''}`}
-                                >
-                                    {isGenerating ? 'Generating...' : 'Generate'}
-                                </Button>
-                                {/* Upload temporarily disabled per request
-                                <label className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer border border-white/20 bg-transparent hover:bg-white/10 text-white">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                                    <span className="text-[12px]">Upload</span>
-                                    <input
-                                        type="file"
-                                        accept=".txt,.md,.json,.csv,.pdf,.doc,.docx,.xls,.xlsx"
-                                        className="hidden"
-                                        onChange={async (e) => {
-                                            setUploadError(null);
-                                            const file = e.target.files?.[0];
-                                            if (!file) return;
-                                            const ext = file.name.toLowerCase().split('.').pop() || '';
-                                            const textLike = ['txt', 'md', 'json', 'csv'];
-                                            if (textLike.includes(ext) || file.type.startsWith('text/')) {
-                                                const text = await file.text();
-                                                setUserPrompt(prev => prev ? `${prev}\n\n${text}` : text);
-                                            } else {
-                                                setUploadError('Unsupported file type for inline extraction. Please convert to text.');
-                                            }
-                                            e.target.value = '';
-                                        }}
-                                    />
-                                </label>
-                                */}
-                            </div>
+                            <Button
+                                onClick={handleGenerate}
+                                disabled={isGenerating || !userPrompt || selectedTechniques.length === 0}
+                                variant="primary"
+                                size="sm"
+                                className={`min-w-[140px] ${isGenerating || !userPrompt || selectedTechniques.length === 0 ? 'opacity-60 cursor-not-allowed' : ''}`}
+                            >
+                                {isGenerating ? 'Generating...' : 'Generate'}
+                            </Button>
                             <span className="ml-auto text-white/50 font-mono">{Math.max(userPrompt.trim().split(/\s+/).filter(Boolean).length, userPrompt ? 1 : 0)} tokens (approx)</span>
                         </div>
                     </div>

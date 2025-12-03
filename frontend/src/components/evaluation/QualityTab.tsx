@@ -13,13 +13,14 @@ interface QualityTabProps {
     datasets: any[];
     onModeChange?: (mode: QualityMode) => void;
     onDatasetCreated?: () => void;
+    onResultsChange?: (results: any | null) => void;
 }
 
 export type QualityMode = 'reference' | 'judge';
 
 const variantLabel = (index: number) => String.fromCharCode(65 + index);
 
-export function QualityTab({ settings, datasets, onModeChange }: QualityTabProps) {
+export function QualityTab({ settings, datasets, onModeChange, onResultsChange }: QualityTabProps) {
     const [mode, setMode] = useState<QualityMode>('reference');
     const [selectedDataset, setSelectedDataset] = useState<string>('');
     const [prompts, setPrompts] = useState<string[]>(['']);
@@ -53,7 +54,8 @@ export function QualityTab({ settings, datasets, onModeChange }: QualityTabProps
             onModeChange(mode);
         }
         setResults(null);
-    }, [mode, onModeChange]);
+        onResultsChange?.(null);
+    }, [mode, onModeChange, onResultsChange]);
 
     const addPrompt = () => {
         setPrompts([...prompts, '']);
@@ -137,6 +139,7 @@ export function QualityTab({ settings, datasets, onModeChange }: QualityTabProps
             };
 
             setResults(processedResults);
+            onResultsChange?.(processedResults);
             setLogs(prev => [...prev, '✓ Evaluation complete']);
         } catch (error) {
             console.error(error);
@@ -145,6 +148,17 @@ export function QualityTab({ settings, datasets, onModeChange }: QualityTabProps
             setLoading(false);
         }
     };
+
+    const hasReferenceInputs = mode === 'reference'
+        && !!selectedDatasetMeta?.data
+        && prompts.some(p => p.trim());
+
+    const hasJudgeInputs = mode === 'judge'
+        && judgePrompt.trim().length > 0
+        && judgeResponse.trim().length > 0;
+
+    const canRun = mode === 'reference' ? hasReferenceInputs : hasJudgeInputs;
+    const isRunDisabled = loading || !canRun;
 
     const runJudgeTest = async () => {
         if (!judgePrompt.trim() || !judgeResponse.trim()) {
@@ -164,10 +178,12 @@ export function QualityTab({ settings, datasets, onModeChange }: QualityTabProps
                 model: settings.model
             });
 
-            setResults({
+            const judgeResults = {
                 mode: 'judge',
                 ...res
-            });
+            };
+            setResults(judgeResults);
+            onResultsChange?.(judgeResults);
             setLogs(prev => [...prev, '✓ Judge evaluation complete']);
         } catch (error) {
             console.error(error);
@@ -193,13 +209,9 @@ export function QualityTab({ settings, datasets, onModeChange }: QualityTabProps
                                 : 'bg-white/[0.02] text-white/50 border border-white/5 hover:bg-white/5'
                         }`}
                     >
-                        <div className="flex items-center justify-center gap-2">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                            </svg>
+                        <div className="flex items-center justify-center">
                             Reference-Based
                         </div>
-                        <div className="text-[10px] text-white/40 mt-1">BLEU, ROUGE, Exact Match</div>
                     </button>
                     <button
                         onClick={() => setMode('judge')}
@@ -209,13 +221,9 @@ export function QualityTab({ settings, datasets, onModeChange }: QualityTabProps
                                 : 'bg-white/[0.02] text-white/50 border border-white/5 hover:bg-white/5'
                         }`}
                     >
-                        <div className="flex items-center justify-center gap-2">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
-                            </svg>
+                        <div className="flex items-center justify-center">
                             LLM-as-Judge
                         </div>
-                        <div className="text-[10px] text-white/40 mt-1">G-Eval style scoring</div>
                     </button>
                 </div>
             </div>
@@ -225,7 +233,7 @@ export function QualityTab({ settings, datasets, onModeChange }: QualityTabProps
                 <>
                     {/* Description */}
                     <div className="text-[11px] text-white/50 bg-white/[0.02] border border-white/5 rounded-lg px-3 py-2">
-                        Compare model outputs against ground truth labels using BLEU, ROUGE, and Exact Match. Best for translation, Q&A, and summarization tasks.
+                        Compare model outputs against ground truth labels using BLEU, ROUGE, and Exact Match.
                     </div>
 
                     {/* Dataset Selection */}
@@ -236,7 +244,7 @@ export function QualityTab({ settings, datasets, onModeChange }: QualityTabProps
                                 onClick={() => setShowDatasetSelector(true)}
                                 variant="secondary"
                                 size="xs"
-                                className="text-[10px] px-2 py-1 text-white/50"
+                                className="text-[10px] px-2 py-0 h-6 text-white/50"
                             >
                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
@@ -285,7 +293,7 @@ export function QualityTab({ settings, datasets, onModeChange }: QualityTabProps
                                             onClick={() => handleOpenSelector('prompt', idx)}
                                             variant="secondary"
                                             size="xs"
-                                            className="text-[10px] px-2 py-1 text-white/50"
+                                            className="text-[10px] px-2 py-0 h-6 text-white/50"
                                         >
                                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" /></svg>
                                             Library
@@ -319,7 +327,7 @@ export function QualityTab({ settings, datasets, onModeChange }: QualityTabProps
                                 onClick={() => handleOpenSelector('judge')}
                                 variant="secondary"
                                 size="xs"
-                                className="text-[10px] px-2 py-1 text-white/50"
+                                className="text-[10px] px-2 py-0 h-6 text-white/50"
                             >
                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" /></svg>
                                 Library
@@ -351,10 +359,10 @@ export function QualityTab({ settings, datasets, onModeChange }: QualityTabProps
             <div className="flex items-center gap-2">
                 <Button
                     onClick={runTest}
-                    disabled={loading}
+                    disabled={isRunDisabled}
                     variant="primary"
                     size="sm"
-                    className={`min-w-[140px] ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    className={`min-w-[140px] ${isRunDisabled ? 'opacity-60 cursor-not-allowed' : ''}`}
                 >
                     {loading ? 'Evaluating...' : 'Run Evaluation'}
                 </Button>

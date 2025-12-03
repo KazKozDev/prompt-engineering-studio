@@ -25,7 +25,7 @@ class OpenAIClient:
         
         self.client = OpenAI(api_key=self.api_key)
         self.config = config or {}
-        self.default_model = self.config.get("model_name", "gpt-5")
+        self.default_model = self.config.get("model_name", "gpt-5-mini")
         
         logger.info(f"OpenAI client initialized with model: {self.default_model}")
     
@@ -83,4 +83,4 @@ class OpenAIClient:
         Returns:
             List of model names
         """
-        return ["gpt-5"]
+        return ["gpt-5-mini"]

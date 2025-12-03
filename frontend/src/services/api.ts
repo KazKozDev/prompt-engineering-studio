@@ -225,6 +225,52 @@ class APIService {
     return this.request('/api/datasets/examples/list');
   }
 
+  // ==================== Dataset Catalog (Hugging Face) ====================
+
+  async searchHFDatasets(query: string, limit: number = 20): Promise<{
+    results: Array<{
+      id: string;
+      cardData?: any;
+      tags?: string[];
+      downloads?: number;
+      likes?: number;
+    }>;
+  }> {
+    const params = new URLSearchParams({ q: query, limit: String(limit) });
+    return this.request(`/api/datasets/catalog/hf/search?${params.toString()}`);
+  }
+
+  async importHFDataset(request: {
+    dataset_id: string;
+    config_name?: string;
+    split?: string;
+    input_key?: string;
+    output_key?: string;
+  }): Promise<{
+    dataset: any;
+    meta: any;
+  }> {
+    return this.request('/api/datasets/catalog/hf/import', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  async inspectHFDataset(request: {
+    dataset_id: string;
+    config_name?: string;
+    split?: string;
+  }): Promise<{
+    columns: string[];
+    suggested_input?: string | null;
+    suggested_output?: string | null;
+  }> {
+    return this.request('/api/datasets/catalog/hf/inspect', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
   // ==================== Dataset Generation ====================
 
   async generateDataset(request: {

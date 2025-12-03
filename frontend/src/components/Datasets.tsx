@@ -73,6 +73,21 @@ export function Datasets({ settings }: DatasetsProps) {
     const [_uploadError, setUploadError] = useState<string | null>(null);
     const [showGuide, setShowGuide] = useState(false);
     const [isClient, setIsClient] = useState(false);
+    const [showCatalog, setShowCatalog] = useState(false);
+    const [catalogQuery, setCatalogQuery] = useState('');
+    const [catalogResults, setCatalogResults] = useState<any[]>([]);
+    const [catalogLoading, setCatalogLoading] = useState(false);
+    const [catalogError, setCatalogError] = useState<string | null>(null);
+    const [mappingTarget, setMappingTarget] = useState<string | null>(null);
+    const [mappingColumns, setMappingColumns] = useState<string[]>([]);
+    const [mappingInput, setMappingInput] = useState<string>('');
+    const [mappingOutput, setMappingOutput] = useState<string>('');
+    const [mappingLoading, setMappingLoading] = useState(false);
+    const [mappingError, setMappingError] = useState<string | null>(null);
+
+    const hasValidDatasetPairs = newDatasetItems.some(
+        (item) => item.input.trim() && item.output.trim()
+    );
 
     useEffect(() => {
         loadData();
@@ -144,11 +159,6 @@ export function Datasets({ settings }: DatasetsProps) {
     }, [allDatasets, searchQuery]);
 
     const handleCreateDataset = async () => {
-        if (!newDatasetName.trim()) {
-            alert('Please enter a dataset name');
-            return;
-        }
-
         const validItems = newDatasetItems.filter(item => item.input.trim() && item.output.trim());
         if (validItems.length === 0) {
             alert('Please add at least one input/output pair');
@@ -156,17 +166,41 @@ export function Datasets({ settings }: DatasetsProps) {
         }
 
         try {
+            // If name is empty, generate one using local T5 model (same pattern as Prompt Library)
+            let finalName = newDatasetName.trim();
+            if (!finalName) {
+                const previewText = validItems
+                    .slice(0, 3)
+                    .map((item, idx) => `#${idx + 1} Input: ${item.input}\nOutput: ${item.output}`)
+                    .join('\n\n')
+                    .slice(0, 800);
+
+                try {
+                    const titleResponse = await api.generateTitle({
+                        prompt_text: previewText || 'Dataset with input/output pairs for LLM evaluation',
+                        provider: 'local',
+                        model: 'google/flan-t5-small',
+                    });
+                    if (titleResponse.title) {
+                        finalName = titleResponse.title.replace(/\.+$/, '');
+                    }
+                } catch (error) {
+                    console.error('Failed to generate dataset title, using fallback:', error);
+                    finalName = 'New Dataset';
+                }
+            }
+
             if (editingDatasetId) {
                 // Update existing dataset
                 await api.updateDataset(editingDatasetId, {
-                    name: newDatasetName,
+                    name: finalName,
                     description: newDatasetDescription,
                     data: validItems
                 });
             } else {
                 // Create new dataset
                 await api.createDataset({
-                    name: newDatasetName,
+                    name: finalName,
                     description: newDatasetDescription,
                     category: 'custom',
                     data: validItems
@@ -174,7 +208,7 @@ export function Datasets({ settings }: DatasetsProps) {
             }
 
             // Reset form
-            const savedName = newDatasetName;
+            const savedName = finalName;
             const wasEditing = !!editingDatasetId;
             setNewDatasetName('');
             setNewDatasetDescription('');
@@ -280,6 +314,66 @@ export function Datasets({ settings }: DatasetsProps) {
         }
     };
 
+    const handleCatalogSearch = async () => {
+        if (!catalogQuery.trim()) return;
+        setCatalogLoading(true);
+        setCatalogError(null);
+        try {
+            const res = await api.searchHFDatasets(catalogQuery.trim(), 20);
+            setCatalogResults(res.results || []);
+        } catch (error) {
+            console.error('Error searching HF catalog:', error);
+            setCatalogError('Online catalog is unavailable. Check your internet connection and that huggingface_hub is installed on the backend.');
+        } finally {
+            setCatalogLoading(false);
+        }
+    };
+
+    const handleStartImportFromCatalog = async (datasetId: string) => {
+        setMappingTarget(datasetId);
+        setMappingColumns([]);
+        setMappingInput('');
+        setMappingOutput('');
+        setMappingError(null);
+        setMappingLoading(true);
+        try {
+            const info = await api.inspectHFDataset({ dataset_id: datasetId, split: 'train' });
+            setMappingColumns(info.columns || []);
+            if (info.suggested_input) setMappingInput(info.suggested_input);
+            if (info.suggested_output) setMappingOutput(info.suggested_output);
+        } catch (error: any) {
+            console.error('Error inspecting HF dataset:', error);
+            setMappingError(error.message || 'Failed to inspect dataset');
+        } finally {
+            setMappingLoading(false);
+        }
+    };
+
+    const handleConfirmMappingImport = async () => {
+        if (!mappingTarget || !mappingInput || !mappingOutput) {
+            setMappingError('Select both input and output columns');
+            return;
+        }
+        try {
+            const res = await api.importHFDataset({
+                dataset_id: mappingTarget,
+                split: 'train',
+                input_key: mappingInput,
+                output_key: mappingOutput,
+            });
+            await loadData();
+            setShowCatalog(false);
+            setMappingTarget(null);
+            if (res.dataset?.id) {
+                setSelectedDatasetId(res.dataset.id);
+            }
+            alert(`Imported dataset "${res.dataset?.name || mappingTarget}" from Hugging Face`);
+        } catch (error: any) {
+            console.error('Error importing HF dataset:', error);
+            setMappingError(error.message || 'Failed to import dataset');
+        }
+    };
+
     const handleExportDataset = (dataset?: Dataset | null) => {
         const target = dataset || detailedDataset;
         if (!target?.data) return;
@@ -323,7 +417,12 @@ export function Datasets({ settings }: DatasetsProps) {
         );
     }
 
+    const isCreateActive = isCreating;
+    const isGenerateActive = isGenerating;
+    const isOnlineActive = showCatalog;
+
     return (
+        <>
         <div className="relative h-full flex gap-6 p-6 overflow-hidden">
             {/* Left Sidebar: List */}
             <div className="w-80 flex flex-col shrink-0 gap-4">
@@ -351,38 +450,52 @@ export function Datasets({ settings }: DatasetsProps) {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-2">
+                <div className="grid grid-cols-3 gap-2">
                     <Button
-                        onClick={() => { setIsCreating(true); setIsGenerating(false); setSelectedDatasetId(null); setEditingDatasetId(null); setNewDatasetName(''); setNewDatasetDescription(''); setNewDatasetItems([{ input: '', output: '' }]); }}
-                        variant="primary"
-                        size="sm"
+                        onClick={() => {
+                            setIsCreating(true);
+                            setIsGenerating(false);
+                            setSelectedDatasetId(null);
+                            setEditingDatasetId(null);
+                            setNewDatasetName('');
+                            setNewDatasetDescription('');
+                            setNewDatasetItems([{ input: '', output: '' }]);
+                        }}
+                        variant={isCreateActive ? 'secondary' : 'outline'}
+                        size="xs"
                         fullWidth
+                        className="px-3 py-2 text-xs font-medium"
                     >
                         Create
                     </Button>
                     {settings && (
                         <Button
-                            onClick={() => { setIsGenerating(true); setIsCreating(false); setSelectedDatasetId(null); }}
-                            variant="primary"
-                            size="sm"
+                            onClick={() => {
+                                setIsGenerating(true);
+                                setIsCreating(false);
+                                setSelectedDatasetId(null);
+                            }}
+                            variant={isGenerateActive ? 'secondary' : 'outline'}
+                            size="xs"
                             fullWidth
+                            className="px-3 py-2 text-xs font-medium"
                         >
                             Generate
                         </Button>
                     )}
-                </div>
-
-                {/* Stats Summary */}
-                <div className="flex gap-2 text-[10px] text-white/40">
-                    <span>{datasets.length} datasets</span>
-                    <span>•</span>
-                    <span>{datasets.reduce((sum, d) => sum + (d.size || 0), 0).toLocaleString()} items</span>
-                    <span>•</span>
-                    <span>{examples.length} examples</span>
+                    <Button
+                        onClick={() => setShowCatalog(true)}
+                        variant={isOnlineActive ? 'secondary' : 'outline'}
+                        size="xs"
+                        fullWidth
+                        className="px-3 py-2 text-xs font-medium"
+                    >
+                        Online
+                    </Button>
                 </div>
 
                 {/* List */}
-                <div className="flex-1 overflow-y-auto min-h-0 space-y-1.5 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto min-h-0 space-y-1.5 custom-scrollbar mt-2 pt-5 border-t border-white/5">
                     {filteredList.map((dataset: any) => (
                         <button
                             key={dataset.id}
@@ -409,6 +522,15 @@ export function Datasets({ settings }: DatasetsProps) {
                             No datasets found
                         </div>
                     )}
+                </div>
+                {/* Stats Summary */}
+                <div className="mt-2 pt-2 border-t border-white/5 flex justify-between text-[10px] text-white/40">
+                    <span>{datasets.length} datasets</span>
+                    <span>
+                        {datasets.reduce((sum, d) => sum + (d.size || 0), 0).toLocaleString()} items
+                        <span className="mx-1">•</span>
+                        {examples.length} examples
+                    </span>
                 </div>
             </div>
 
@@ -488,7 +610,10 @@ export function Datasets({ settings }: DatasetsProps) {
 
                                 <div className="space-y-3">
                                     {newDatasetItems.map((item, index) => (
-                                        <div key={index} className="bg-black/30 p-4 rounded-xl border border-white/5 group hover:border-white/10 transition-colors">
+                                        <div
+                                            key={index}
+                                            className="bg-white/[0.02] p-4 rounded-xl border border-white/10 group hover:border-white/20 transition-colors"
+                                        >
                                             <div className="flex justify-between items-center mb-3">
                                                 <span className="text-[10px] text-white/30 font-mono">#{index + 1}</span>
                                                 {newDatasetItems.length > 1 && (
@@ -526,24 +651,27 @@ export function Datasets({ settings }: DatasetsProps) {
                                     ))}
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="p-6 border-t border-white/5 bg-black/20 flex justify-end gap-3">
-                            <Button
-                                onClick={() => { setIsCreating(false); setEditingDatasetId(null); }}
-                                variant="ghost"
-                                size="sm"
-                                className="px-4 text-sm text-white/70 hover:text-white"
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                onClick={handleCreateDataset}
-                                variant="primary"
-                                size="sm"
-                            >
-                                {editingDatasetId ? 'Save Changes' : 'Create Dataset'}
-                            </Button>
+                            {/* Primary actions */}
+                            <div className="flex items-center gap-3">
+                                <Button
+                                    onClick={handleCreateDataset}
+                                    disabled={!hasValidDatasetPairs}
+                                    variant="primary"
+                                    size="sm"
+                                    className={`${!hasValidDatasetPairs ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                >
+                                    {editingDatasetId ? 'Save Changes' : 'Create Dataset'}
+                                </Button>
+                                <Button
+                                    onClick={() => { setIsCreating(false); setEditingDatasetId(null); }}
+                                    variant="outline"
+                                    size="sm"
+                                    className="px-4 text-sm text-white/60 border-white/15 hover:text-white hover:border-white/30"
+                                >
+                                    Cancel
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 ) : detailedDataset ? (
@@ -731,5 +859,165 @@ export function Datasets({ settings }: DatasetsProps) {
                 document.body
             )}
         </div>
+
+        {/* Hugging Face Catalog Modal */}
+        {isClient && showCatalog && createPortal(
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+                <div className="w-full max-w-3xl max-h-[80vh] bg-[#050509] border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+                    <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
+                        <div>
+                            <div className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-semibold mb-1">
+                                Dataset Catalog
+                            </div>
+                            <div className="text-sm font-semibold text-white/90">
+                                Import from Hugging Face Hub
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => setShowCatalog(false)}
+                            className="p-1.5 rounded-lg border border-white/10 text-white/60 hover:text-white hover:border-white/30 transition-colors"
+                            aria-label="Close catalog"
+                        >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div className="p-4 border-b border-white/10 flex items-center gap-3">
+                        <input
+                            type="text"
+                            value={catalogQuery}
+                            onChange={(e) => setCatalogQuery(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') handleCatalogSearch(); }}
+                            placeholder="Search business datasets (e.g., customer support, faq, banking)..."
+                            className="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/90 placeholder:text-white/30 focus:outline-none focus:border-white/20"
+                        />
+                        <Button
+                            onClick={handleCatalogSearch}
+                            variant="primary"
+                            size="sm"
+                            className="px-4"
+                            disabled={catalogLoading || !catalogQuery.trim()}
+                        >
+                            {catalogLoading ? 'Searching…' : 'Search'}
+                        </Button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar text-sm text-white/80">
+                        {catalogLoading && (
+                            <div className="text-xs text-white/40">Searching Hugging Face…</div>
+                        )}
+                        {!catalogLoading && catalogError && (
+                            <div className="text-xs text-red-400">{catalogError}</div>
+                        )}
+                        {!catalogLoading && !catalogError && catalogResults.length === 0 && (
+                            <div className="text-xs text-white/40">Enter a query to search public datasets.</div>
+                        )}
+                        {catalogResults.map((ds) => (
+                            <div
+                                key={ds.id}
+                                className="bg-white/[0.02] border border-white/10 rounded-lg px-3 py-3 flex items-start justify-between gap-3"
+                            >
+                                <div className="space-y-1">
+                                    <div className="text-sm font-semibold text-white truncate">{ds.id}</div>
+                                    {ds.cardData?.pretty_name && (
+                                        <div className="text-[11px] text-white/70 truncate">
+                                            {ds.cardData.pretty_name}
+                                        </div>
+                                    )}
+                                    {ds.cardData?.task_categories && (
+                                        <div className="text-[10px] text-white/40">
+                                            Tasks:{' '}
+                                            {Array.isArray(ds.cardData.task_categories)
+                                                ? ds.cardData.task_categories.join(', ')
+                                                : String(ds.cardData.task_categories)}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex flex-col items-end gap-2 shrink-0">
+                                    <div className="text-[10px] text-white/40 flex gap-2">
+                                        {typeof ds.downloads === 'number' && <span>{ds.downloads.toLocaleString()} downloads</span>}
+                                        {typeof ds.likes === 'number' && <span>• {ds.likes} likes</span>}
+                                    </div>
+                                    <Button
+                                        onClick={() => handleStartImportFromCatalog(ds.id)}
+                                        variant="secondary"
+                                        size="xs"
+                                        className="text-[11px] px-3 py-1"
+                                    >
+                                        Import
+                                    </Button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    {mappingTarget && (
+                        <div className="px-5 py-3 border-t border-white/10 bg-black/40 space-y-2">
+                            <div className="flex items-center justify-between">
+                                <div className="text-[11px] text-white/60">
+                                    Map columns for <span className="font-semibold">{mappingTarget}</span>
+                                </div>
+                                {mappingLoading && (
+                                    <div className="text-[10px] text-white/40">Loading schema…</div>
+                                )}
+                            </div>
+                            {!mappingLoading && mappingColumns.length > 0 && (
+                                <div className="flex flex-wrap gap-3 text-[11px] text-white/80">
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-white/50">Input column</span>
+                                        <select
+                                            value={mappingInput}
+                                            onChange={(e) => setMappingInput(e.target.value)}
+                                            className="bg-black/40 border border-white/15 rounded-md px-2 py-1 text-[11px] text-white/90 focus:outline-none focus:border-white/30"
+                                        >
+                                            <option value="">Select…</option>
+                                            {mappingColumns.map((col) => (
+                                                <option key={col} value={col}>
+                                                    {col}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-white/50">Output column</span>
+                                        <select
+                                            value={mappingOutput}
+                                            onChange={(e) => setMappingOutput(e.target.value)}
+                                            className="bg-black/40 border border-white/15 rounded-md px-2 py-1 text-[11px] text-white/90 focus:outline-none focus:border-white/30"
+                                        >
+                                            <option value="">Select…</option>
+                                            {mappingColumns.map((col) => (
+                                                <option key={col} value={col}>
+                                                    {col}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="flex items-end gap-2 ml-auto">
+                                        {mappingError && (
+                                            <span className="text-[10px] text-red-400">{mappingError}</span>
+                                        )}
+                                        <Button
+                                            onClick={handleConfirmMappingImport}
+                                            variant="primary"
+                                            size="xs"
+                                            className="px-3 py-1"
+                                            disabled={mappingLoading}
+                                        >
+                                            Import with Mapping
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    <div className="px-5 py-3 border-t border-white/10 text-[11px] text-white/35 bg-white/[0.02]">
+                        Imported datasets are stored locally and tagged as <span className="text-white/60">external</span>.
+                        Always review license and suitability before using in production.
+                    </div>
+                </div>
+            </div>,
+            document.body
+        )}
+        </>
     );
 }

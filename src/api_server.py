@@ -36,6 +36,7 @@ from src.prompts.manager import PromptManager
 from src.storage.history import HistoryManager
 from src.storage.templates import TemplatesManager
 from src.dataset_manager import DatasetManager
+from src.hf_dataset_provider import search_hf_datasets, import_hf_dataset, inspect_hf_dataset
 from src.dataset_generator import DatasetGenerator, GenerationConfig, GenerationMode, TaskType, Difficulty
 from src.utils.logger import get_logger, setup_logging
 
@@ -125,7 +126,7 @@ async def get_models(provider: str):
             client = OpenAIClient(config.get("models", {}).get("openai", {}))
             return {"models": client.get_available_models()}
         except:
-            return {"models": ["gpt-5"]}
+            return {"models": ["gpt-5-mini"]}
     else:
         raise HTTPException(status_code=400, detail="Invalid provider")
 
@@ -147,8 +148,11 @@ async def generate_prompts(request: GenerateRequest):
             client = GeminiClient(config["models"]["gemini"], request.api_key)
         elif request.provider == "ollama":
             client = OllamaClient(config["models"]["ollama"])
+        elif request.provider == "openai":
+            from src.llm.openai_client import OpenAIClient
+            client = OpenAIClient(config.get("models", {}).get("openai", {}), api_key=request.api_key)
         else:
-            raise HTTPException(status_code=400, detail="OpenAI not implemented yet")
+            raise HTTPException(status_code=400, detail="Unsupported provider")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error initializing client: {str(e)}")
     
@@ -253,6 +257,9 @@ async def generate_title(request: GenerateTitleRequest):
             client = GeminiClient(config["models"]["gemini"], request.api_key)
         elif request.provider == "ollama":
             client = OllamaClient(config["models"]["ollama"])
+        elif request.provider == "openai":
+            from src.llm.openai_client import OpenAIClient
+            client = OpenAIClient(config.get("models", {}).get("openai", {}), api_key=request.api_key)
         else:
             raise HTTPException(status_code=400, detail="Provider not supported")
         
@@ -1053,6 +1060,91 @@ async def get_example_datasets():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/api/datasets/catalog/hf/search")
+async def search_hf_catalog(q: str, limit: int = 20):
+    """Search Hugging Face datasets catalog for business-ready datasets.
+
+    This returns lightweight metadata; import is handled by a separate endpoint.
+    """
+    try:
+        results = search_hf_datasets(q, limit=limit)
+        return {"results": results}
+    except Exception as e:
+        logger.error(f"Error searching HF catalog: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/datasets/catalog/hf/import")
+async def import_hf_catalog_dataset(payload: Dict[str, Any]):
+    """Import a dataset from Hugging Face into the local DatasetManager.
+
+    Expected payload:
+      {
+        "dataset_id": "username/dataset",
+        "config_name": "...",   # optional
+        "split": "train"        # optional, defaults to train
+      }
+    """
+    dataset_id = payload.get("dataset_id")
+    if not dataset_id:
+        raise HTTPException(status_code=400, detail="dataset_id is required")
+
+    config_name = payload.get("config_name")
+    split = payload.get("split", "train")
+    input_key = payload.get("input_key")
+    output_key = payload.get("output_key")
+
+    try:
+        imported = import_hf_dataset(
+            dataset_id,
+            config_name=config_name,
+            split=split,
+            input_key=input_key,
+            output_key=output_key,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error importing HF dataset {dataset_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+    try:
+        dataset = dataset_manager.create_dataset(
+            name=imported["name"],
+            data=imported["items"],
+            description=imported["description"],
+            category="external",
+        )
+    except Exception as e:
+        logger.error(f"Error saving imported HF dataset: {e}")
+        raise HTTPException(status_code=500, detail="Failed to save imported dataset")
+
+    return {
+        "dataset": dataset,
+        "meta": imported["meta"],
+    }
+
+
+@app.post("/api/datasets/catalog/hf/inspect")
+async def inspect_hf_catalog_dataset(payload: Dict[str, Any]):
+    """Inspect a Hugging Face dataset to get available columns and suggested mapping."""
+    dataset_id = payload.get("dataset_id")
+    if not dataset_id:
+        raise HTTPException(status_code=400, detail="dataset_id is required")
+
+    config_name = payload.get("config_name")
+    split = payload.get("split", "train")
+
+    try:
+        info = inspect_hf_dataset(dataset_id, config_name=config_name, split=split)
+        return info
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error inspecting HF dataset {dataset_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ==================== Dataset Generation Endpoints ====================
 
 class DatasetGenerateRequest(BaseModel):
@@ -1121,6 +1213,11 @@ async def generate_dataset(request: DatasetGenerateRequest):
             client = GeminiClient(config["models"]["gemini"], request.api_key)
         elif request.provider == "ollama":
             client = OllamaClient(config["models"]["ollama"])
+        elif request.provider == "openai":
+            if not request.api_key:
+                raise HTTPException(status_code=400, detail="API key required for OpenAI")
+            from src.llm.openai_client import OpenAIClient
+            client = OpenAIClient(config.get("models", {}).get("openai", {}), api_key=request.api_key)
         else:
             raise HTTPException(status_code=400, detail=f"Unsupported provider: {request.provider}")
         
@@ -1499,7 +1596,7 @@ from src.dspy_langchain_agent import DSPyLangChainAgent
 
 class DSPyOrchestratorRequest(BaseModel):
     business_task: str
-    target_lm: str = "gpt-5"
+    target_lm: str = "gpt-5-mini"
     dataset: List[EvaluationItem]
     quality_profile: str = "BALANCED"
     optimizer_strategy: str = "auto"
@@ -1539,7 +1636,7 @@ async def run_dspy_orchestrator_stream(request: DSPyOrchestratorRequest):
             """Run agent in background thread."""
             try:
                 agent = DSPyLangChainAgent(
-                    model_name="gpt-5",
+                    model_name="gpt-5-mini",
                     api_key=OPENAI_API_KEY,
                     temperature=0.2,
                     max_iterations=20,
@@ -1617,7 +1714,7 @@ async def run_dspy_orchestrator(request: DSPyOrchestratorRequest):
             raise HTTPException(status_code=400, detail="OpenAI API key required for DSPy Agent")
         
         agent = DSPyLangChainAgent(
-            model_name="gpt-5",
+            model_name="gpt-5-mini",
             api_key=OPENAI_API_KEY,
             temperature=0.2,
             max_iterations=20

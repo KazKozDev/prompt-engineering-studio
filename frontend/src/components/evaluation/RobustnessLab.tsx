@@ -13,6 +13,7 @@ interface RobustnessLabProps {
     datasets: any[];
     onTestTypeChange?: (testType: 'format' | 'length' | 'adversarial') => void;
     onDatasetCreated?: () => void;
+    onResultsChange?: (results: any | null) => void;
 }
 
 type TestType = 'format' | 'length' | 'adversarial';
@@ -41,7 +42,7 @@ const Icons = {
     ),
 };
 
-export function RobustnessLab({ settings, datasets, onTestTypeChange }: RobustnessLabProps) {
+export function RobustnessLab({ settings, datasets, onTestTypeChange, onResultsChange }: RobustnessLabProps) {
     const [selectedDataset, setSelectedDataset] = useState<string>('');
     const [prompt, setPrompt] = useState('');
     const [results, setResults] = useState<any>(null);
@@ -59,7 +60,8 @@ export function RobustnessLab({ settings, datasets, onTestTypeChange }: Robustne
     useEffect(() => {
         onTestTypeChange?.(testType);
         setResults(null);
-    }, [testType, onTestTypeChange]);
+        onResultsChange?.(null);
+    }, [testType, onTestTypeChange, onResultsChange]);
 
     const handleModeChange = (newMode: TestType) => {
         setTestType(newMode);
@@ -102,6 +104,7 @@ export function RobustnessLab({ settings, datasets, onTestTypeChange }: Robustne
                 });
             }
             setResults(res);
+            onResultsChange?.(res);
         } catch (error) {
             console.error(error);
             alert('Error running test');
@@ -122,6 +125,9 @@ export function RobustnessLab({ settings, datasets, onTestTypeChange }: Robustne
         return 'bg-red-500/20 border-red-500/30';
     };
 
+    const hasRobustnessInputs = !!selectedDatasetMeta?.data && prompt.trim().length > 0;
+    const isRunDisabled = loading || !hasRobustnessInputs;
+
     return (
         <div className="space-y-6">
             {/* Mode Selector */}
@@ -138,11 +144,9 @@ export function RobustnessLab({ settings, datasets, onTestTypeChange }: Robustne
                                 : 'bg-white/[0.02] text-white/50 border border-white/5 hover:bg-white/5'
                         }`}
                     >
-                        <div className="flex items-center justify-center gap-2">
-                            <Icons.format />
+                        <div className="flex items-center justify-center">
                             Format
                         </div>
-                        <div className="text-[10px] text-white/40 mt-1">JSON, text, markdown</div>
                     </button>
                     <button
                         onClick={() => handleModeChange('length')}
@@ -152,11 +156,9 @@ export function RobustnessLab({ settings, datasets, onTestTypeChange }: Robustne
                                 : 'bg-white/[0.02] text-white/50 border border-white/5 hover:bg-white/5'
                         }`}
                     >
-                        <div className="flex items-center justify-center gap-2">
-                            <Icons.length />
+                        <div className="flex items-center justify-center">
                             Length
                         </div>
-                        <div className="text-[10px] text-white/40 mt-1">Context window</div>
                     </button>
                     <button
                         onClick={() => handleModeChange('adversarial')}
@@ -166,11 +168,9 @@ export function RobustnessLab({ settings, datasets, onTestTypeChange }: Robustne
                                 : 'bg-white/[0.02] text-white/50 border border-white/5 hover:bg-white/5'
                         }`}
                     >
-                        <div className="flex items-center justify-center gap-2">
-                            <Icons.adversarial />
+                        <div className="flex items-center justify-center">
                             Adversarial
                         </div>
-                        <div className="text-[10px] text-white/40 mt-1">Attack resistance</div>
                     </button>
                 </div>
             </div>
@@ -190,7 +190,7 @@ export function RobustnessLab({ settings, datasets, onTestTypeChange }: Robustne
                         onClick={() => setShowDatasetSelector(true)}
                         variant="secondary"
                         size="xs"
-                        className="text-[10px] px-2 py-1 text-white/50"
+                        className="text-[10px] px-2 py-0 h-6 text-white/50"
                     >
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
@@ -215,7 +215,7 @@ export function RobustnessLab({ settings, datasets, onTestTypeChange }: Robustne
                         onClick={() => setShowSelector(true)}
                         variant="secondary"
                         size="xs"
-                        className="text-[10px] px-2 py-1 text-white/50"
+                        className="text-[10px] px-2 py-0 h-6 text-white/50"
                     >
                         <Icons.library />
                         Library
@@ -279,10 +279,10 @@ export function RobustnessLab({ settings, datasets, onTestTypeChange }: Robustne
             <div className="flex items-center gap-2">
                 <Button
                     onClick={runTest}
-                    disabled={loading}
+                    disabled={isRunDisabled}
                     variant="primary"
                     size="sm"
-                    className={`min-w-[140px] ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    className={`min-w-[140px] ${isRunDisabled ? 'opacity-60 cursor-not-allowed' : ''}`}
                 >
                     {loading ? 'Running...' : 'Run Test'}
                 </Button>

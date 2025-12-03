@@ -79,7 +79,11 @@ Techniques are organized by primary use case:
 *   **Data Extraction** — Structured output (Chain of Table)
 
 ### File Upload Support
-Supported formats: `.txt`, `.md`, `.json`, `.csv`. Content is appended to your task description.
+
+| Option | Details |
+| --- | --- |
+| Supported formats | `.txt`, `.md`, `.json`, `.csv` |
+| How it is used | File content is appended to your task description. |
 
 ### Keyboard Shortcuts
 *   `⌘/Ctrl + Enter` — Generate prompts
@@ -98,17 +102,12 @@ Supported formats: `.txt`, `.md`, `.json`, `.csv`. Content is appended to your t
 
 ## Best Practices
 
-✓ **DO:**
-*   Start with clear, specific task descriptions.
-*   Select 2-4 techniques for comparison.
-*   Save successful prompts to Library.
-*   Test prompts in Evaluation Lab before production.
-
-✗ **DON'T:**
-*   Use vague task descriptions like "help me with coding".
-*   Select all 30+ techniques at once (slow, overwhelming).
-*   Skip saving good results (hard to reproduce).
-*   Deploy without testing on datasets.
+| ✓ DO | ✗ DON'T |
+| --- | --- |
+| Start with clear, specific task descriptions. | Use vague task descriptions like "help me with coding". |
+| Select 2-4 techniques for comparison. | Select all 30+ techniques at once (slow, overwhelming). |
+| Save successful prompts to Library. | Skip saving good results (hard to reproduce). |
+| Test prompts in Evaluation Lab before production. | Deploy without testing on datasets. |
 
 ## Next Steps
 

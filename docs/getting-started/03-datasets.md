@@ -378,21 +378,14 @@ After evaluation:
 
 ## Best Practices
 
-✓ **DO:**
-- Start with example datasets to understand structure
-- Include diverse, representative test cases
-- Add expected outputs for automated evaluation
-- Use metadata for filtering and analysis
-- Version datasets when making significant changes
-- Test prompts on datasets before production
-
-✗ **DON'T:**
-- Create datasets with only easy cases
-- Use tiny datasets (<10 cases) for production decisions
-- Include personally identifiable information (PII)
-- Duplicate test cases unnecessarily
-- Skip validation of imported data
-- Delete datasets that are referenced in evaluations
+| ✓ DO | ✗ DON'T |
+| --- | --- |
+| Start with example datasets to understand structure. | Create datasets with only easy cases. |
+| Include diverse, representative test cases. | Use tiny datasets (&lt;10 cases) for production decisions. |
+| Add expected outputs for automated evaluation. | Include personally identifiable information (PII). |
+| Use metadata for filtering and analysis. | Duplicate test cases unnecessarily. |
+| Version datasets when making significant changes. | Skip validation of imported data. |
+| Test prompts on datasets before production. | Delete datasets that are referenced in evaluations. |
 
 ## Troubleshooting
 

@@ -150,9 +150,9 @@ export function Help() {
           <p className="text-xs text-white/40 mb-4 mt-1">Documentation and guides for the application</p>
         </div>
         <div className="bg-white/[0.02] border border-white/10 rounded-xl p-5 space-y-4 text-sm text-white/80 backdrop-blur-sm">
-          <div className="space-y-1">
-            <div className="text-sm font-bold text-white tracking-wide">Prompt Engineering Studio</div>
-            <div className="text-[11px] text-white/40 tracking-wide">v2.0</div>
+          <div className="text-sm font-bold text-white tracking-wide flex items-baseline gap-1.5">
+            <span>Prompt Engineering Studio</span>
+            <span className="text-[11px] font-normal text-white/40 tracking-wide">v2.0</span>
           </div>
 
           <div className="h-px bg-white/5 w-full" />
@@ -425,9 +425,10 @@ export function Help() {
               {toc.map((item, i) => (
                 <a
                   key={i}
-                  href={`#${item.id} `}
-                  className={`block py - 2 px - 3 text - [13px] rounded - lg transition - colors hover: bg - white / 5 hover: text - white ${item.level === 3 ? 'ml-3 text-white/40' : 'text-white/60'
-                    } `}
+                  href={`#${item.id}`}
+                  className={`block px-3 py-1.5 text-[13px] rounded-lg transition-colors hover:bg-white/5 hover:text-white ${
+                    item.level === 3 ? 'ml-3 text-white/40' : 'text-white/60'
+                  }`}
                   onClick={(e) => {
                     e.preventDefault();
                     document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' });

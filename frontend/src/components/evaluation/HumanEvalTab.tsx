@@ -204,11 +204,9 @@ export function HumanEvalTab({ onModeChange }: HumanEvalTabProps) {
                                 : 'bg-white/[0.02] text-white/50 border border-white/5 hover:bg-white/5'
                         }`}
                     >
-                        <div className="flex items-center justify-center gap-2">
-                            <Icons.star />
+                        <div className="flex items-center justify-center">
                             Rating Scale
                         </div>
-                        <div className="text-[10px] text-white/40 mt-1">Likert 1-5 scoring</div>
                     </button>
                     <button
                         onClick={() => handleModeChange('ranking')}
@@ -218,11 +216,9 @@ export function HumanEvalTab({ onModeChange }: HumanEvalTabProps) {
                                 : 'bg-white/[0.02] text-white/50 border border-white/5 hover:bg-white/5'
                         }`}
                     >
-                        <div className="flex items-center justify-center gap-2">
-                            <Icons.sort />
+                        <div className="flex items-center justify-center">
                             Ranking
                         </div>
-                        <div className="text-[10px] text-white/40 mt-1">Order by preference</div>
                     </button>
                     <button
                         onClick={() => handleModeChange('ab')}
@@ -232,11 +228,9 @@ export function HumanEvalTab({ onModeChange }: HumanEvalTabProps) {
                                 : 'bg-white/[0.02] text-white/50 border border-white/5 hover:bg-white/5'
                         }`}
                     >
-                        <div className="flex items-center justify-center gap-2">
-                            <Icons.compare />
+                        <div className="flex items-center justify-center">
                             A/B Testing
                         </div>
-                        <div className="text-[10px] text-white/40 mt-1">Compare two variants</div>
                     </button>
                 </div>
             </div>
@@ -270,9 +264,8 @@ export function HumanEvalTab({ onModeChange }: HumanEvalTabProps) {
                         <div className="space-y-2">
                             {criteria.map((c, idx) => (
                                 <div key={c.id} className="flex items-center gap-2 bg-white/[0.03] border border-white/5 rounded-lg p-2">
-                                    <span className="text-xs text-white/70 flex-1">{c.name}</span>
-                                    <span className="text-[10px] text-white/40 truncate max-w-[150px]">{c.description}</span>
-                                    <span className="text-[10px] text-white/50 bg-white/5 px-1.5 py-0.5 rounded">w:{c.weight}</span>
+                                    <span className="text-xs text-white/70 flex-none">{c.name}</span>
+                                    <span className="text-[10px] text-white/40 flex-1 text-right truncate">{c.description}</span>
                                     {idx >= 5 && (
                                         <button
                                             onClick={() => setCriteria(criteria.filter(x => x.id !== c.id))}
@@ -346,7 +339,7 @@ export function HumanEvalTab({ onModeChange }: HumanEvalTabProps) {
                                         onClick={() => { setSelectorTarget('prompt'); setShowSelector(true); }}
                                         variant="secondary"
                                         size="xs"
-                                        className="text-[10px] px-2 py-1 text-white/50"
+                                        className="text-[10px] px-2 py-0 h-6 text-white/50"
                                     >
                                         <Icons.library />
                                         Library
@@ -414,22 +407,36 @@ export function HumanEvalTab({ onModeChange }: HumanEvalTabProps) {
 
                     {/* Submit Button */}
                     <div className="flex items-center gap-2">
+                        {/** Save is enabled only when current item exists and all criteria have a rating */}
                         <Button
                             onClick={() => {
                                 if (!currentItem) {
                                     alert('Please add an item first');
                                     return;
                                 }
+                                const hasAllRatings = criteria.every(c => currentItem.ratings[c.id]);
+                                if (!hasAllRatings) {
+                                    alert('Please rate all criteria before saving.');
+                                    return;
+                                }
                                 if (!items.find(i => i.id === currentItem.id)) {
                                     setItems([...items, currentItem]);
                                 } else {
-                                    setItems(items.map(i => i.id === currentItem.id ? currentItem : i));
+                                    setItems(items.map(i => (i.id === currentItem.id ? currentItem : i)));
                                 }
                                 alert('Rating saved!');
                             }}
+                            disabled={
+                                !currentItem ||
+                                !criteria.every(c => currentItem.ratings[c.id])
+                            }
                             variant="primary"
                             size="sm"
-                            className={`min-w-[140px] ${!currentItem ? 'opacity-60' : ''}`}
+                            className={`min-w-[140px] ${
+                                !currentItem || !criteria.every(c => currentItem.ratings[c.id])
+                                    ? 'opacity-60 cursor-not-allowed'
+                                    : ''
+                            }`}
                         >
                             Save Rating
                         </Button>
@@ -454,8 +461,7 @@ export function HumanEvalTab({ onModeChange }: HumanEvalTabProps) {
                     <div className="grid grid-cols-2 gap-4">
                         {/* Variant A */}
                         <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
-                            <div className="flex items-center gap-2 mb-3">
-                                <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-xs font-bold border border-blue-500/30">A</span>
+                            <div className="flex items-center mb-3">
                                 <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Variant A</span>
                             </div>
                             <div className="space-y-3">
@@ -482,8 +488,7 @@ export function HumanEvalTab({ onModeChange }: HumanEvalTabProps) {
 
                         {/* Variant B */}
                         <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
-                            <div className="flex items-center gap-2 mb-3">
-                                <span className="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs font-bold border border-purple-500/30">B</span>
+                            <div className="flex items-center mb-3">
                                 <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Variant B</span>
                             </div>
                             <div className="space-y-3">
@@ -515,30 +520,30 @@ export function HumanEvalTab({ onModeChange }: HumanEvalTabProps) {
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setAbResults({ ...abResults, winner: 'A' })}
-                                className={`flex-1 py-3 rounded-lg text-sm font-medium transition-all ${
+                                className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${
                                     abResults.winner === 'A'
-                                        ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                                        : 'bg-white/[0.03] text-white/50 border border-white/10 hover:bg-white/[0.05]'
+                                        ? 'bg-white/10 text-white border border-white/30'
+                                        : 'bg-white/[0.03] text-white/60 border border-white/10 hover:bg-white/[0.05]'
                                 }`}
                             >
                                 A Wins
                             </button>
                             <button
                                 onClick={() => setAbResults({ ...abResults, winner: 'tie' })}
-                                className={`flex-1 py-3 rounded-lg text-sm font-medium transition-all ${
+                                className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${
                                     abResults.winner === 'tie'
-                                        ? 'bg-white/20 text-white border border-white/30'
-                                        : 'bg-white/[0.03] text-white/50 border border-white/10 hover:bg-white/[0.05]'
+                                        ? 'bg-white/10 text-white border border-white/30'
+                                        : 'bg-white/[0.03] text-white/60 border border-white/10 hover:bg-white/[0.05]'
                                 }`}
                             >
                                 Tie
                             </button>
                             <button
                                 onClick={() => setAbResults({ ...abResults, winner: 'B' })}
-                                className={`flex-1 py-3 rounded-lg text-sm font-medium transition-all ${
+                                className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${
                                     abResults.winner === 'B'
-                                        ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                                        : 'bg-white/[0.03] text-white/50 border border-white/10 hover:bg-white/[0.05]'
+                                        ? 'bg-white/10 text-white border border-white/30'
+                                        : 'bg-white/[0.03] text-white/60 border border-white/10 hover:bg-white/[0.05]'
                                 }`}
                             >
                                 B Wins

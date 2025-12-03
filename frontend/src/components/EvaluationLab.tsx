@@ -39,12 +39,64 @@ type TabType = 'quality' | 'consistency' | 'robustness' | 'performance' | 'human
 type RobustnessTestType = 'format' | 'length' | 'adversarial';
 
 const EVAL_CATEGORIES = [
-  { id: 'quality' as TabType, label: 'Quality', desc: 'BLEU, ROUGE, G-Eval', info: 'Check if your chatbot answers match the knowledge base, or if generated emails follow the approved template. Essential for customer support, content generation, and data extraction tasks.' },
-  { id: 'consistency' as TabType, label: 'Consistency', desc: 'Self & Mutual', info: 'Ensure your pricing assistant gives the same quote for identical requests, or your legal summarizer produces stable outputs. Critical for finance, healthcare, and compliance use cases.' },
-  { id: 'robustness' as TabType, label: 'Robustness', desc: 'Format, Length, Adversarial', info: 'Test if your prompt handles typos, unusual formatting, or attempts to bypass instructions. Important for public-facing chatbots, moderation systems, and security-sensitive applications.' },
-  { id: 'performance' as TabType, label: 'Performance', desc: 'Latency, Cost, Reliability', info: 'Measure response time for real-time applications and estimate API costs at scale. Key for production deployment, SLA compliance, and budget planning.' },
-  { id: 'human' as TabType, label: 'Human', desc: 'Rating, Ranking, A/B', info: 'Let your team rate output quality or compare prompt variants side-by-side. Best for creative writing, marketing copy, and cases where automated metrics fall short.' },
-  { id: 'overview' as TabType, label: 'Overview', desc: 'Aggregated Report', info: 'See all evaluation results in one place with scores and recommendations. Use before deploying to production or when presenting results to stakeholders.' },
+  {
+    id: 'quality' as TabType,
+    label: 'Quality',
+    desc: 'BLEU, ROUGE, G-Eval',
+    infoLines: [
+      'Does the model produce correct and useful answers?',
+      'Best for:',
+      '→ Translation',
+      '→ Q&A',
+      '→ Summarization',
+      '→ Template-based content',
+    ],
+  },
+  {
+    id: 'consistency' as TabType,
+    label: 'Consistency',
+    desc: 'Self & Mutual',
+    infoLines: [
+      'Does the model give the same answer for the same request?',
+      'Recommended for finance, healthcare, and compliance workflows where stability matters.',
+    ],
+  },
+  {
+    id: 'robustness' as TabType,
+    label: 'Robustness',
+    desc: 'Format, Length, Adversarial',
+    infoLines: [
+      'Does the prompt break on noisy, unusual, or hostile inputs?',
+      'Recommended for public chatbots, moderation, and security‑sensitive applications.',
+    ],
+  },
+  {
+    id: 'performance' as TabType,
+    label: 'Performance',
+    desc: 'Latency, Cost, Reliability',
+    infoLines: [
+      'How fast is the system and сколько стоит один вызов?',
+      'Recommended for production deployment, SLAs, and budget/capacity planning.',
+    ],
+  },
+  {
+    id: 'human' as TabType,
+    label: 'Human',
+    desc: 'Rating, Ranking, A/B',
+    infoLines: [
+      'Что думают люди о качестве ответов?',
+      'Recommended for creative copy, UI text, and high‑stakes decisions needing human review.',
+    ],
+  },
+  {
+    id: 'overview' as TabType,
+    label: 'Overview',
+    desc: 'Aggregated Report',
+    infoLines: [
+      'Review combined scores across Quality, Consistency, and Robustness in one place.',
+      'Recommended before production launch and when presenting results to stakeholders.',
+    ],
+  },
 ];
 
 export function EvaluationLab({ settings, promptToEvaluate, onSaveEvaluation }: EvaluationLabProps) {
@@ -75,8 +127,22 @@ export function EvaluationLab({ settings, promptToEvaluate, onSaveEvaluation }: 
 
   const loadDatasets = async () => {
     try {
-      const examplesData = await api.getExampleDatasets();
-      setDatasets(examplesData.examples || []);
+      const datasetsRes = await api.listDatasets();
+      const metaList = datasetsRes.datasets || [];
+
+      // Load full dataset objects so evaluation tabs have access to .data
+      const withData = await Promise.all(
+        metaList.map(async (d: any) => {
+          try {
+            const full = await api.getDataset(d.id);
+            return full || d;
+          } catch {
+            return d;
+          }
+        })
+      );
+
+      setDatasets(withData);
     } catch (error) {
       console.error('Failed to load datasets:', error);
     }
@@ -106,50 +172,125 @@ export function EvaluationLab({ settings, promptToEvaluate, onSaveEvaluation }: 
 
   const getActiveCategory = () => EVAL_CATEGORIES.find(c => c.id === activeTab);
 
+  const getCategoryBorderAccent = (tab: TabType) => {
+    switch (tab) {
+      case 'quality':
+        return 'border-l-sky-300/50';
+      case 'consistency':
+        return 'border-l-cyan-300/50';
+      case 'robustness':
+        return 'border-l-orange-300/60';
+      case 'performance':
+        return 'border-l-emerald-300/60';
+      case 'human':
+        return 'border-l-pink-300/60';
+      case 'overview':
+      default:
+        return 'border-l-white/15';
+    }
+  };
+
+  // Derived scores for summary panel (mirror OverviewTab logic)
+  const getQualityScore = (): number | null => {
+    if (!qualityResults) return null;
+    if (qualityResults.mode === 'judge') {
+      return qualityResults.score ?? null;
+    }
+    const bleu = qualityResults.metrics?.bleu ?? qualityResults.summary?.bleu ?? 0;
+    const rouge = qualityResults.metrics?.rouge_l ?? qualityResults.summary?.rouge_l ?? 0;
+    const em = qualityResults.metrics?.exact_match ?? qualityResults.summary?.exact_match ?? 0;
+    return (bleu + rouge + em) / 3;
+  };
+
+  const getConsistencyScore = (): number | null => {
+    if (!consistencyResults) return null;
+    if (consistencyResults.mode === 'self') {
+      return consistencyResults.consistency_score ?? consistencyResults.score ?? null;
+    }
+    return consistencyResults.glape_score ?? consistencyResults.agreement_score ?? null;
+  };
+
+  const getRobustnessScore = (): number | null => {
+    if (!robustnessResults) return null;
+    return robustnessResults.robustness_score ?? null;
+  };
+
+  const qualityScore = getQualityScore();
+  const consistencyScore = getConsistencyScore();
+  const robustnessScore = getRobustnessScore();
+
+  const calculateOverallScore = (): number | null => {
+    const scores: number[] = [];
+    if (qualityScore !== null) scores.push(qualityScore);
+    if (consistencyScore !== null) scores.push(consistencyScore);
+    if (robustnessScore !== null) scores.push(robustnessScore);
+    if (scores.length === 0) return null;
+    return scores.reduce((a, b) => a + b, 0) / scores.length;
+  };
+
+  const overallScore = calculateOverallScore();
+
+  const hasAnyResults = qualityResults || consistencyResults || robustnessResults;
+
   return (
     <>
       <div className="h-full flex gap-6 p-6 overflow-hidden">
         {/* Left: Categories / Filters */}
-        <div className="w-80 flex flex-col shrink-0 gap-4">
-          <div>
-            <h2 className="text-[11px] font-bold text-white/30 uppercase tracking-widest mb-1">Evaluation Lab</h2>
-            <p className="text-xs text-white/40 mb-4 mt-1">Choose evaluation type and run tests on your prompts.</p>
-          </div>
-
-          <div className="flex-1 bg-black/20 border border-white/5 rounded-2xl overflow-hidden flex flex-col">
-            {/* Category Buttons */}
-            <div className="p-3 border-b border-white/5 space-y-2">
-              <div className="grid grid-cols-2 gap-2">
-                {EVAL_CATEGORIES.map(cat => (
-                  <Button
-                    key={cat.id}
-                    onClick={() => setActiveTab(cat.id)}
-                    variant={activeTab === cat.id ? 'secondary' : 'outline'}
-                    size="xs"
-                    fullWidth
-                    className="px-3 py-2 text-xs font-medium"
-                  >
-                    {cat.label}
-                  </Button>
-                ))}
-              </div>
+        <div className="w-80 flex flex-col shrink-0">
+          <div className="flex-1 flex flex-col gap-4">
+            <div>
+              <h2 className="text-[11px] font-bold text-white/30 uppercase tracking-widest mb-1">Evaluation Lab</h2>
+              <p className="text-xs text-white/40 mb-4 mt-1">Choose evaluation type and run tests on your prompts.</p>
             </div>
+
+            <div className="flex-1 flex flex-col">
+              {/* Category Buttons */}
+              <div className="p-3 border-b border-white/5 space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  {EVAL_CATEGORIES.map(cat => (
+                    <Button
+                      key={cat.id}
+                      onClick={() => setActiveTab(cat.id)}
+                      variant={activeTab === cat.id ? 'secondary' : 'outline'}
+                      size="xs"
+                      fullWidth
+                      className="px-3 py-2 text-xs font-medium"
+                    >
+                      {cat.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
 
             {/* Selected Category Info */}
             <div className="flex-1 p-4 space-y-4">
-              <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
-                <div className="text-sm font-semibold text-white/80 mb-2">{getActiveCategory()?.label}</div>
-                <div className="text-[11px] text-white/50 leading-relaxed">{getActiveCategory()?.info}</div>
-              </div>
+              {getActiveCategory() && (
+                <div
+                  className={
+                    'bg-white/[0.02] border border-white/10 rounded-lg px-3 py-3 border-l-2 ' +
+                    getCategoryBorderAccent(activeTab)
+                  }
+                >
+                  <div className="text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">
+                    {getActiveCategory()!.label} checks
+                  </div>
+                  <ul className="space-y-1 text-[11px] text-white/60">
+                    {getActiveCategory()!.infoLines?.map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
+            </div>
+          </div>
 
-            {/* Footer */}
-            <div className="px-3 py-2 border-t border-white/5 text-[10px] text-white/30 flex justify-between">
-              <span>5 evaluation types</span>
-              <span className="text-white/50">
-                {[qualityResults, consistencyResults, robustnessResults].filter(Boolean).length} completed
-              </span>
-            </div>
+          {/* Footer */}
+          <div className="pt-2 border-t border-white/5 text-[10px] text-white/30 flex justify-between">
+            <span>5 evaluation types</span>
+            <span className="text-white/50">
+              {[qualityResults, consistencyResults, robustnessResults].filter(Boolean).length} completed
+            </span>
           </div>
         </div>
 
@@ -175,41 +316,44 @@ export function EvaluationLab({ settings, promptToEvaluate, onSaveEvaluation }: 
           </div>
 
           <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
-            {activeTab === 'quality' && (
+            <div className={activeTab === 'quality' ? 'block' : 'hidden'}>
               <QualityTab
                 settings={settings}
                 datasets={datasets}
                 onModeChange={setQualityMode}
                 onDatasetCreated={loadDatasets}
+                onResultsChange={_setQualityResults}
               />
-            )}
-            {activeTab === 'consistency' && (
+            </div>
+            <div className={activeTab === 'consistency' ? 'block' : 'hidden'}>
               <ConsistencyTab
                 settings={settings}
                 onModeChange={setConsistencyMode}
+                onResultsChange={_setConsistencyResults}
               />
-            )}
-            {activeTab === 'robustness' && (
+            </div>
+            <div className={activeTab === 'robustness' ? 'block' : 'hidden'}>
               <RobustnessLab
                 settings={settings}
                 datasets={datasets}
                 onTestTypeChange={setRobustnessTestType}
                 onDatasetCreated={loadDatasets}
+                onResultsChange={_setRobustnessResults}
               />
-            )}
-            {activeTab === 'performance' && (
+            </div>
+            <div className={activeTab === 'performance' ? 'block' : 'hidden'}>
               <PerformanceTab
                 settings={settings}
                 onModeChange={setPerformanceMode}
               />
-            )}
-            {activeTab === 'human' && (
+            </div>
+            <div className={activeTab === 'human' ? 'block' : 'hidden'}>
               <HumanEvalTab
                 settings={settings}
                 onModeChange={setHumanEvalMode}
               />
-            )}
-            {activeTab === 'overview' && (
+            </div>
+            <div className={activeTab === 'overview' ? 'block' : 'hidden'}>
               <OverviewTab
                 settings={settings}
                 qualityResults={qualityResults}
@@ -222,7 +366,7 @@ export function EvaluationLab({ settings, promptToEvaluate, onSaveEvaluation }: 
                   }
                 }}
               />
-            )}
+            </div>
           </div>
         </div>
 
@@ -235,17 +379,32 @@ export function EvaluationLab({ settings, promptToEvaluate, onSaveEvaluation }: 
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
             {/* Overall Score Card */}
             <div className="bg-gradient-to-br from-white/[0.04] to-transparent border border-white/10 rounded-xl p-4">
               <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-3">Overall Grade</div>
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-                  <span className="text-2xl font-bold text-white/30">—</span>
+                  <span className="text-2xl font-bold text-white/70">
+                    {overallScore !== null ? `${(overallScore * 100).toFixed(0)}` : '—'}
+                  </span>
                 </div>
                 <div className="flex-1">
-                  <div className="text-sm text-white/50 mb-1">Run evaluations to see grade</div>
-                  <div className="text-[10px] text-white/30">Quality + Consistency + Robustness</div>
+                  {overallScore === null ? (
+                    <>
+                      <div className="text-sm text-white/50 mb-1">Run evaluations to see grade</div>
+                      <div className="text-[10px] text-white/30">Quality + Consistency + Robustness</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-sm text-white/60 mb-1">
+                        Average score across Quality, Consistency, and Robustness.
+                      </div>
+                      <div className="text-[10px] text-white/40">
+                        Higher than {(overallScore * 100).toFixed(0)}% of your current test runs.
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -259,7 +418,9 @@ export function EvaluationLab({ settings, promptToEvaluate, onSaveEvaluation }: 
                   <div className="w-2 h-2 rounded-full bg-blue-400/50"></div>
                   <span className="text-xs text-white/70">Quality</span>
                 </div>
-                <span className="text-xs text-white/30">{qualityResults ? `${qualityResults.score}%` : '—'}</span>
+                <span className="text-xs text-white/30">
+                  {qualityScore !== null ? `${(qualityScore * 100).toFixed(0)}%` : '—'}
+                </span>
               </div>
 
               <div className="bg-white/[0.02] border border-white/5 rounded-lg p-3 flex items-center justify-between">
@@ -267,7 +428,9 @@ export function EvaluationLab({ settings, promptToEvaluate, onSaveEvaluation }: 
                   <div className="w-2 h-2 rounded-full bg-cyan-400/50"></div>
                   <span className="text-xs text-white/70">Consistency</span>
                 </div>
-                <span className="text-xs text-white/30">{consistencyResults ? `${consistencyResults.score}%` : '—'}</span>
+                <span className="text-xs text-white/30">
+                  {consistencyScore !== null ? `${(consistencyScore * 100).toFixed(0)}%` : '—'}
+                </span>
               </div>
 
               <div className="bg-white/[0.02] border border-white/5 rounded-lg p-3 flex items-center justify-between">
@@ -275,7 +438,9 @@ export function EvaluationLab({ settings, promptToEvaluate, onSaveEvaluation }: 
                   <div className="w-2 h-2 rounded-full bg-orange-400/50"></div>
                   <span className="text-xs text-white/70">Robustness</span>
                 </div>
-                <span className="text-xs text-white/30">{robustnessResults ? `${robustnessResults.score}%` : '—'}</span>
+                <span className="text-xs text-white/30">
+                  {robustnessScore !== null ? `${(robustnessScore * 100).toFixed(0)}%` : '—'}
+                </span>
               </div>
 
               <div className="bg-white/[0.02] border border-white/5 rounded-lg p-3 flex items-center justify-between">
@@ -317,28 +482,17 @@ export function EvaluationLab({ settings, promptToEvaluate, onSaveEvaluation }: 
             {/* Quick Actions */}
             <div className="space-y-2 pt-2">
               <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Actions</div>
-              <Button
-                onClick={() => setActiveTab('overview')}
-                variant="outline"
-                size="xs"
-                fullWidth
-                className="justify-start text-xs"
-              >
-                <svg className="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                View Full Report
-              </Button>
-              <Button
-                onClick={() => setGuideOpen(true)}
-                variant="outline"
-                size="xs"
-                fullWidth
-                className="justify-start text-xs"
-              >
-                <MethodologyIcon className="w-3.5 h-3.5 mr-2" />
-                Methodology Guide
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => setActiveTab('overview')}
+                  variant="outline"
+                  size="xs"
+                  className="flex-1 inline-flex items-center justify-center px-3 py-1.5 text-xs"
+                  disabled={!hasAnyResults}
+                >
+                  View Full Report
+                </Button>
+              </div>
             </div>
           </div>
         </div>

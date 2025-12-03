@@ -10,13 +10,14 @@ interface ConsistencyTabProps {
         apiKey?: string;
     };
     onModeChange?: (mode: ConsistencyMode) => void;
+    onResultsChange?: (results: any | null) => void;
 }
 
 export type ConsistencyMode = 'self' | 'mutual';
 
 const variantLabel = (index: number) => String.fromCharCode(65 + index);
 
-export function ConsistencyTab({ settings, onModeChange }: ConsistencyTabProps) {
+export function ConsistencyTab({ settings, onModeChange, onResultsChange }: ConsistencyTabProps) {
     const [mode, setMode] = useState<ConsistencyMode>('self');
     const [prompt, setPrompt] = useState('');
     const [prompts, setPrompts] = useState<string[]>(['', '']);
@@ -34,7 +35,8 @@ export function ConsistencyTab({ settings, onModeChange }: ConsistencyTabProps) 
             onModeChange(mode);
         }
         setResults(null);
-    }, [mode, onModeChange]);
+        onResultsChange?.(null);
+    }, [mode, onModeChange, onResultsChange]);
 
     const addPrompt = () => setPrompts([...prompts, '']);
     const removePrompt = (idx: number) => setPrompts(prompts.filter((_, i) => i !== idx));
@@ -82,10 +84,12 @@ export function ConsistencyTab({ settings, onModeChange }: ConsistencyTabProps) 
                 model: settings.model
             });
 
-            setResults({
+            const selfResults = {
                 mode: 'self',
                 ...res
-            });
+            };
+            setResults(selfResults);
+            onResultsChange?.(selfResults);
         } catch (error) {
             console.error(error);
             alert('Error running consistency check');
@@ -93,6 +97,11 @@ export function ConsistencyTab({ settings, onModeChange }: ConsistencyTabProps) 
             setLoading(false);
         }
     };
+
+    const hasSelfInputs = mode === 'self' && prompt.trim().length > 0;
+    const hasMutualInputs = mode === 'mutual' && prompts.filter(p => p.trim()).length >= 2;
+    const canRun = mode === 'self' ? hasSelfInputs : hasMutualInputs;
+    const isRunDisabled = loading || !canRun;
 
     const runMutualConsistency = async () => {
         const validPrompts = prompts.filter(p => p.trim());
@@ -109,10 +118,12 @@ export function ConsistencyTab({ settings, onModeChange }: ConsistencyTabProps) 
                 model: settings.model
             });
 
-            setResults({
+            const mutualResults = {
                 mode: 'mutual',
                 ...res
-            });
+            };
+            setResults(mutualResults);
+            onResultsChange?.(mutualResults);
         } catch (error) {
             console.error(error);
             alert('Error running mutual consistency');
@@ -137,13 +148,9 @@ export function ConsistencyTab({ settings, onModeChange }: ConsistencyTabProps) 
                                 : 'bg-white/[0.02] text-white/50 border border-white/5 hover:bg-white/5'
                         }`}
                     >
-                        <div className="flex items-center justify-center gap-2">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
+                        <div className="flex items-center justify-center">
                             Self-Consistency
                         </div>
-                        <div className="text-[10px] text-white/40 mt-1">Same prompt, N runs</div>
                     </button>
                     <button
                         onClick={() => setMode('mutual')}
@@ -153,13 +160,9 @@ export function ConsistencyTab({ settings, onModeChange }: ConsistencyTabProps) 
                                 : 'bg-white/[0.02] text-white/50 border border-white/5 hover:bg-white/5'
                         }`}
                     >
-                        <div className="flex items-center justify-center gap-2">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                            </svg>
+                        <div className="flex items-center justify-center">
                             Mutual-Consistency
                         </div>
-                        <div className="text-[10px] text-white/40 mt-1">Compare prompt variants (GLaPE)</div>
                     </button>
                 </div>
             </div>
@@ -179,7 +182,7 @@ export function ConsistencyTab({ settings, onModeChange }: ConsistencyTabProps) 
                                 onClick={() => handleOpenSelector('single')}
                                 variant="secondary"
                                 size="xs"
-                                className="text-[10px] px-2 py-1 text-white/50"
+                                className="text-[10px] px-2 py-0 h-6 text-white/50"
                             >
                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" /></svg>
                                 Library
@@ -253,7 +256,7 @@ export function ConsistencyTab({ settings, onModeChange }: ConsistencyTabProps) 
                                         onClick={() => handleOpenSelector('multi', idx)}
                                         variant="secondary"
                                         size="xs"
-                                        className="text-[10px] px-2 py-1 text-white/50"
+                                        className="text-[10px] px-2 py-0 h-6 text-white/50"
                                     >
                                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" /></svg>
                                         Library
@@ -276,10 +279,10 @@ export function ConsistencyTab({ settings, onModeChange }: ConsistencyTabProps) 
             <div className="flex items-center gap-2">
                 <Button
                     onClick={runTest}
-                    disabled={loading}
+                    disabled={isRunDisabled}
                     variant="primary"
                     size="sm"
-                    className={`min-w-[140px] ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    className={`min-w-[140px] ${isRunDisabled ? 'opacity-60 cursor-not-allowed' : ''}`}
                 >
                     {loading ? 'Evaluating...' : 'Run Evaluation'}
                 </Button>

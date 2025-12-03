@@ -36,8 +36,8 @@ interface TargetModelOption {
 // Optimizer strategies
 const OPTIMIZER_STRATEGIES = [
     { value: 'auto', label: 'Auto', tooltip: 'Let the agent analyze your task and pick the best strategy. Good starting point for any task.' },
-    { value: 'BootstrapFewShot', label: 'Bootstrap Few-Shot', tooltip: 'Generates examples from your dataset to teach the model. Fast, works well with 10-50 examples.' },
-    { value: 'MIPROv2', label: 'MIPRO v2', tooltip: 'Advanced optimization with instruction tuning. Best quality but slower, needs 50+ examples.' },
+    { value: 'BootstrapFewShot', label: 'Bootstrap Few-Shot', tooltip: 'Generates exam. from your dataset to teach the model. Fast, works well with 10-50 exam.' },
+    { value: 'MIPROv2', label: 'MIPRO v2', tooltip: 'Advanced optimization with instruction tuning. Best quality but slower, needs 50+ exam.' },
     { value: 'COPRO', label: 'COPRO', tooltip: 'Focuses on improving the instruction text itself. Great for complex multi-step tasks.' },
 ] as const;
 
@@ -81,7 +81,9 @@ interface OrchestratorResult {
     eval_results: {
         metric_name: string;
         metric_value: number;
-        num_iterations: number;
+        num_iterations?: number;
+        metric_history?: number[];
+        real_dspy?: boolean;
     };
     task_analysis: TaskAnalysis;
     program_code: string;
@@ -91,6 +93,13 @@ interface OrchestratorResult {
     };
     react_iterations: number;
     total_cost_usd?: number;
+    optimizer_type?: string;
+    quality_profile?: string;
+    data_splits?: {
+        train: number;
+        dev: number;
+        test: number;
+    };
 }
 
 export function DSPyOrchestrator({ settings }: DSPyOrchestratorProps) {
@@ -122,7 +131,7 @@ export function DSPyOrchestrator({ settings }: DSPyOrchestratorProps) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [_libraryPrompts, _setLibraryPrompts] = useState<LibraryPrompt[]>([]);
     const [savedToLibrary, setSavedToLibrary] = useState(false);
-    const [activeResultTab, setActiveResultTab] = useState<'overview' | 'code' | 'test' | 'deploy'>('overview');
+    const [activeResultTab, setActiveResultTab] = useState<'overview' | 'code' | 'details' | 'test' | 'deploy'>('overview');
     
     // Test artifact state
     const [testInput, setTestInput] = useState('');
@@ -145,8 +154,10 @@ export function DSPyOrchestrator({ settings }: DSPyOrchestratorProps) {
                 const data = await api.getModels(providerConfig.id);
                 if (data.models && data.models.length > 0) {
                     data.models.forEach((model: string) => {
+                        // Value is fully-qualified LM name for DSPy, e.g. "openai/gpt-5-mini" or "ollama/gemma3:4b"
+                        const fqName = `${providerConfig.id}/${model}`;
                         allOptions.push({
-                            value: model,
+                            value: fqName,
                             label: `${model} (${providerConfig.label})`,
                             provider: providerConfig.id,
                         });
@@ -223,7 +234,7 @@ export function DSPyOrchestrator({ settings }: DSPyOrchestratorProps) {
         try {
             dataset = JSON.parse(datasetText);
             if (!Array.isArray(dataset)) throw new Error("Dataset must be an array");
-            if (dataset.length < 5) throw new Error("Dataset must have at least 5 examples");
+            if (dataset.length < 5) throw new Error("Dataset must have at least 5 exam.");
         } catch (e: any) {
             setError(`Invalid dataset: ${e.message}`);
             setIsRunning(false);
@@ -307,6 +318,9 @@ export function DSPyOrchestrator({ settings }: DSPyOrchestratorProps) {
                         deployment_package: response.deployment_package,
                         react_iterations: response.react_iterations,
                         total_cost_usd: response.total_cost_usd,
+                        optimizer_type: response.optimizer_type,
+                        quality_profile: response.quality_profile,
+                        data_splits: response.data_splits,
                     });
 
                     setCurrentPhase('Complete!');
@@ -407,7 +421,7 @@ export function DSPyOrchestrator({ settings }: DSPyOrchestratorProps) {
                             settings={settings}
                             context="optimizer"
                             title="Generate Eval Dataset"
-                            description="Create input/output examples for DSPy optimization"
+                            description="Create input/output exam. for DSPy optimization"
                             initialPrompt={businessTask || ''}
                             onGenerated={async (data, name) => {
                                 try {
@@ -510,6 +524,28 @@ export function DSPyOrchestrator({ settings }: DSPyOrchestratorProps) {
                     </p>
                 </div>
 
+                {/* DSPy Suitability Guide */}
+                <div className="space-y-2 mt-4">
+                    <div className="bg-white/[0.02] border border-white/10 border-l-2 border-l-emerald-300/60 rounded-lg px-3 py-2">
+                        <div className="text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">Best for DSPy</div>
+                        <ul className="list-disc list-inside space-y-1 text-[11px] text-white/60">
+                            <li>Complex, multi-step pipelines (RAG, CoT, tool use).</li>
+                            <li>Enough labeled data (30–50+, ideally 300+ exam.).</li>
+                            <li>Clear metrics: accuracy, pass@k, cost, latency.</li>
+                            <li>Need to auto-adapt prompts across models.</li>
+                        </ul>
+                    </div>
+                    <div className="bg-white/[0.02] border border-white/10 border-l-2 border-l-rose-300/60 rounded-lg px-3 py-2">
+                        <div className="text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">Avoid DSPy for</div>
+                        <ul className="list-disc list-inside space-y-1 text-[11px] text-white/60">
+                            <li>Simple, one-off prompts (e.g., “write a poem”).</li>
+                            <li>Too little data (&lt; ~30 exam.) or no numeric metric.</li>
+                            <li>Highly conversational or open-ended creative apps.</li>
+                            <li>Hard compute/budget limits or use of a single DSPy block.</li>
+                        </ul>
+                    </div>
+                </div>
+
             </div>
 
             {/* Middle Column: Task Input + ReAct Steps */}
@@ -521,8 +557,21 @@ export function DSPyOrchestrator({ settings }: DSPyOrchestratorProps) {
                             <h2 className="text-xl font-semibold text-white/90 mb-1">DSPy Orchestrator</h2>
                             <p className="text-xs text-white/45 mt-1">Describe the business task you want DSPy to optimize.</p>
                         </div>
-                        <div className="text-[11px] px-2 py-1 rounded-md border border-white/10 text-white/50 bg-black/30">
-                            Agent: GPT-5 → Target: {targetLM || 'Not selected'}
+                        <div className="flex flex-col items-end gap-1 text-[11px]">
+                            <div className="px-2 py-1 rounded-md border border-white/10 text-white/50 bg-black/30">
+                                Agent: GPT-5 → Target: {targetLM || 'Not selected'}
+                            </div>
+                            <div className="flex flex-wrap justify-end gap-2 text-white/40">
+                                <span>
+                                    Profile:{' '}
+                                    {QUALITY_PROFILES.find(p => p.value === qualityProfile)?.label || qualityProfile}
+                                </span>
+                                {result?.optimizer_type && (
+                                    <span>
+                                        Optimizer: <span className="text-white/60">{result.optimizer_type}</span>
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     </div>
                     <div className="p-4 flex flex-col gap-3">
@@ -543,9 +592,17 @@ export function DSPyOrchestrator({ settings }: DSPyOrchestratorProps) {
                                 >
                                     {isRunning ? currentPhase : 'Run DSPy'}
                                 </Button>
-                                {datasetCount > 0 && (
-                                    <span className="text-[11px] text-white/40">{datasetCount} examples loaded</span>
-                                )}
+                                <div className="flex flex-col">
+                                    {datasetCount > 0 && (
+                                        <span className="text-[11px] text-white/40">{datasetCount} exam. loaded</span>
+                                    )}
+                                    {datasetCount > 0 && (
+                                        <span className="text-[10px] text-white/30">
+                                            Recommended for {QUALITY_PROFILES.find(p => p.value === qualityProfile)?.label || qualityProfile}:{' '}
+                                            {qualityProfile === 'HIGH_QUALITY' ? '30+' : qualityProfile === 'FAST_CHEAP' ? '5+' : '10+'} examples
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                             <button
                                 onClick={async () => {
@@ -553,7 +610,7 @@ export function DSPyOrchestrator({ settings }: DSPyOrchestratorProps) {
                                     setDatasets(allDatasets);
                                     setShowDatasetPicker(true);
                                 }}
-                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
+                                className="flex items-center gap-2 px-3 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
                                 title="Select dataset"
                             >
                                 <svg className="w-4 h-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -578,10 +635,18 @@ export function DSPyOrchestrator({ settings }: DSPyOrchestratorProps) {
                         </div>
                         <span className="text-[10px] text-white/30">{reactSteps.length} steps</span>
                     </div>
+                    {error && (
+                        <div className="mx-4 mt-3 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/30 text-[11px] text-red-300 flex items-start gap-2">
+                            <svg className="w-4 h-4 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>DSPy failed: {error}</span>
+                        </div>
+                    )}
                     <div ref={stepsContainerRef} className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
                         {reactSteps.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-full text-white/30 text-sm">
-                                <svg className="w-12 h-12 mb-3 text-white/10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-12 h-12 mb-3 text-amber-300/25" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                                 </svg>
                                 <span>Agent will show reasoning steps here</span>
@@ -670,7 +735,7 @@ export function DSPyOrchestrator({ settings }: DSPyOrchestratorProps) {
                     </div>
                     {result && (
                         <div className="flex gap-1 mt-3">
-                            {(['overview', 'code', 'test', 'deploy'] as const).map(tab => (
+                            {(['overview', 'code', 'details', 'test', 'deploy'] as const).map(tab => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveResultTab(tab)}
@@ -719,6 +784,53 @@ export function DSPyOrchestrator({ settings }: DSPyOrchestratorProps) {
                                             <div className="text-[10px] text-white/40 uppercase tracking-wider">Iterations</div>
                                             <div className="text-lg font-bold text-white/90 mt-1">{result.react_iterations}</div>
                                             <div className="text-[10px] text-white/30">ReAct steps</div>
+                                        </div>
+                                    </div>
+
+                                    {/* Run Details */}
+                                    <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                                        <div className="text-[10px] text-white/40 uppercase tracking-wider mb-2">Run Details</div>
+                                        <div className="space-y-1.5 text-[11px] text-white/70">
+                                            <div className="flex justify-between">
+                                                <span className="text-white/50">Optimizer</span>
+                                                <span className="text-white/80">
+                                                    {result.optimizer_type || 'Auto (agent-chosen)'}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-white/50">Profile</span>
+                                                <span className="text-white/80">
+                                                    {result.quality_profile
+                                                        ? QUALITY_PROFILES.find(p => p.value === result.quality_profile)?.label || result.quality_profile
+                                                        : QUALITY_PROFILES.find(p => p.value === qualityProfile)?.label || qualityProfile}
+                                                </span>
+                                            </div>
+                                            {result.data_splits && (
+                                                <div className="flex justify-between">
+                                                    <span className="text-white/50">Train / Dev / Test</span>
+                                                    <span className="text-white/80">
+                                                        {result.data_splits.train} / {result.data_splits.dev} / {result.data_splits.test}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between">
+                                                <span className="text-white/50">Real DSPy</span>
+                                                <span className="text-white/80">
+                                                    {result.eval_results?.real_dspy ? 'Yes' : 'No'}
+                                                </span>
+                                            </div>
+                                            {result.eval_results?.metric_history && result.eval_results.metric_history.length > 1 && (
+                                                <div className="flex justify-between">
+                                                    <span className="text-white/50">Metric history</span>
+                                                    <span className="text-white/80 text-right">
+                                                        {result.eval_results.metric_history
+                                                            .slice(0, 4)
+                                                            .map((m) => (m * 100).toFixed(0) + '%')
+                                                            .join(' → ')}
+                                                        {result.eval_results.metric_history.length > 4 && ' → …'}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
@@ -785,6 +897,19 @@ export function DSPyOrchestrator({ settings }: DSPyOrchestratorProps) {
                                     >
                                         Copy Code
                                     </Button>
+                                </div>
+                            )}
+
+                            {activeResultTab === 'details' && (
+                                <div className="space-y-3">
+                                    <div className="text-[10px] text-white/40 uppercase tracking-wider">Raw eval_results</div>
+                                    <pre className="text-[11px] font-mono text-white/80 bg-black/40 p-3 rounded-xl border border-white/5 whitespace-pre overflow-auto max-h-[260px]">
+                                        {JSON.stringify(result.eval_results, null, 2)}
+                                    </pre>
+                                    <div className="text-[10px] text-white/40 uppercase tracking-wider">Full Orchestrator Result</div>
+                                    <pre className="text-[11px] font-mono text-white/70 bg-black/30 p-3 rounded-xl border border-white/5 whitespace-pre overflow-auto max-h-[260px]">
+                                        {JSON.stringify(result, null, 2)}
+                                    </pre>
                                 </div>
                             )}
 

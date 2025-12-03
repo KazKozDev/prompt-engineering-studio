@@ -26,16 +26,25 @@ from langgraph.prebuilt import create_react_agent as create_langgraph_react_agen
 dspy = None
 BootstrapFewShot = None
 BootstrapFewShotWithRandomSearch = None
+BootstrapFinetune = None
+MIPROv2 = None
+COPRO = None
+
 
 def _load_dspy():
     """Lazy load DSPy to avoid import conflicts at startup."""
-    global dspy, BootstrapFewShot, BootstrapFewShotWithRandomSearch
+    global dspy, BootstrapFewShot, BootstrapFewShotWithRandomSearch, BootstrapFinetune, MIPROv2, COPRO
     if dspy is None:
         import dspy as _dspy
-        from dspy.teleprompt import BootstrapFewShot as _BFS, BootstrapFewShotWithRandomSearch as _BFSRS
+        from dspy import teleprompt as _tp
+
         dspy = _dspy
-        BootstrapFewShot = _BFS
-        BootstrapFewShotWithRandomSearch = _BFSRS
+        BootstrapFewShot = getattr(_tp, "BootstrapFewShot", None)
+        BootstrapFewShotWithRandomSearch = getattr(_tp, "BootstrapFewShotWithRandomSearch", None)
+        BootstrapFinetune = getattr(_tp, "BootstrapFinetune", None)
+        MIPROv2 = getattr(_tp, "MIPROv2", None)
+        COPRO = getattr(_tp, "COPRO", None)
+
     return dspy, BootstrapFewShot, BootstrapFewShotWithRandomSearch
 
 from src.utils.logger import get_logger
@@ -188,7 +197,7 @@ Thought: {agent_scratchpad}"""
 
     def __init__(
         self,
-        model_name: str = "gpt-5",
+        model_name: str = "gpt-5-mini",
         api_key: Optional[str] = None,
         temperature: float = 0.2,
         max_iterations: int = 20,
@@ -470,7 +479,7 @@ Return ONLY valid JSON."""
         
         # Tool 6: Select Optimizer
         def select_compiler_strategy(task_type: str, complexity_level: str, data_size: int, profile: str) -> str:
-            """Select DSPy optimizer strategy."""
+            """Select DSPy optimizer strategy based on profile and dataset size."""
             self._add_step(
                 "Select Compiler Strategy",
                 "select_compiler_strategy",
@@ -478,16 +487,42 @@ Return ONLY valid JSON."""
                 thought=f"Selecting optimizer for {data_size} examples..."
             )
             
-            # Select based on data size and profile
-            if profile == "FAST_CHEAP" or data_size < 20:
+            # Strict mapping profile -> optimizer, with light data-size adjustments
+            profile = profile or "BALANCED"
+            if profile == "FAST_CHEAP":
                 optimizer_type = "BootstrapFewShot"
-                params = {"max_bootstrapped_demos": 2, "max_labeled_demos": 4}
-            elif profile == "HIGH_QUALITY" or data_size > 100:
-                optimizer_type = "MIPROv2"
-                params = {"max_bootstrapped_demos": 4, "max_labeled_demos": 16}
+                params = {
+                    "max_bootstrapped_demos": 2,
+                    "max_labeled_demos": 4,
+                    "max_rounds": 1,
+                }
+            elif profile == "HIGH_QUALITY":
+                # Prefer MIPROv2 for high quality, but if очень мало данных — падаем на BootstrapFewShotWithRandomSearch
+                if data_size >= 30:
+                    optimizer_type = "MIPROv2"
+                    params = {
+                        "max_bootstrapped_demos": 4,
+                        "max_labeled_demos": 4,
+                        "auto": "heavy",
+                        "num_candidates": 16,
+                    }
+                else:
+                    optimizer_type = "BootstrapFewShotWithRandomSearch"
+                    params = {
+                        "max_bootstrapped_demos": 3,
+                        "max_labeled_demos": 8,
+                        "max_rounds": 1,
+                        "num_candidate_programs": 8,
+                    }
             else:
+                # BALANCED and any unknown profiles
                 optimizer_type = "BootstrapFewShotWithRandomSearch"
-                params = {"max_bootstrapped_demos": 3, "max_labeled_demos": 8}
+                params = {
+                    "max_bootstrapped_demos": 3,
+                    "max_labeled_demos": 8,
+                    "max_rounds": 1,
+                    "num_candidate_programs": 12,
+                }
             
             self.state.optimizer_type = optimizer_type
             self.state.optimizer_params = params
@@ -499,7 +534,7 @@ Return ONLY valid JSON."""
                 "select_compiler_strategy",
                 "success",
                 action=f'select_compiler_strategy(profile="{profile}", size={data_size})',
-                observation=f'optimizer="{optimizer_type}"'
+                observation=f'optimizer="{optimizer_type}", profile="{profile}"'
             )
             
             return json.dumps(result)
@@ -524,9 +559,16 @@ Return ONLY valid JSON."""
                 # Lazy load DSPy
                 dspy, BootstrapFewShot, BootstrapFewShotWithRandomSearch = _load_dspy()
                 
-                # Configure DSPy with target LM
-                target_lm = self.state.target_lm or "gpt-5"
-                lm = dspy.LM(f"openai/{target_lm}", api_key=self.api_key)
+                # Configure DSPy with target LM.
+                # If user passed a fully-qualified provider string like "openai/gpt-4o" or "ollama/gemma2:9b",
+                # use it as-is. Otherwise, default to OpenAI provider.
+                raw_target = self.state.target_lm or "gpt-5-mini"
+                if "/" in raw_target:
+                    lm_name = raw_target
+                else:
+                    lm_name = f"openai/{raw_target}"
+
+                lm = dspy.LM(lm_name, api_key=self.api_key)
                 dspy.configure(lm=lm)
                 
                 # Create dynamic Signature class
@@ -551,9 +593,23 @@ Return ONLY valid JSON."""
                 else:
                     predictor = dspy.Predict(DynamicSignature)
                 
+                # Prepare train/dev/test splits
+                full_dataset = self.state.dataset or []
+                n = len(full_dataset)
+                if self.state.data_splits:
+                    train_size = int(self.state.data_splits.get("train", 0))
+                    dev_size = int(self.state.data_splits.get("dev", 0))
+                else:
+                    train_size = int(n * 0.7)
+                    dev_size = int(n * 0.2)
+                train_size = max(1, min(train_size, n))
+                dev_size = max(0, min(dev_size, n - train_size))
+                train_data = full_dataset[:train_size]
+                dev_data = full_dataset[train_size:train_size + dev_size] if dev_size > 0 else []
+                
                 # Prepare training data as dspy.Example objects
                 trainset = []
-                for item in self.state.dataset:
+                for item in train_data:
                     example_dict = {}
                     # Map input/output to roles
                     if len(input_roles) == 1:
@@ -562,76 +618,157 @@ Return ONLY valid JSON."""
                         example_dict[output_roles[0]] = item.get("output", "")
                     trainset.append(dspy.Example(**example_dict).with_inputs(*input_roles))
                 
-                # Define metric function
-                def metric(example, pred, trace=None):
-                    # Get the output field name
-                    output_field = output_roles[0] if output_roles else "result"
-                    gold = getattr(example, output_field, "")
-                    predicted = getattr(pred, output_field, "")
-                    # Simple exact match or fuzzy match
-                    if str(gold).lower().strip() == str(predicted).lower().strip():
-                        return 1.0
-                    # Partial match
-                    if str(gold).lower() in str(predicted).lower() or str(predicted).lower() in str(gold).lower():
-                        return 0.5
-                    return 0.0
+                # Metric factory based on task type
+                def _make_metric(task_type_name: str):
+                    t = (task_type_name or "").lower()
+
+                    def exact_or_partial(example, pred, trace=None):
+                        output_field = output_roles[0] if output_roles else "result"
+                        gold = str(getattr(example, output_field, "")).strip()
+                        predicted = str(getattr(pred, output_field, "")).strip()
+                        if not gold and not predicted:
+                            return 1.0
+                        if gold.lower() == predicted.lower():
+                            return 1.0
+                        if gold.lower() in predicted.lower() or predicted.lower() in gold.lower():
+                            return 0.5
+                        return 0.0
+
+                    def token_f1(example, pred, trace=None):
+                        output_field = output_roles[0] if output_roles else "result"
+                        gold = str(getattr(example, output_field, "")).strip().lower().split()
+                        predicted = str(getattr(pred, output_field, "")).strip().lower().split()
+                        if not gold and not predicted:
+                            return 1.0
+                        gold_set = set(gold)
+                        pred_set = set(predicted)
+                        inter = len(gold_set & pred_set)
+                        if inter == 0:
+                            return 0.0
+                        precision = inter / max(len(pred_set), 1)
+                        recall = inter / max(len(gold_set), 1)
+                        if precision + recall == 0:
+                            return 0.0
+                        return 2 * precision * recall / (precision + recall)
+
+                    # Classification-style tasks → accuracy
+                    if t in {"classification", "routing"}:
+                        return exact_or_partial, "accuracy"
+                    # Text generation / extraction → token F1
+                    if t in {"extraction", "summarization", "rag", "reasoning", "hybrid"}:
+                        return token_f1, "token_f1"
+                    # Fallback
+                    return exact_or_partial, "semantic_f1"
+
+                metric, metric_name = _make_metric(task_type)
                 
                 # Select and run optimizer
                 optimizer_params = self.state.optimizer_params or {}
                 
-                if optimizer_type == "BootstrapFewShot":
+                # Select optimizer by type; default to BootstrapFewShotWithRandomSearch where appropriate
+                if optimizer_type == "BootstrapFewShot" and BootstrapFewShot is not None:
                     optimizer = BootstrapFewShot(
                         metric=metric,
-                        max_bootstrapped_demos=optimizer_params.get("max_bootstrapped_demos", 2),
-                        max_labeled_demos=optimizer_params.get("max_labeled_demos", 4)
+                        max_bootstrapped_demos=optimizer_params.get("max_bootstrapped_demos", 4),
+                        max_labeled_demos=optimizer_params.get("max_labeled_demos", 16),
+                        max_rounds=optimizer_params.get("max_rounds", 1),
+                        metric_threshold=optimizer_params.get("metric_threshold")
                     )
-                else:
+                elif optimizer_type == "BootstrapFewShotWithRandomSearch" and BootstrapFewShotWithRandomSearch is not None:
                     optimizer = BootstrapFewShotWithRandomSearch(
                         metric=metric,
-                        max_bootstrapped_demos=optimizer_params.get("max_bootstrapped_demos", 3),
-                        max_labeled_demos=optimizer_params.get("max_labeled_demos", 8),
-                        num_candidate_programs=4
+                        max_bootstrapped_demos=optimizer_params.get("max_bootstrapped_demos", 4),
+                        max_labeled_demos=optimizer_params.get("max_labeled_demos", 16),
+                        max_rounds=optimizer_params.get("max_rounds", 1),
+                        num_candidate_programs=optimizer_params.get("num_candidate_programs", 16),
+                        metric_threshold=optimizer_params.get("metric_threshold")
+                    )
+                elif optimizer_type == "BootstrapFinetune" and BootstrapFinetune is not None:
+                    optimizer = BootstrapFinetune(
+                        metric=metric
+                    )
+                elif optimizer_type == "MIPROv2" and MIPROv2 is not None:
+                    optimizer = MIPROv2(
+                        metric=metric,
+                        max_bootstrapped_demos=optimizer_params.get("max_bootstrapped_demos", 4),
+                        max_labeled_demos=optimizer_params.get("max_labeled_demos", 4),
+                        auto=optimizer_params.get("auto", "light"),
+                        num_candidates=optimizer_params.get("num_candidates"),
+                        metric_threshold=optimizer_params.get("metric_threshold")
+                    )
+                elif optimizer_type == "COPRO" and COPRO is not None:
+                    optimizer = COPRO(
+                        metric=metric,
+                        breadth=optimizer_params.get("breadth", 10),
+                        depth=optimizer_params.get("depth", 3)
+                    )
+                else:
+                    # Sensible default if something unexpected comes through
+                    if BootstrapFewShotWithRandomSearch is None:
+                        raise RuntimeError(f"Unsupported optimizer_type '{optimizer_type}' and BootstrapFewShotWithRandomSearch not available")
+                    optimizer = BootstrapFewShotWithRandomSearch(
+                        metric=metric,
+                        max_bootstrapped_demos=optimizer_params.get("max_bootstrapped_demos", 4),
+                        max_labeled_demos=optimizer_params.get("max_labeled_demos", 16),
+                        max_rounds=optimizer_params.get("max_rounds", 1),
+                        num_candidate_programs=optimizer_params.get("num_candidate_programs", 16),
+                        metric_threshold=optimizer_params.get("metric_threshold")
                     )
                 
                 # Run compilation
                 compiled_predictor = optimizer.compile(predictor, trainset=trainset)
                 
-                # Evaluate on trainset to get metric
-                correct = 0
-                for example in trainset[:min(5, len(trainset))]:
+                # Evaluate on devset (or fallback to trainset) to get metric
+                eval_examples = []
+                if dev_data:
+                    for item in dev_data:
+                        example_dict = {}
+                        if len(input_roles) == 1:
+                            example_dict[input_roles[0]] = item.get("input", "")
+                        if len(output_roles) == 1:
+                            example_dict[output_roles[0]] = item.get("output", "")
+                        eval_examples.append(dspy.Example(**example_dict).with_inputs(*input_roles))
+                else:
+                    eval_examples = trainset
+                
+                metric_history = []
+                correct = 0.0
+                eval_count = min(10, len(eval_examples)) if eval_examples else 0
+                for example in eval_examples[:eval_count]:
                     try:
                         input_kwargs = {role: getattr(example, role) for role in input_roles}
                         pred = compiled_predictor(**input_kwargs)
-                        correct += metric(example, pred)
+                        m = metric(example, pred)
+                        metric_history.append(float(m))
+                        correct += m
                     except:
                         pass
-                
-                final_metric = correct / min(5, len(trainset)) if trainset else 0.5
+                final_metric = (correct / eval_count) if eval_count > 0 else 0.0
                 iterations = len(trainset)
                 
                 self.state.compilation_result = {
                     "status": "success",
                     "metric_value": round(final_metric, 3),
-                    "metric_name": "accuracy" if task_type == "classification" else "semantic_f1",
+                    "metric_name": metric_name,
                     "iterations": iterations,
-                    "real_dspy": True
+                    "real_dspy": True,
+                    "metric_history": metric_history,
                 }
-                
             except Exception as e:
-                logger.error(f"Real DSPy compilation failed: {e}, falling back to simulation")
-                # Fallback to simulation
-                iterations = 3
-                final_metric = 0.85 + (len(self.state.dataset) / 500) * 0.1
-                final_metric = min(final_metric, 0.95)
-                
+                logger.error(f"Real DSPy compilation failed: {e}")
+                # Mark failure and let the agent bubble up the error
                 self.state.compilation_result = {
-                    "status": "success",
-                    "metric_value": final_metric,
-                    "metric_name": "accuracy" if task_type == "classification" else "semantic_f1",
-                    "iterations": iterations,
-                    "real_dspy": False,
-                    "fallback_reason": str(e)
+                    "status": "error",
+                    "error": str(e),
+                    "real_dspy": False
                 }
+                self._add_step(
+                    "Run Compilation",
+                    "run_compilation",
+                    "error",
+                    observation=f"real_dspy_failed: {e}"
+                )
+                raise
             
             final_metric = self.state.compilation_result["metric_value"]
             iterations = self.state.compilation_result["iterations"]
@@ -651,7 +788,7 @@ class {task_type.title()}Program(dspy.Module):
         return self.predictor({", ".join([f"{r}={r}" for r in input_roles])})
 
 # Optimized with {optimizer_type}
-# Metric: {final_metric:.3f}
+# Metric ({self.state.compilation_result.get("metric_name", "metric")}): {final_metric:.3f}
 # Target LM: {self.state.target_lm}
 # Real DSPy: {self.state.compilation_result.get("real_dspy", False)}
 '''
@@ -1081,6 +1218,9 @@ Return the final artifact ID when complete."""
                 },
                 "react_iterations": len(self.state.steps),
                 "total_cost_usd": 0.15 + len(self.state.steps) * 0.02,
+                 "optimizer_type": self.state.optimizer_type,
+                 "quality_profile": quality_profile,
+                 "data_splits": self.state.data_splits,
                 "steps": self.state.steps,
                 "agent_output": final_message
             }

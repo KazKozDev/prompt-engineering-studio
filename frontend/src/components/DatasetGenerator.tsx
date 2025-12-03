@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { api } from '../services/api';
 import { Button } from './ui/Button';
+import { MethodologyIcon } from './icons/MethodologyIcon';
 
 type GenerationMode = 'from_task' | 'from_examples' | 'from_prompt' | 'edge_cases';
 type TaskType = 'classification' | 'extraction' | 'generation' | 'qa' | 'summarization' | 'translation' | 'custom';
@@ -60,46 +62,22 @@ const contextConfig: Record<GeneratorContext, {
     }
 };
 
-// SVG Icon components
-const ModeIcons: Record<GenerationMode, React.ReactNode> = {
-    from_task: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-    ),
-    from_examples: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
-    ),
-    from_prompt: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
-        </svg>
-    ),
-    edge_cases: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-        </svg>
-    )
-};
-
 const modeInfo: Record<GenerationMode, { title: string; description: string }> = {
     from_task: {
         title: 'From Task Description',
-        description: 'Describe your task and AI will generate diverse input/output pairs'
+        description: 'Describe the real-world task you care about, and AI will synthesize diverse input/output pairs that match it. Best when you know the goal but don’t yet have examples. Recommended for: early prototypes, Quality / Performance benchmarks, and quick sanity-check datasets.'
     },
     from_examples: {
         title: 'From Examples',
-        description: 'Provide 2-5 seed examples to expand into a full dataset'
+        description: 'Provide 2–5 high-quality input/output examples and let AI expand them into a larger dataset. Best when you already have a few “golden” cases that show desired behavior. Recommended for: DSPy optimization datasets, Offline Benchmarks, and production-grade Evaluation Lab runs.'
     },
     from_prompt: {
         title: 'From Prompt',
-        description: 'Generate test cases to evaluate a specific prompt'
+        description: 'Paste a specific prompt and generate targeted test cases to evaluate and regress it. Useful for comparing prompt versions and catching failures before production. Recommended for: Evaluation Lab (Quality, Consistency) and prompt A/B testing.'
     },
     edge_cases: {
         title: 'Edge Cases',
-        description: 'Generate adversarial inputs for robustness testing'
+        description: 'Generates adversarial and boundary inputs: format variations, long/short extremes, special characters, ambiguous phrasing, and prompt-injection attempts to stress-test robustness. Recommended for: Robustness tab, security / jailbreak checks, and red-teaming prompts.'
     }
 };
 
@@ -130,6 +108,12 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
     const [difficulty, setDifficulty] = useState<Difficulty>('mixed');
     const [domain, setDomain] = useState('');
     const [includeEdgeCases, setIncludeEdgeCases] = useState(false);
+    const [guideOpen, setGuideOpen] = useState(false);
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     // Mode-specific inputs
     const [taskDescription, setTaskDescription] = useState('');
@@ -268,13 +252,36 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
         setSeedExamples(updated);
     };
 
+    const hasRequiredInputs = (() => {
+        if (mode === 'from_task') {
+            return taskDescription.trim().length > 0;
+        }
+        if (mode === 'from_examples') {
+            const filled = seedExamples.filter(
+                (ex) => ex.input.trim().length > 0 && ex.output.trim().length > 0
+            );
+            return filled.length >= 2;
+        }
+        if (mode === 'from_prompt') {
+            return promptToTest.trim().length > 0;
+        }
+        if (mode === 'edge_cases') {
+            return promptToTest.trim().length > 0;
+        }
+        return false;
+    })();
+
     return (
         <div className="flex flex-col h-full">
             {/* Header */}
-            <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
+            <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
                 <div>
-                    <h2 className="text-[11px] font-bold text-white/30 uppercase tracking-widest">{title || 'Generate Dataset'}</h2>
-                    <p className="text-xs text-white/50 mt-1">{description || 'Use AI to create test data for benchmarks and optimization'}</p>
+                    <h2 className="text-xl font-semibold text-white/90 mb-1">
+                        Generate Dataset
+                    </h2>
+                    <p className="text-[11px] text-white/45 mt-1">
+                        {description || 'Use AI to create test data for benchmarks and optimization.'}
+                    </p>
                 </div>
                 {onClose && (
                     <Button
@@ -301,28 +308,33 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
 
                     {/* Mode Selection */}
                     <div>
-                        <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">
-                            Generation Mode
-                        </label>
+                        <div className="flex items-center justify-between mb-3">
+                            <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest">
+                                Generation Mode
+                            </label>
+                            <button
+                                onClick={() => setGuideOpen(true)}
+                                className="px-2 py-1.5 rounded-lg border border-amber-500/30 bg-amber-900/20 text-amber-300 hover:bg-amber-900/30 transition-all"
+                                title="Generation Mode Guide"
+                            >
+                                <MethodologyIcon className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
                         <div className={`grid gap-2 ${config.availableModes.length <= 2 ? 'grid-cols-2' : 'grid-cols-2'}`}>
                             {config.availableModes.map((m) => (
                                 <button
                                     key={m}
                                     onClick={() => setMode(m)}
-                                    className={`w-full text-left p-3 rounded-lg border transition-all ${mode === m
+                                    className={`w-full text-left px-3 py-2.5 rounded-lg border transition-all ${mode === m
                                         ? 'bg-white/10 border-white/20'
                                         : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.04] hover:border-white/10'
                                         }`}
                                 >
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <span className={`${mode === m ? 'text-white/80' : 'text-white/40'}`}>{ModeIcons[m]}</span>
+                                    <div>
                                         <span className={`text-[13px] font-medium ${mode === m ? 'text-white/90' : 'text-white/60'}`}>
                                             {modeInfo[m].title}
                                         </span>
                                     </div>
-                                    <p className="text-[11px] text-white/40 leading-relaxed pl-7">
-                                        {modeInfo[m].description}
-                                    </p>
                                 </button>
                             ))}
                         </div>
@@ -404,28 +416,9 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
                             <textarea
                                 value={promptToTest}
                                 onChange={(e) => setPromptToTest(e.target.value)}
-                                placeholder="Paste the prompt you want to generate test cases for..."
-                                className="w-full min-h-[120px] bg-white/[0.02] border border-white/10 rounded-lg px-4 py-3 text-sm text-white/80 placeholder:text-white/30 resize-none focus:outline-none focus:border-white/20 font-mono transition-colors"
+                                placeholder="Paste the prompt you want to generate test cases for evaluation and regression testing..."
+                                className="w-full min-h-[120px] bg-white/[0.02] border border-white/10 rounded-lg px-4 py-3 text-xs text-white/80 placeholder:text-white/30 resize-none focus:outline-none focus:border-white/20 font-mono transition-colors"
                             />
-                        </div>
-                    )}
-
-                    {mode === 'edge_cases' && (
-                        <div className="bg-white/[0.02] border border-white/10 rounded-lg p-4">
-                            <div className="flex items-start gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
-                                    <svg className="w-4 h-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <p className="text-[13px] text-white/70 font-medium mb-1">Edge Case Generation</p>
-                                    <p className="text-xs text-white/40 leading-relaxed">
-                                        Generates adversarial inputs: format variations, boundary cases,
-                                        special characters, ambiguous inputs, and prompt injection attempts.
-                                    </p>
-                                </div>
-                            </div>
                         </div>
                     )}
 
@@ -507,7 +500,10 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
 
                     {/* Include Edge Cases Toggle */}
                     {mode !== 'edge_cases' && (
-                        <label className="flex items-center gap-3 cursor-pointer group">
+                        <label className="flex items-center justify-end gap-3 cursor-pointer group">
+                            <span className="text-[13px] text-white/50 group-hover:text-white/70 transition-colors">
+                                Include edge cases in generation
+                            </span>
                             <button
                                 type="button"
                                 onClick={() => setIncludeEdgeCases(!includeEdgeCases)}
@@ -515,20 +511,17 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
                             >
                                 <div className={`w-4 h-4 rounded-full bg-white shadow-sm absolute top-0.5 transition-all ${includeEdgeCases ? 'left-5' : 'left-0.5'}`} />
                             </button>
-                            <span className="text-[13px] text-white/50 group-hover:text-white/70 transition-colors">
-                                Include edge cases in generation
-                            </span>
                         </label>
                     )}
 
                     {/* Generate Button */}
-                    <div className="flex justify-end">
+                    <div className="flex justify-start">
                         <Button
                             onClick={handleGenerate}
-                            disabled={isGenerating}
+                            disabled={isGenerating || !hasRequiredInputs}
                             variant="primary"
                             size="md"
-                            className={isGenerating ? 'opacity-70 cursor-not-allowed' : ''}
+                            className={`${(isGenerating || !hasRequiredInputs) ? 'opacity-60 cursor-not-allowed' : ''}`}
                         >
                             {isGenerating ? 'Generating...' : `Generate ${count} Examples`}
                         </Button>
@@ -636,6 +629,61 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
                     <span>Max 100 examples per generation</span>
                 </div>
             </div>
+
+            {/* Generation Mode Guide (right-side panel, like Evaluation Lab) */}
+            {isClient &&
+                typeof document !== 'undefined' &&
+                guideOpen &&
+                createPortal(
+                    <div
+                        className="fixed inset-0 z-[60] flex justify-end bg-black/60 backdrop-blur-sm"
+                        onClick={() => setGuideOpen(false)}
+                    >
+                        <div
+                            className="w-[380px] max-w-full h-full bg-[#0f1115] border-l border-white/10 shadow-2xl shadow-black/60 flex flex-col"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between">
+                                <div className="flex items-start gap-2">
+                                    <MethodologyIcon className="w-4 h-4 text-amber-300/80 mt-0.5" />
+                                    <div>
+                                        <p className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-semibold mb-1">
+                                            Generation Modes
+                                        </p>
+                                        <h3 className="text-sm font-semibold text-white/90">
+                                            When to use each dataset mode
+                                        </h3>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setGuideOpen(false)}
+                                    className="p-1.5 rounded-lg border border-white/10 text-white/60 hover:text-white hover:border-white/30 transition-colors"
+                                    aria-label="Close guide"
+                                >
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar text-[11px] text-white/65 leading-relaxed">
+                                {(Object.keys(modeInfo) as GenerationMode[]).map((m) => (
+                                    <div
+                                        key={m}
+                                        className={`bg-white/[0.02] border rounded-lg px-3 py-3 ${
+                                            mode === m ? 'border-amber-400/40' : 'border-white/8'
+                                        }`}
+                                    >
+                                        <div className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-1">
+                                            {modeInfo[m].title}
+                                        </div>
+                                        <p>{modeInfo[m].description}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>,
+                    document.body,
+                )}
         </div>
     );
 }

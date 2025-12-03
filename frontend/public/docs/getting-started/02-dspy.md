@@ -21,11 +21,11 @@ It treats your prompt as a "program" with parameters that can be tuned. An auton
 ### 2. Define Task (Center Panel)
 
 *   **Business Task:** Describe your goal in plain English (e.g., "Analyze legal contracts for risk").
-*   **Templates:** Use the buttons above the text area to load common patterns (Legal, Support, etc.).
 
 ### 3. Select Dataset
 
-DSPy needs data to learn. You must provide at least **5 examples** of input/output pairs.
+DSPy needs data to learn. For a quick test, 5–10 examples of input/output pairs are enough.  
+For production-grade setups, see the **DSPy Guide** for detailed recommendations.
 *   **Select Dataset:** Click the "Dataset" button to choose an existing file.
 *   **Generate Dataset:** If you don't have data, use the **Dataset Generator** (available in the Dataset picker) to create synthetic examples from your task description.
 
@@ -61,15 +61,11 @@ You can see this process happening in real-time in the "ReAct Agent Steps" panel
 
 ## Best Practices
 
-✓ **DO:**
-*   **Start with "Balanced" profile:** It offers the best trade-off for most users.
-*   **Use high-quality datasets:** The optimization is only as good as your data. Ensure your examples are accurate.
-*   **Re-optimize for new models:** If you switch from GPT-4 to Gemini, run DSPy again.
-
-✗ **DON'T:**
-*   **Run without data:** DSPy requires examples to work.
-*   **Interrupt the process:** Optimization can take a few minutes. Let the agent finish its cycles.
-*   **Ignore the metrics:** If the score is low, check your dataset quality or clarify your task description.
+| ✓ DO | ✗ DON'T |
+| --- | --- |
+| **Start with "Balanced" profile:** It offers the best trade-off for most users. | **Run without data:** DSPy requires examples to work. |
+| **Use high-quality datasets:** The optimization is only as good as your data. Ensure your examples are accurate. | **Interrupt the process:** Optimization can take a few minutes. Let the agent finish its cycles. |
+| **Re-optimize for new models:** If you switch from GPT-4 to Gemini, run DSPy again. | **Ignore the metrics:** If the score is low, check your dataset quality or clarify your task description. |
 
 ## Next Steps
 

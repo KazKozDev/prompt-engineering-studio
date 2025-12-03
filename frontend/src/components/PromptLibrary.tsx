@@ -266,7 +266,32 @@ export function PromptLibrary({ onEvaluatePrompt }: PromptLibraryProps) {
     };
 
     const handleCopyPrompt = (text: string) => {
-        navigator.clipboard.writeText(text);
+        if (navigator?.clipboard?.writeText) {
+            navigator.clipboard.writeText(text).catch(err => {
+                console.error('Clipboard copy failed:', err);
+            });
+        } else {
+            console.warn('Clipboard API not available');
+        }
+    };
+
+    const handleExportPrompt = (prompt: LibraryPrompt) => {
+        try {
+            const safeName = (prompt.name || 'prompt')
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/gi, '-')
+                .replace(/^-+|-+$/g, '');
+            const blob = new Blob([JSON.stringify(prompt, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${safeName || 'prompt'}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (e) {
+            console.error('Error exporting prompt:', e);
+            alert('Failed to export prompt. Please try again.');
+        }
     };
 
     const handleDuplicatePrompt = (prompt: LibraryPrompt) => {
@@ -363,19 +388,8 @@ export function PromptLibrary({ onEvaluatePrompt }: PromptLibraryProps) {
                     <option value="usage">Sort by Usage</option>
                 </select>
 
-                {/* Stats Summary */}
-                <div className="flex gap-2 text-[10px] text-white/40">
-                    <span>{stats.total} total</span>
-                    <span>•</span>
-                    <span className="text-gray-400">{stats.draft} drafts</span>
-                    <span>•</span>
-                    <span className="text-yellow-400">{stats.testing} testing</span>
-                    <span>•</span>
-                    <span className="text-white/40">{stats.production} prod</span>
-                </div>
-
                 {/* Prompts List */}
-                <div className="flex-1 overflow-y-auto min-h-0 space-y-1.5 pr-2 custom-scrollbar mt-2">
+                <div className="flex-1 overflow-y-auto min-h-0 space-y-1.5 pr-2 custom-scrollbar mt-2 pt-5 border-t border-white/5">
                     {isLoading ? (
                         <div className="text-center py-12 text-white/40 text-xs">Loading...</div>
                     ) : filteredPrompts.length === 0 ? (
@@ -392,7 +406,7 @@ export function PromptLibrary({ onEvaluatePrompt }: PromptLibraryProps) {
                                 className={`w-full text-left px-3 py-2.5 rounded-lg border transition-all ${selectedPrompt?.id === prompt.id
                                     ? 'bg-white/10 border-white/20'
                                     : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.05] hover:border-white/10'
-                                    }`}
+                                }`}
                             >
                                 <span className={`block text-[13px] font-medium truncate text-left ${selectedPrompt?.id === prompt.id ? 'text-white' : 'text-white/70'}`}>
                                     {prompt.name}
@@ -400,6 +414,18 @@ export function PromptLibrary({ onEvaluatePrompt }: PromptLibraryProps) {
                             </button>
                         ))
                     )}
+                </div>
+
+                {/* Stats Summary */}
+                <div className="mt-2 pt-2 border-t border-white/5 flex justify-between text-[10px] text-white/40">
+                    <span>{stats.total} total</span>
+                    <span>
+                        <span className="text-gray-400">{stats.draft} drafts</span>
+                        <span className="mx-1">•</span>
+                        <span className="text-yellow-400">{stats.testing} testing</span>
+                        <span className="mx-1">•</span>
+                        <span className="text-white/40">{stats.production} prod</span>
+                    </span>
                 </div>
             </div>
 
@@ -428,7 +454,7 @@ export function PromptLibrary({ onEvaluatePrompt }: PromptLibraryProps) {
 
                         <div className="flex items-center gap-2 shrink-0">
                             <button
-                                onClick={() => handleCopyPrompt(selectedPrompt.text)}
+                                onClick={() => handleExportPrompt(selectedPrompt)}
                                 className="px-3 py-1.5 text-xs font-medium rounded-lg border border-white/10 bg-white/[0.04] text-white/70 hover:text-white hover:border-white/30 transition-all"
                             >
                                 Export
@@ -439,24 +465,13 @@ export function PromptLibrary({ onEvaluatePrompt }: PromptLibraryProps) {
                             >
                                 Duplicate
                             </button>
-                            {onEvaluatePrompt && (
-                                <button
-                                    onClick={() => {
-                                        onEvaluatePrompt(selectedPrompt);
-                                        setSelectedPrompt(null);
-                                    }}
-                                    className="px-3 py-1.5 text-xs font-medium rounded-lg border border-white/10 bg-white/[0.04] text-white/70 hover:text-white hover:border-white/30 transition-all"
-                                >
-                                    Evaluate
-                                </button>
-                            )}
                             {selectedPrompt.status !== 'production' && (
                                 <button
                                     onClick={() => {
                                         handleUpdateStatus(selectedPrompt.id, 'production');
                                         setSelectedPrompt({ ...selectedPrompt, status: 'production' });
                                     }}
-                                    className="px-3 py-1.5 text-xs font-medium rounded-lg border border-white/20 bg-white/10 text-white hover:bg-white/20 transition-all"
+                                    className="px-3 py-1.5 text-xs font-medium rounded-lg border border-white/10 bg-white/[0.04] text-white/70 hover:text-white hover:border-white/30 transition-all"
                                 >
                                     Deploy
                                 </button>

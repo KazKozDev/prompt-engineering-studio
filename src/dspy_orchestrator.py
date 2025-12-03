@@ -112,7 +112,7 @@ class DSPyOrchestrator:
     
     def __init__(
         self,
-        agent_model: str = "gpt-5",
+        agent_model: str = "gpt-5-mini",
         agent_provider: str = "openai",
         max_iterations: int = 20,
         artifacts_dir: str = "data/artifacts"
@@ -610,56 +610,24 @@ class {class_name}(dspy.Module):
     ) -> Dict[str, Any]:
         """
         Tool 13: Run DSPy compilation/optimization.
+
+        NOTE:
+            The real DSPy compilation pipeline is implemented in `DSPyLangChainAgent`
+            (src/dspy_langchain_agent.py). This helper no longer simulates metrics.
+            If you need orchestration with real optimization, call the LangChain agent.
         """
         step = self._add_step(
             name="Run Compilation",
             tool="run_compilation",
-            thought="Starting the optimization process. This may take a few iterations."
+            thought="Starting the optimization process via DSPyLangChainAgent."
         )
-        start_time = time.time()
-        
-        try:
-            # Simulate optimization iterations
-            iterations = 3
-            metric_values = []
-            
-            for i in range(iterations):
-                # Simulate metric improvement
-                base_metric = 0.65 + (i * 0.08) + (0.05 * (len(data["trainset"]) / 50))
-                metric_values.append(min(base_metric + 0.02 * i, 0.95))
-                
-                # Update step observation during iteration
-                step.observation = f"Iteration {i + 1}/{iterations}... metric_value={metric_values[-1]:.3f}"
-            
-            final_metric = metric_values[-1]
-            compiled_program_id = f"compiled_{program['program_id']}"
-            
-            result = {
-                "compiled_program_id": compiled_program_id,
-                "eval_results": {
-                    "metric_name": metric_name,
-                    "metric_value": final_metric,
-                    "num_iterations": iterations,
-                    "metric_history": metric_values
-                },
-                "status": "success"
-            }
-            
-            duration = int((time.time() - start_time) * 1000)
-            self._update_step(
-                step,
-                status="success",
-                action=f'run_compilation(program_id="{program["program_id"]}", optimizer="{optimizer["optimizer_type"]}")',
-                observation=f'status="success", metric_value={final_metric:.3f}, iterations={iterations}',
-                duration_ms=duration
-            )
-            
-            return result
-            
-        except Exception as e:
-            duration = int((time.time() - start_time) * 1000)
-            self._update_step(step, status="error", error=str(e), duration_ms=duration)
-            raise
+        # We explicitly avoid a fake simulation here.
+        error_msg = (
+            "run_compilation in DSPyOrchestrator no longer simulates DSPy. "
+            "Use DSPyLangChainAgent for real compilation and metrics."
+        )
+        self._update_step(step, status="error", error=error_msg)
+        raise RuntimeError(error_msg)
     
     def log_artifacts(
         self,

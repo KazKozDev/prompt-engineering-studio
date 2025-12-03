@@ -141,6 +141,15 @@ export function LabelFreeEval({ settings, onModeChange }: LabelFreeEvalProps) {
         );
     };
 
+    const hasConsistencyInputs = mode === 'consistency' && prompt.trim().length > 0;
+    const hasMutualInputs = mode === 'mutual' && prompts.filter(p => p.trim()).length >= 2;
+    const hasJudgeInputs = mode === 'judge' && prompt.trim().length > 0 && response.trim().length > 0;
+    const canRun =
+        mode === 'consistency' ? hasConsistencyInputs :
+        mode === 'mutual' ? hasMutualInputs :
+        hasJudgeInputs;
+    const isRunDisabled = loading || !canRun;
+
     return (
         <div className="relative space-y-6 pb-20">
             {showSelector && (
@@ -233,7 +242,7 @@ export function LabelFreeEval({ settings, onModeChange }: LabelFreeEvalProps) {
                                             onClick={() => handleOpenSelector('multi', idx)}
                                             variant="secondary"
                                             size="xs"
-                                            className="inline-flex items-center gap-1 text-[11px]"
+                                            className="inline-flex items-center gap-1 text-[11px] px-2 py-0 h-6"
                                         >
                                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                                             Library
@@ -290,7 +299,7 @@ export function LabelFreeEval({ settings, onModeChange }: LabelFreeEvalProps) {
                                     onClick={() => handleOpenSelector('single')}
                                     variant="secondary"
                                     size="xs"
-                                    className="inline-flex items-center gap-1 text-[11px]"
+                                    className="inline-flex items-center gap-1 text-[11px] px-2 py-0 h-6"
                                 >
                                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                                     Library
@@ -450,10 +459,10 @@ export function LabelFreeEval({ settings, onModeChange }: LabelFreeEvalProps) {
                     </div>
                     <Button
                         onClick={runTest}
-                        disabled={loading}
+                        disabled={isRunDisabled}
                         variant="primary"
                         size="md"
-                        className={loading ? 'opacity-60 cursor-not-allowed' : ''}
+                        className={isRunDisabled ? 'opacity-60 cursor-not-allowed' : ''}
                     >
                         {loading ? (
                             <>

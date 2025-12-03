@@ -161,6 +161,9 @@ export function PerformanceTab({ settings, onModeChange }: PerformanceTabProps) 
         return 'bg-red-500/20 border-red-500/30';
     };
 
+    const hasPerformanceInputs = prompt.trim().length > 0;
+    const isRunDisabled = loading || !hasPerformanceInputs;
+
     return (
         <div className="space-y-6">
             {/* Mode Selector */}
@@ -177,11 +180,9 @@ export function PerformanceTab({ settings, onModeChange }: PerformanceTabProps) 
                                 : 'bg-white/[0.02] text-white/50 border border-white/5 hover:bg-white/5'
                         }`}
                     >
-                        <div className="flex items-center justify-center gap-2">
-                            <Icons.clock />
+                        <div className="flex items-center justify-center">
                             Latency
                         </div>
-                        <div className="text-[10px] text-white/40 mt-1">Response time</div>
                     </button>
                     <button
                         onClick={() => handleModeChange('cost')}
@@ -191,11 +192,9 @@ export function PerformanceTab({ settings, onModeChange }: PerformanceTabProps) 
                                 : 'bg-white/[0.02] text-white/50 border border-white/5 hover:bg-white/5'
                         }`}
                     >
-                        <div className="flex items-center justify-center gap-2">
-                            <Icons.dollar />
+                        <div className="flex items-center justify-center">
                             Cost
                         </div>
-                        <div className="text-[10px] text-white/40 mt-1">Token usage</div>
                     </button>
                     <button
                         onClick={() => handleModeChange('reliability')}
@@ -205,11 +204,9 @@ export function PerformanceTab({ settings, onModeChange }: PerformanceTabProps) 
                                 : 'bg-white/[0.02] text-white/50 border border-white/5 hover:bg-white/5'
                         }`}
                     >
-                        <div className="flex items-center justify-center gap-2">
-                            <Icons.shield />
+                        <div className="flex items-center justify-center">
                             Reliability
                         </div>
-                        <div className="text-[10px] text-white/40 mt-1">Failure rate</div>
                     </button>
                 </div>
             </div>
@@ -229,7 +226,7 @@ export function PerformanceTab({ settings, onModeChange }: PerformanceTabProps) 
                         onClick={() => setShowSelector(true)}
                         variant="secondary"
                         size="xs"
-                        className="text-[10px] px-2 py-1 text-white/50"
+                        className="text-[10px] px-2 py-0 h-6 text-white/50"
                     >
                         <Icons.library />
                         Library
@@ -281,10 +278,10 @@ export function PerformanceTab({ settings, onModeChange }: PerformanceTabProps) 
             <div className="flex items-center gap-2">
                 <Button
                     onClick={runTest}
-                    disabled={loading}
+                    disabled={isRunDisabled}
                     variant="primary"
                     size="sm"
-                    className={`min-w-[140px] ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    className={`min-w-[140px] ${isRunDisabled ? 'opacity-60 cursor-not-allowed' : ''}`}
                 >
                     {loading ? 'Running...' : 'Run Test'}
                 </Button>
