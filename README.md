@@ -203,14 +203,32 @@ Configure providers in **Settings** panel:
 - **Anthropic:** Claude models
 - **Google:** Gemini models
 
+
 ## Usage Workflow
 
-1. **Generate Prompts** → Select techniques, describe task, generate variants
-2. **Optimize** → Use DSPy orchestrator for automated refinement
-3. **Create Dataset** → Upload test cases or generate synthetic data
-4. **Evaluate** → Run benchmarks, label-free eval, robustness tests
-5. **Save to Library** → Version control and deployment tracking
-6. **Monitor** → Track performance with evaluation history and regression detection
+**Two Approaches:**
+
+### Path 1: Manual Prompt Engineering (Generator)
+1. **Describe Task** → Plain language description of what you need
+2. **Select Techniques** → Choose from 70+ research-backed methods
+3. **Generate Variants** → Create multiple prompt versions
+4. **Evaluate** → Test against datasets in Evaluation Lab
+5. **Refine** → Iterate based on metrics
+6. **Save to Library** → Version control and deployment
+
+### Path 2: Automated Optimization (DSPy Orchestrator)
+1. **Define Task** → Business objective in plain language
+2. **Provide Dataset** → Examples of input/output pairs
+3. **Configure** → Select target model and quality profile
+4. **Run Optimization** → ReAct agent automatically optimizes
+5. **Review Results** → Get optimized program with metrics
+6. **Deploy** → Save artifact for production use
+
+**Both paths support:**
+- Multi-provider testing (Ollama, OpenAI, Anthropic, Google)
+- Comprehensive evaluation (Quality, Consistency, Robustness)
+- Performance monitoring (History, Regression Detection, Trends)
+
 
 ## Key Dependencies
 
