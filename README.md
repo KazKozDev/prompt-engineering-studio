@@ -199,9 +199,9 @@ GOOGLE_API_KEY=your_key_here
 ### Provider Setup
 Configure providers in **Settings** panel:
 - **Ollama:** Local models (requires Ollama installation)
-- **OpenAI:** GPT-3.5, GPT-4, GPT-4o
-- **Anthropic:** Claude 3 (Opus, Sonnet, Haiku)
-- **Google:** Gemini Pro, Gemini Flash
+- **OpenAI:** Cloud-based models
+- **Anthropic:** Claude models
+- **Google:** Gemini models
 
 ## Usage Workflow
 
@@ -210,7 +210,7 @@ Configure providers in **Settings** panel:
 3. **Create Dataset** → Upload test cases or generate synthetic data
 4. **Evaluate** → Run benchmarks, label-free eval, robustness tests
 5. **Save to Library** → Version control and deployment tracking
-6. **Monitor** → Track performance metrics (planned feature)
+6. **Monitor** → Track performance with evaluation history and regression detection
 
 ## Key Dependencies
 
