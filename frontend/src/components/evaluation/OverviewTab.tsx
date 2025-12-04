@@ -32,11 +32,21 @@ export function OverviewTab({ qualityResults, consistencyResults, robustnessResu
         if (qualityResults.mode === 'judge') {
             return qualityResults.score ?? null;
         }
-        // Reference-based: average of BLEU, ROUGE, EM
+        // Reference-based: average of BLEU, ROUGE, EM, and BERTScore (if available)
         const bleu = qualityResults.metrics?.bleu ?? qualityResults.summary?.bleu ?? 0;
         const rouge = qualityResults.metrics?.rouge_l ?? qualityResults.summary?.rouge_l ?? 0;
         const em = qualityResults.metrics?.exact_match ?? qualityResults.summary?.exact_match ?? 0;
-        return (bleu + rouge + em) / 3;
+
+        // Include BERTScore if available (advanced metrics)
+        const bertscore = qualityResults.summary?.bertscore;
+
+        if (bertscore !== undefined) {
+            // With BERTScore: average of 4 metrics
+            return (bleu + rouge + em + bertscore) / 4;
+        } else {
+            // Without BERTScore: average of 3 metrics (backward compatible)
+            return (bleu + rouge + em) / 3;
+        }
     };
 
     const getConsistencyScore = (): number | null => {
@@ -62,7 +72,7 @@ export function OverviewTab({ qualityResults, consistencyResults, robustnessResu
         if (qualityScore !== null) scores.push(qualityScore);
         if (consistencyScore !== null) scores.push(consistencyScore);
         if (robustnessScore !== null) scores.push(robustnessScore);
-        
+
         if (scores.length === 0) return null;
         return scores.reduce((a, b) => a + b, 0) / scores.length;
     };
@@ -180,10 +190,36 @@ export function OverviewTab({ qualityResults, consistencyResults, robustnessResu
                         {qualityScore !== null ? `${(qualityScore * 100).toFixed(0)}%` : '—'}
                     </div>
                     <div className="text-[10px] text-white/40 mt-1">
-                        {qualityResults?.mode === 'judge' ? 'LLM-as-Judge' : 
-                         qualityResults?.mode === 'reference' ? 'Reference-Based' : 'Not evaluated'}
+                        {qualityResults?.mode === 'judge' ? 'LLM-as-Judge' :
+                            qualityResults?.mode === 'reference' ? 'Reference-Based' : 'Not evaluated'}
                     </div>
-                    <div className="text-[10px] text-white/40 mt-1">
+
+                    {/* Advanced Metrics Indicator */}
+                    {qualityResults?.summary?.bertscore !== undefined && (
+                        <div className="mt-2 pt-2 border-t border-white/10">
+                            <div className="text-[9px] text-emerald-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                                <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                                    <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+                                </svg>
+                                Advanced
+                            </div>
+                            <div className="space-y-0.5 text-[10px] text-white/50">
+                                <div className="flex justify-between">
+                                    <span>BERTScore:</span>
+                                    <span className="text-emerald-400 font-medium">{qualityResults.summary.bertscore.toFixed(3)}</span>
+                                </div>
+                                {qualityResults.summary?.perplexity !== undefined && (
+                                    <div className="flex justify-between">
+                                        <span>Perplexity:</span>
+                                        <span className="text-emerald-400 font-medium">{qualityResults.summary.perplexity.toFixed(1)}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="text-[10px] text-white/40 mt-2">
                         <a
                             href="https://arxiv.org/abs/2303.16634"
                             target="_blank"
@@ -207,8 +243,8 @@ export function OverviewTab({ qualityResults, consistencyResults, robustnessResu
                         {consistencyScore !== null ? `${(consistencyScore * 100).toFixed(0)}%` : '—'}
                     </div>
                     <div className="text-[10px] text-white/40 mt-1">
-                        {consistencyResults?.mode === 'self' ? 'Self-Consistency' : 
-                         consistencyResults?.mode === 'mutual' ? 'Mutual (GLaPE)' : 'Not evaluated'}
+                        {consistencyResults?.mode === 'self' ? 'Self-Consistency' :
+                            consistencyResults?.mode === 'mutual' ? 'Mutual (GLaPE)' : 'Not evaluated'}
                     </div>
                     <div className="text-[10px] text-white/40 mt-1">
                         <a

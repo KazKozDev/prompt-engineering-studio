@@ -92,6 +92,18 @@ class TemplateUpdate(BaseModel):
     category: Optional[str] = None
     tags: Optional[List[str]] = None
 
+
+class PromptSetupAnalysisRequest(BaseModel):
+    """Request body for prompt setup analysis."""
+    task_description: str
+    # How many examples per local dataset to show the advisor (for context only)
+    dataset_preview_examples: int = 3
+
+
+def _normalize_key(text: str) -> str:
+    """Normalize technique names/keys for comparison."""
+    return ''.join(ch for ch in text.lower() if ch.isalnum())
+
 # Routes
 @app.get("/")
 async def root():
@@ -102,6 +114,281 @@ async def get_techniques():
     """Get all available techniques"""
     techniques = prompt_manager.get_all_techniques()
     return {"techniques": techniques}
+
+
+@app.post("/api/analysis/prompt-setup")
+async def analyze_prompt_setup(request: PromptSetupAnalysisRequest):
+    """
+    Analyze a task description and suggest techniques, dataset shape,
+    and Evaluation Lab benchmarks.
+    
+    Uses a lightweight LangChain ChatOpenAI agent (gpt-5-mini) that
+    knows about all registered techniques and returns a structured plan.
+    """
+    if not request.task_description.strip():
+        raise HTTPException(status_code=400, detail="task_description is required")
+
+    if not OPENAI_API_KEY:
+        raise HTTPException(status_code=400, detail="OpenAI API key required for analysis")
+
+    try:
+        # Import locally to avoid hard dependency if LangChain is unavailable elsewhere
+        from langchain_openai import ChatOpenAI
+    except Exception as e:
+        logger.error(f"LangChain / OpenAI client import error: {e}")
+        raise HTTPException(status_code=500, detail="LangChain/OpenAI is not available on the backend")
+
+    techniques = prompt_manager.get_all_techniques()
+
+    # Collect local datasets with a small preview so the advisor can judge fit.
+    # This lets the agent say which existing datasets are suitable for the task.
+    local_datasets_summary: List[Dict[str, Any]] = []
+    try:
+        datasets = dataset_manager.list_datasets()
+        preview_n = max(0, min(int(request.dataset_preview_examples or 0), 5))
+        for ds in datasets:
+            ds_id = ds.get("id")
+            try:
+                full = dataset_manager.get_dataset(ds_id) if ds_id else None
+                items = (full or {}).get("data", []) if preview_n > 0 else []
+                preview_items = items[:preview_n]
+            except Exception as e:
+                logger.warning(f"Failed to load dataset preview for {ds_id}: {e}")
+                preview_items = []
+
+            local_datasets_summary.append(
+                {
+                    "id": ds_id,
+                    "name": ds.get("name"),
+                    "description": ds.get("description", ""),
+                    "size": ds.get("size", len(preview_items)),
+                    "category": ds.get("category", ""),
+                    "preview": preview_items,
+                }
+            )
+    except Exception as e:
+        logger.warning(f"Failed to list local datasets for analysis: {e}")
+    technique_options = [
+        {
+            "key": key,
+            "name": value.get("name"),
+            "description": value.get("description", "")
+        }
+        for key, value in techniques.items()
+    ]
+
+    system_prompt = (
+        "You are a senior prompt engineering advisor for an Evaluation Lab.\n"
+        "Given a business task description, a catalog of prompt-engineering techniques, "
+        "and a list of AVAILABLE LOCAL DATASETS, you must propose a concrete, "
+        "step-by-step evaluation plan that fits THIS product:\n"
+        "- Evaluation Lab tabs: Quality, Consistency, Robustness, Performance, Human, Overview.\n"
+        "- Dataset sources:\n"
+        "    * localDatasets: user-created datasets already in the workspace\n"
+        "    * huggingface catalog: accessible via text search\n"
+        "    * Dataset Generator: modes from_task, from_examples, from_prompt, edge_cases\n"
+        "      with task_type (classification, extraction, qa, summarization, translation, generation, custom).\n\n"
+        "Always respond with a single JSON object using EXACTLY these fields:\n"
+        "  taskProfile: short lowercase string like 'classification', 'extraction',\n"
+        "      'qa', 'summarization', 'translation', 'generation', or 'general'.\n"
+        "  datasetHint: one sentence describing how {input, output} pairs should look.\n"
+        "  benchmarkHint: one sentence that refers to THIS UI, e.g.\n"
+        "      'Run Quality → Reference-Based, then Consistency and Robustness (Format/Adversarial)'.\n"
+        "  techniqueSuggestions: array of up to 3 items, each with fields:\n"
+        "      key: technique key from the provided list\n"
+        "      name: human-friendly technique name.\n"
+        "  localDatasetRecommendations: array of up to 3 objects describing LOCAL datasets that fit best, each:\n"
+        "      { id, name, fit: 'high'|'medium'|'low', reason }\n"
+        "      id MUST come from the provided localDatasets list when source is local.\n"
+        "  hfSuggestions: array of up to 3 objects suggesting Hugging Face searches, each:\n"
+        "      { query, reason }\n"
+        "      query should be what the user types into the Online catalog search box.\n"
+        "  generatorSuggestion: one object that recommends how to use Dataset Generator, with fields:\n"
+        "      { mode, task_type, include_edge_cases, difficulty, count, reason }\n"
+        "      mode ∈ ['from_task','from_examples','from_prompt','edge_cases'].\n"
+        "      difficulty ∈ ['easy','medium','hard','mixed'].\n"
+        "  dspyRecommendation: one object describing whether this task should use DSPy optimization in this product,\n"
+        "      shaped as { suitable: boolean, reason, profile, warnings } where:\n"
+        "        - suitable: true ONLY if there is enough data (≥30–50, ideally 300+), clear numeric metrics and a stable pipeline,\n"
+        "        - profile: one of ['FAST_CHEAP','BALANCED','HIGH_QUALITY'] when suitable=true,\n"
+        "        - reason: short explanation referencing the DSPy best‑practice criteria,\n"
+        "        - warnings: mention cost/compute concerns and when not to use DSPy.\n"
+        "  steps: array of short strings (1–2 sentences each) that explain the plan\n"
+        "      step-by-step for the user (max 6 steps).\n\n"
+        "If you are unsure, pick 'general' as taskProfile and choose broadly useful\n"
+        "techniques (e.g., CoT, self-consistency, few-shot prompting). Do not include\n"
+        "any extra commentary outside the JSON."
+    )
+
+    # Provide techniques and local datasets as context
+    user_prompt = (
+        "Task description:\n"
+        f"{request.task_description.strip()}\n\n"
+        "Available techniques (keys, names, descriptions):\n"
+        f"{json.dumps(technique_options, ensure_ascii=False, indent=2)}\n\n"
+        "Local datasets in this workspace (id, name, description, size, category, preview examples):\n"
+        f"{json.dumps(local_datasets_summary, ensure_ascii=False, indent=2)}\n\n"
+        "Return the JSON object now."
+    )
+
+    # Initialize LLM using OpenAI config (defaults to gpt-5-mini)
+    openai_cfg = config.get("models", {}).get("openai", {}) or {}
+    model_name = openai_cfg.get("model_name", "gpt-5-mini")
+
+    try:
+        llm = ChatOpenAI(
+            model=model_name,
+            temperature=0.2,
+            api_key=OPENAI_API_KEY,
+        )
+
+        response = await llm.ainvoke(
+            [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ]
+        )
+        content = getattr(response, "content", "") or ""
+    except Exception as e:
+        logger.error(f"Prompt setup analysis LLM error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to run analysis model")
+
+    # Extract JSON from the response
+    try:
+        text = content.strip()
+        if "```json" in text:
+            text = text.split("```json", 1)[1].split("```", 1)[0]
+        elif "```" in text:
+            text = text.split("```", 1)[1].split("```", 1)[0]
+
+        raw = json.loads(text)
+    except Exception as e:
+        logger.error(f"Failed to parse analysis JSON: {e} | raw content={content!r}")
+        raise HTTPException(status_code=500, detail="Model returned invalid JSON for analysis")
+
+    # Normalize and validate response
+    task_profile = (raw.get("taskProfile") or raw.get("task_profile") or "general").strip() or "general"
+    dataset_hint = raw.get("datasetHint") or raw.get("dataset_hint") or ""
+    benchmark_hint = raw.get("benchmarkHint") or raw.get("benchmark_hint") or ""
+
+    # Build maps for resolving technique references
+    normalized_to_key: Dict[str, str] = {}
+    for key, value in techniques.items():
+        name = value.get("name", "")
+        normalized_to_key[_normalize_key(key)] = key
+        if name:
+            normalized_to_key[_normalize_key(name)] = key
+
+    technique_suggestions: List[Dict[str, str]] = []
+    raw_techs = raw.get("techniqueSuggestions") or raw.get("techniques") or []
+
+    for item in raw_techs:
+        if isinstance(item, str):
+            candidate_key = item
+            candidate_name = techniques.get(item, {}).get("name", item)
+        elif isinstance(item, dict):
+            candidate_key = item.get("key") or item.get("id") or ""
+            candidate_name = item.get("name") or techniques.get(candidate_key, {}).get("name", "")
+        else:
+            continue
+
+        if candidate_key not in techniques:
+            resolved = normalized_to_key.get(_normalize_key(candidate_key)) or normalized_to_key.get(
+                _normalize_key(candidate_name)
+            )
+            if resolved:
+                candidate_key = resolved
+                candidate_name = techniques[resolved]["name"]
+            else:
+                continue
+
+        technique_suggestions.append(
+            {
+                "key": candidate_key,
+                "name": candidate_name or techniques[candidate_key].get("name", candidate_key),
+            }
+        )
+        if len(technique_suggestions) >= 3:
+            break
+
+    # Fallback: if model did not select any valid techniques, pick a few generic ones
+    if not technique_suggestions:
+        # Prefer techniques that have chain-of-thought or few-shot hints
+        generic_candidates = []
+        for key, value in techniques.items():
+            desc = f"{value.get('name', '')} {value.get('description', '')}".lower()
+            if any(k in desc for k in ["chain-of-thought", "few-shot", "self-consistency", "cot"]):
+                generic_candidates.append((key, value))
+        if not generic_candidates:
+            generic_candidates = list(techniques.items())[:3]
+
+        for key, value in generic_candidates[:3]:
+            technique_suggestions.append({"key": key, "name": value.get("name", key)})
+
+    # Local dataset recommendations
+    local_recs: List[Dict[str, Any]] = []
+    for item in raw.get("localDatasetRecommendations", []) or []:
+        if not isinstance(item, dict):
+            continue
+        ds_id = item.get("id")
+        ds_name = item.get("name") or ""
+        if not ds_id and not ds_name:
+            continue
+        local_recs.append(
+            {
+                "id": ds_id,
+                "name": ds_name,
+                "fit": (item.get("fit") or "medium").lower(),
+                "reason": item.get("reason", ""),
+            }
+        )
+
+    # Hugging Face search suggestions
+    hf_suggestions: List[Dict[str, str]] = []
+    for item in raw.get("hfSuggestions", []) or []:
+        if not isinstance(item, dict):
+            continue
+        query = (item.get("query") or "").strip()
+        if not query:
+            continue
+        hf_suggestions.append(
+            {
+                "query": query,
+                "reason": item.get("reason", ""),
+            }
+        )
+
+    generator_cfg = raw.get("generatorSuggestion") or {}
+    generator_suggestion = {
+        "mode": generator_cfg.get("mode") or "",
+        "task_type": generator_cfg.get("task_type") or "",
+        "include_edge_cases": bool(generator_cfg.get("include_edge_cases", False)),
+        "difficulty": generator_cfg.get("difficulty") or "",
+        "count": int(generator_cfg.get("count") or 0),
+        "reason": generator_cfg.get("reason", ""),
+    }
+
+    steps = [str(s) for s in (raw.get("steps") or []) if isinstance(s, (str, int, float))][:6]
+
+    dspy_cfg = raw.get("dspyRecommendation") or {}
+    dspy_recommendation = {
+        "suitable": bool(dspy_cfg.get("suitable", False)),
+        "reason": dspy_cfg.get("reason", ""),
+        "profile": dspy_cfg.get("profile") or "",
+        "warnings": dspy_cfg.get("warnings", ""),
+    }
+
+    return {
+        "taskProfile": task_profile,
+        "datasetHint": dataset_hint,
+        "benchmarkHint": benchmark_hint,
+        "techniqueSuggestions": technique_suggestions,
+        "localDatasetRecommendations": local_recs,
+        "hfSuggestions": hf_suggestions,
+        "generatorSuggestion": generator_suggestion,
+        "dspyRecommendation": dspy_recommendation,
+        "steps": steps,
+    }
 
 @app.get("/api/tasks")
 async def get_tasks():
@@ -493,6 +780,78 @@ async def run_offline_evaluation(request: OfflineEvaluationRequest):
             prompts=request.prompts,
             model_func=model_func
         )
+        
+        # ==================== Advanced Metrics Integration ====================
+        # Automatically calculate BERTScore and Perplexity if dependencies are available
+        from src.evaluator import ADVANCED_METRICS_AVAILABLE
+        
+        if ADVANCED_METRICS_AVAILABLE:
+            try:
+                from src.evaluator import calculate_bertscore, calculate_perplexity
+                
+                logger.info("Calculating advanced metrics (BERTScore, Perplexity)...")
+                
+                # Collect all predictions and references from results
+                all_predictions = []
+                all_references = []
+                
+                # Extract predictions from each prompt's results
+                for prompt_key, prompt_data in results.items():
+                    if prompt_key.startswith("prompt_") and "predictions" in prompt_data:
+                        predictions = prompt_data["predictions"]
+                        ground_truth = prompt_data["ground_truth"]
+                        
+                        all_predictions.extend(predictions)
+                        all_references.extend(ground_truth)
+                
+                if all_predictions and all_references:
+                    # Calculate BERTScore for each prediction-reference pair
+                    bertscore_scores = []
+                    for pred, ref in zip(all_predictions, all_references):
+                        if pred and ref:  # Skip empty strings
+                            try:
+                                result = calculate_bertscore(pred, ref)
+                                bertscore_scores.append(result.score)
+                            except Exception as e:
+                                logger.warning(f"BERTScore calculation failed for pair: {e}")
+                    
+                    # Calculate average BERTScore
+                    if bertscore_scores:
+                        avg_bertscore = sum(bertscore_scores) / len(bertscore_scores)
+                        
+                        # Add to results summary
+                        if "summary" not in results:
+                            results["summary"] = {}
+                        results["summary"]["bertscore"] = round(avg_bertscore, 4)
+                        logger.info(f"BERTScore calculated: {avg_bertscore:.4f}")
+                    
+                    # Calculate Perplexity for each prediction
+                    perplexity_scores = []
+                    for pred in all_predictions:
+                        if pred and pred.strip():  # Skip empty strings
+                            try:
+                                result = calculate_perplexity(pred)
+                                if result.score != float('inf'):
+                                    perplexity_scores.append(result.score)
+                            except Exception as e:
+                                logger.warning(f"Perplexity calculation failed: {e}")
+                    
+                    # Calculate average Perplexity
+                    if perplexity_scores:
+                        avg_perplexity = sum(perplexity_scores) / len(perplexity_scores)
+                        
+                        # Add to results summary
+                        if "summary" not in results:
+                            results["summary"] = {}
+                        results["summary"]["perplexity"] = round(avg_perplexity, 2)
+                        logger.info(f"Perplexity calculated: {avg_perplexity:.2f}")
+                
+            except Exception as e:
+                logger.warning(f"Advanced metrics calculation failed: {e}")
+                # Continue without advanced metrics - graceful degradation
+        else:
+            logger.info("Advanced metrics not available (dependencies not installed)")
+        
         return results
     except Exception as e:
         logger.error(f"Evaluation error: {e}")
@@ -1521,10 +1880,13 @@ async def run_llm_judge_batch(request: BatchJudgeRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
 @app.get("/api/metrics/available")
 async def get_available_metrics():
     """Get list of available metrics and their descriptions."""
-    return {
+    from src.evaluator import ADVANCED_METRICS_AVAILABLE
+    
+    metrics = {
         "reference_based": {
             "bleu": {
                 "name": "BLEU",
@@ -1587,9 +1949,36 @@ async def get_available_metrics():
             }
         }
     }
+    
+    # Add advanced metrics if available
+    if ADVANCED_METRICS_AVAILABLE:
+        metrics["reference_based"]["bertscore"] = {
+            "name": "BERTScore",
+            "description": "Embedding-based semantic similarity using BERT",
+            "use_case": "Semantic equivalence, more accurate than n-grams",
+            "range": "0-1 (higher is better)",
+            "requires": "sentence-transformers"
+        }
+        metrics["reference_based"]["semantic_similarity_advanced"] = {
+            "name": "Semantic Similarity (Advanced)",
+            "description": "Sentence embeddings for deep semantic understanding",
+            "use_case": "Better than Jaccard for semantic similarity",
+            "range": "0-1 (higher is better)",
+            "requires": "sentence-transformers"
+        }
+        metrics["reference_free"]["perplexity"] = {
+            "name": "Perplexity",
+            "description": "Language model confidence in the text",
+            "use_case": "Naturalness and fluency of generated text",
+            "range": "Lower is better (typically 10-100)",
+            "requires": "transformers, torch"
+        }
+    
+    return metrics
 
 
 # ==================== DSPy Orchestrator Endpoints ====================
+
 
 from src.dspy_orchestrator import DSPyOrchestrator
 from src.dspy_langchain_agent import DSPyLangChainAgent
@@ -1832,6 +2221,18 @@ async def test_artifact(request: TestArtifactRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ==================== Advanced Evaluation Endpoints ====================
+
+# Register advanced evaluation router
+try:
+    from src.api.advanced_evaluation import router as advanced_eval_router
+    app.include_router(advanced_eval_router)
+    logger.info("Advanced evaluation endpoints registered")
+except ImportError as e:
+    logger.warning(f"Advanced evaluation endpoints not available: {e}")
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+

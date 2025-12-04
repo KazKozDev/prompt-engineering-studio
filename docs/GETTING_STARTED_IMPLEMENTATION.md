@@ -8,55 +8,55 @@ Created comprehensive documentation for all 9 main sections of Prompt Engineerin
 
 ### Documentation Files (9 guides)
 
-1. **`docs/getting-started/01-generator.md`** (5.2 KB)
+1. **`docs/getting-started/01-generator.md`** (served from `frontend/public/docs/getting-started/01-generator.md`)
    - Technique selection workflow
    - Task description best practices
    - Generation and results management
    - Advanced features and tips
 
-2. **`docs/getting-started/02-optimizer.md`** (9.5 KB)
+2. **`docs/getting-started/02-optimizer.md`** (served from `frontend/public/docs/getting-started/02-optimizer.md`)
    - Optimization strategies (Clarity, Effectiveness, Specificity, Token Efficiency)
    - Iteration settings and temperature guidelines
    - Real-world use cases
    - A/B testing integration
 
-3. **`docs/getting-started/03-datasets.md`** (11 KB)
+3. **`docs/getting-started/03-datasets.md`** (served from `frontend/public/docs/getting-started/03-datasets.md`)
    - Dataset creation (manual and upload)
    - Best practices for coverage and diversity
    - Dataset types (Q&A, Classification, Generation, etc.)
    - Versioning and splitting
 
-4. **`docs/getting-started/04-evaluation.md`** (13.8 KB)
+4. **`docs/getting-started/04-evaluation.md`** (served from `frontend/public/docs/getting-started/04-evaluation.md`)
    - Offline benchmarks (accuracy, quality, efficiency metrics)
    - Label-free evaluation (Self-Consistency, GLaPE, LLM-as-Judge)
    - Robustness testing (format, length, adversarial)
    - Full unified reports
 
-5. **`docs/getting-started/05-library.md`** (11.4 KB)
+5. **`docs/getting-started/05-library.md`** (served from `frontend/public/docs/getting-started/05-library.md`)
    - Prompt organization and categorization
    - Version control and branching
    - Templates and collections
    - Deployment tracking
 
-6. **`docs/getting-started/06-metrics.md`** (12.5 KB)
+6. **`docs/getting-started/06-metrics.md`** (served from `frontend/public/docs/getting-started/06-metrics.md`)
    - Real-time monitoring dashboards
    - Key metrics (volume, success rate, latency, cost)
    - Alerting and SLA tracking
    - Cost optimization workflows
 
-7. **`docs/getting-started/07-history.md`** (12.4 KB)
+7. **`docs/getting-started/07-history.md`** (served from `frontend/public/docs/getting-started/07-history.md`)
    - Change tracking and audit trails
    - Rollback and restore procedures
    - Change analytics
    - Compliance and approval workflows
 
-8. **`docs/getting-started/08-settings.md`** (12.5 KB)
+8. **`docs/getting-started/08-settings.md`** (served from `frontend/public/docs/getting-started/08-settings.md`)
    - LLM provider configuration (Ollama, Gemini, OpenAI, Claude)
    - Workspace preferences
    - Security and API key management
    - Advanced performance tuning
 
-9. **`docs/getting-started/09-help.md`** (10 KB)
+9. **`docs/getting-started/09-help.md`** (served from `frontend/public/docs/getting-started/09-help.md`)
    - Search and navigation
    - Documentation structure
    - Support resources

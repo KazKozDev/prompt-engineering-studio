@@ -98,7 +98,7 @@ const difficulties: { id: Difficulty; name: string }[] = [
     { id: 'mixed', name: 'Mixed' }
 ];
 
-export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt, title, description, context = 'general' }: DatasetGeneratorProps) {
+export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt, title: _title, description: _description, context = 'general' }: DatasetGeneratorProps) {
     const config = contextConfig[context];
 
     // Generation config
@@ -274,27 +274,39 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
     return (
         <div className="flex flex-col h-full">
             {/* Header */}
-            <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
+            <div className="px-6 py-4 border-b border-white/10 flex items-start justify-between bg-white/[0.02] gap-4">
                 <div>
                     <h2 className="text-xl font-semibold text-white/90 mb-1">
                         Generate Dataset
                     </h2>
                     <p className="text-[11px] text-white/45 mt-1">
-                        {description || 'Use AI to create test data for benchmarks and optimization.'}
+                        {_description || 'Use AI to create test data for benchmarks and optimization.'}
                     </p>
                 </div>
-                {onClose && (
-                    <Button
-                        onClick={onClose}
-                        variant="ghost"
-                        size="icon"
-                        className="p-2 text-white/60 hover:text-white"
+                <div className="flex items-center gap-2">
+                    <div className="text-[11px] px-2 py-1 rounded-md border border-white/10 text-white/50 bg-black/30">
+                        {settings.provider} · {settings.model}
+                    </div>
+                    <button
+                        onClick={() => setGuideOpen(true)}
+                        className="px-2 py-1.5 rounded-lg border border-amber-500/30 bg-amber-900/20 text-amber-300 hover:bg-amber-900/30 transition-all"
+                        title="Generation Mode Guide"
                     >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </Button>
-                )}
+                        <MethodologyIcon className="w-3.5 h-3.5" />
+                    </button>
+                    {onClose && (
+                        <Button
+                            onClick={onClose}
+                            variant="ghost"
+                            size="icon"
+                            className="p-2 text-white/60 hover:text-white"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </Button>
+                    )}
+                </div>
             </div>
 
             <div className="flex-1 overflow-y-auto">
@@ -312,13 +324,6 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
                             <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest">
                                 Generation Mode
                             </label>
-                            <button
-                                onClick={() => setGuideOpen(true)}
-                                className="px-2 py-1.5 rounded-lg border border-amber-500/30 bg-amber-900/20 text-amber-300 hover:bg-amber-900/30 transition-all"
-                                title="Generation Mode Guide"
-                            >
-                                <MethodologyIcon className="w-3.5 h-3.5" />
-                            </button>
                         </div>
                         <div className={`grid gap-2 ${config.availableModes.length <= 2 ? 'grid-cols-2' : 'grid-cols-2'}`}>
                             {config.availableModes.map((m) => (
@@ -622,12 +627,9 @@ export function DatasetGenerator({ settings, onGenerated, onClose, initialPrompt
                 </div>
             </div>
 
-            {/* Footer with model info */}
-            <div className="px-6 py-3 border-t border-white/10">
-                <div className="flex items-center justify-between text-[11px] text-white/30">
-                    <span>Using: {settings.provider} / {settings.model}</span>
-                    <span>Max 100 examples per generation</span>
-                </div>
+            {/* Footer note */}
+            <div className="px-6 py-3 border-t border-white/10 text-[11px] text-white/30">
+                Max 100 examples per generation
             </div>
 
             {/* Generation Mode Guide (right-side panel, like Evaluation Lab) */}

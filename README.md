@@ -1,36 +1,309 @@
-# Prompt Engineering Studio (Beta)
+# Prompt Engineering Studio
 
-Prompt Engineering Studio is a local-first workbench for designing, evaluating, and deploying LLM prompts in a structured, reproducible way.
+Local-first workbench for designing, evaluating, and deploying LLM prompts with scientific rigor.
 
-> Status: **v2.0 Beta** — active development, breaking changes possible.
-
-
-<img width="1500" height="1049" alt="Screenshot 2025-12-02 at 22 54 55" src="https://github.com/user-attachments/assets/9a5c60d2-fc37-4c8d-b5b6-bb4e33d4f3d3" />
-
-<img width="1540" height="1059" alt="Screenshot 2025-12-02 at 23 18 12" src="https://github.com/user-attachments/assets/0249bfca-a979-437e-b54f-88990f70b65c" />
+## Overview
 
 
-## Features
+Prompt Engineering Studio is a production-grade tool for systematic prompt development. It combines 70+ research-backed prompting techniques with automated optimization, comprehensive evaluation, and deployment tracking.
 
-- Prompt generator with 30+ prompting techniques
-- DSPy-based orchestrator for automated prompt optimization
-- Dataset manager and evaluation lab with metrics
-- Prompt library with history and (planned) production metrics
+**Status:** v2.0 Beta — Active development
 
-## Getting Started
+## Screenshots
+
+<img width="1500" alt="Generator Interface" src="https://github.com/user-attachments/assets/9a5c60d2-fc37-4c8d-b5b6-bb4e33d4f3d3" />
+
+*Generator: 70+ research-backed prompting techniques with paper citations and structure hints*
+
+<img width="1540" alt="Evaluation Lab" src="https://github.com/user-attachments/assets/0249bfca-a979-437e-b54f-88990f70b65c" />
+
+*Evaluation Lab: Comprehensive testing with Quality, Consistency, Robustness, and Advanced Metrics*
+
+
+## Core Features
+
+### 1. Generator
+- **70+ Prompting Techniques** from research papers (2020-2025)
+- Categories: Reasoning, Coding, Creative Writing, Data Extraction, Translation, Summarization
+- Techniques include: Chain-of-Thought, ReAct, Tree of Thoughts, Self-Consistency, DSPy optimization, and more
+- Each technique includes paper citation, arXiv link, and structure hints
+
+### 2. DSPy Orchestrator
+- Automated prompt optimization using DSPy framework
+- LangChain-based agent for task analysis and technique suggestion
+- Multi-provider support (GPT-4, Claude, Gemini, Ollama)
+- Iterative refinement with configurable strategies
+
+### 3. Dataset Manager
+- Import from JSON, CSV, or HuggingFace datasets
+- Manual dataset creation with schema preview
+- Support for Q&A, classification, generation, and extraction tasks
+- Dataset versioning and metadata tracking
+
+
+### 4. Evaluation Lab ✅ **Production-Ready**
+
+**Core Evaluation:**
+- **Offline Benchmarks:** Accuracy, BLEU, ROUGE, BERTScore, semantic similarity
+- **Label-Free Evaluation:** Self-Consistency, GLaPE, LLM-as-Judge
+- **Robustness Testing:** Format variations, length stress tests, adversarial inputs
+- **Unified Reports:** Comprehensive evaluation across all metrics
+
+**Advanced Metrics** (NEW):
+- **BERTScore:** Embedding-based semantic similarity using sentence-transformers
+- **Perplexity:** Language model confidence for fluency assessment
+- **Advanced Semantic Similarity:** Deep semantic understanding with embeddings
+- Automatic calculation when dependencies installed
+- Graceful degradation to basic metrics if not available
+
+**Evaluation History & Monitoring** (NEW):
+- **Automatic Tracking:** Every evaluation run saved with full metrics and metadata
+- **Regression Detection:** Compare recent runs against baseline to catch performance drops
+- **Trend Analysis:** Visualize metric changes over time (improving/stable/declining)
+- **History Tab:** Dedicated UI for viewing statistics, detecting regressions, and analyzing trends
+- **Response Caching:** Hash-based caching with TTL for faster iterations
+
+**6 Evaluation Types:**
+1. Quality (BLEU, ROUGE, BERTScore, Perplexity, LLM-as-Judge)
+2. Consistency (Self-Consistency, Mutual/GLaPE)
+3. Robustness (Format, Length, Adversarial)
+4. Performance (Latency, Cost, Reliability)
+5. Human (Rating, Ranking, A/B Testing)
+6. Overview (Aggregated scores with advanced metrics)
+7. History (Trends, regressions, statistics)
+
+
+### 5. Prompt Library
+- Version control for prompts
+- Template management with categories and tags
+- Generation history tracking
+- Deployment status monitoring
+
+### 6. Settings
+- Multi-provider configuration (Ollama, OpenAI, Gemini, Anthropic)
+- API key management
+- Model selection per provider
+- Workspace preferences
+
+## Architecture
+
+```
+prompt-engineering-studio/
+├── src/                      # Python backend (FastAPI)
+│   ├── api_server.py         # Main API server (2125 lines)
+│   ├── llm/                  # LLM client implementations
+│   ├── evaluator/            # Evaluation metrics and methods
+│   ├── prompts/              # Prompt templates and management
+│   ├── storage/              # Data persistence
+│   └── utils/                # Utilities (rate limiting, caching, logging)
+├── frontend/                 # React + TypeScript UI
+│   └── src/
+│       ├── components/       # UI components (Generator, Optimizer, etc.)
+│       └── services/         # API client
+├── config/                   # Configuration files
+│   ├── prompts.yaml          # 70+ technique definitions (668 lines)
+│   ├── technique_templates.yaml
+│   ├── model_config.yaml
+│   └── tools_schema.json
+├── data/                     # Datasets, cache, outputs
+└── docs/                     # Documentation and references
+```
+
+## Tech Stack
+
+**Backend:**
+- Python 3.11+
+- FastAPI + Uvicorn
+- LangChain for agent orchestration
+- DSPy for prompt optimization
+- HuggingFace Datasets
+- Multi-provider LLM clients (OpenAI, Anthropic, Google, Ollama)
+
+**Frontend:**
+- React 19 + TypeScript
+- Vite build system
+- React Markdown for documentation rendering
+- Tailwind CSS (via postcss)
+
+**Code Quality:**
+- Black formatter
+- Ruff linter (pycodestyle, pyflakes, isort, pydocstyle)
+- Type hints (flake8-annotations)
+- Google-style docstrings
+
+## Installation
+
+### Prerequisites
+- Python 3.11+
+- Node.js 18+
+- (Optional) Ollama for local models
+- (Optional) CUDA-capable GPU for advanced metrics (recommended but not required)
+
+### Quick Start
 
 ```bash
+# Clone repository
 git clone https://github.com/KazKozDev/prompt-engineering-studio.git
 cd prompt-engineering-studio
 
-# Backend (Python 3.11+)
+# Backend setup
 pip install -r requirements.txt
-python -m src.api.app  # or your preferred entrypoint
 
-# Frontend
+# Optional: Install advanced evaluation metrics
+# Note: This will download ~500MB of models (sentence-transformers, torch)
+pip install sentence-transformers transformers torch numpy
+
+# Frontend setup
 cd frontend
 npm install
-npm run dev
+cd ..
+
+# Configure providers (create .env file)
+cp .env.example .env
+# Add your API keys: OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY
+
+# Start application (macOS)
+./start.command
+
+# Or manually:
+# Terminal 1: python src/api_server.py
+# Terminal 2: cd frontend && npm run dev
 ```
 
-Configure providers and models under **Settings** in the UI. DSPy, Ollama, OpenAI, Gemini, and Anthropic are supported via the backend configuration.
+Application will open at `http://localhost:5173`
+
+### Advanced Metrics (Optional)
+
+Advanced evaluation metrics (BERTScore, Perplexity, Semantic Similarity) require additional dependencies:
+
+```bash
+# Full installation with advanced metrics
+pip install sentence-transformers>=2.2.0 transformers>=4.30.0 torch>=2.0.0 numpy>=1.24.0
+```
+
+**Note:** 
+- First run will download models (~500MB total)
+- Models are cached locally for future use
+- Advanced metrics work without GPU but are faster with CUDA
+- If not installed, basic metrics (BLEU, ROUGE, Jaccard) still work perfectly
+
+## Configuration
+
+### Environment Variables (.env)
+```bash
+OPENAI_API_KEY=your_key_here
+ANTHROPIC_API_KEY=your_key_here
+GOOGLE_API_KEY=your_key_here
+```
+
+### Provider Setup
+Configure providers in **Settings** panel:
+- **Ollama:** Local models (requires Ollama installation)
+- **OpenAI:** GPT-3.5, GPT-4, GPT-4o
+- **Anthropic:** Claude 3 (Opus, Sonnet, Haiku)
+- **Google:** Gemini Pro, Gemini Flash
+
+## Usage Workflow
+
+1. **Generate Prompts** → Select techniques, describe task, generate variants
+2. **Optimize** → Use DSPy orchestrator for automated refinement
+3. **Create Dataset** → Upload test cases or generate synthetic data
+4. **Evaluate** → Run benchmarks, label-free eval, robustness tests
+5. **Save to Library** → Version control and deployment tracking
+6. **Monitor** → Track performance metrics (planned feature)
+
+## Key Dependencies
+
+```
+fastapi>=0.104.0          # API framework
+openai>=1.0.0             # OpenAI client
+anthropic>=0.25.0         # Anthropic client
+google-generativeai>=0.4.0 # Gemini client
+datasets>=2.19.0          # HuggingFace datasets
+pydantic>=2.0.0           # Data validation
+pyyaml>=6.0.0             # Config parsing
+tiktoken>=0.6.0           # Token counting
+```
+
+## Research Foundation
+
+All prompting techniques are based on peer-reviewed research papers:
+- **Chain-of-Thought** (Wei et al., 2022) - arXiv:2201.11903
+- **ReAct** (Yao et al., 2022) - arXiv:2210.03629
+- **Tree of Thoughts** (Yao et al., 2023) - arXiv:2305.10601
+- **Self-Consistency** (Wang et al., 2022) - arXiv:2203.11171
+- **DSPy** (Khattab et al., 2023) - arXiv:2310.03714
+- And 65+ more techniques from 2020-2025
+
+See `config/prompts.yaml` for complete list with citations.
+
+## Development
+
+### Code Style
+```bash
+# Format code
+black .
+
+# Lint
+ruff check . --fix
+
+# Run tests
+pytest tests/
+```
+
+### Project Structure
+- Follow GenAI project standards (see `.agent/workflows/`)
+- Type hints required for all functions
+- Google-style docstrings
+- Configuration externalized to YAML files
+
+## Documentation
+
+- **Getting Started Guides:** `docs/getting-started/` (9 comprehensive guides)
+- **Method Documentation:** `docs/methods/` (technique deep-dives)
+- **Research Papers:** `docs/references/` (19 PDF papers)
+- **In-App Help:** Available in Help section of UI
+
+## Roadmap
+
+- [ ] Production metrics dashboard
+- [ ] Real-time monitoring and alerting
+- [ ] A/B testing framework
+- [ ] Prompt branching and merging
+- [ ] Multi-user collaboration
+- [ ] API endpoint for production deployment
+- [ ] Cost optimization recommendations
+
+## License
+
+MIT License - See LICENSE file
+
+## Contributing
+
+Contributions welcome. Please:
+1. Follow existing code style (Black + Ruff)
+2. Add type hints and docstrings
+3. Update tests
+4. Reference research papers for new techniques
+
+## Links
+
+- **GitHub:** https://github.com/KazKozDev/prompt-engineering-studio
+- **Author:** Artem Kazakov (KazKozDev)
+- **Issues:** https://github.com/KazKozDev/prompt-engineering-studio/issues
+
+## Citation
+
+If you use this tool in research, please cite:
+```
+@software{prompt_engineering_studio,
+  author = {Kazakov, Artem},
+  title = {Prompt Engineering Studio},
+  year = {2025},
+  url = {https://github.com/KazKozDev/prompt-engineering-studio}
+}
+```
+
+---
+
+**Note:** This is a beta release. Breaking changes may occur. For production use, pin to specific versions and test thoroughly.

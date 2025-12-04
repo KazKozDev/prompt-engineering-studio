@@ -203,11 +203,10 @@ export function QualityTab({ settings, datasets, onModeChange, onResultsChange }
                 <div className="flex gap-2">
                     <button
                         onClick={() => setMode('reference')}
-                        className={`flex-1 px-4 py-2.5 rounded-lg text-xs font-medium transition-all ${
-                            mode === 'reference'
+                        className={`flex-1 px-4 py-2.5 rounded-lg text-xs font-medium transition-all ${mode === 'reference'
                                 ? 'bg-white/10 text-white border border-white/20'
                                 : 'bg-white/[0.02] text-white/50 border border-white/5 hover:bg-white/5'
-                        }`}
+                            }`}
                     >
                         <div className="flex items-center justify-center">
                             Reference-Based
@@ -215,11 +214,10 @@ export function QualityTab({ settings, datasets, onModeChange, onResultsChange }
                     </button>
                     <button
                         onClick={() => setMode('judge')}
-                        className={`flex-1 px-4 py-2.5 rounded-lg text-xs font-medium transition-all ${
-                            mode === 'judge'
+                        className={`flex-1 px-4 py-2.5 rounded-lg text-xs font-medium transition-all ${mode === 'judge'
                                 ? 'bg-white/10 text-white border border-white/20'
                                 : 'bg-white/[0.02] text-white/50 border border-white/5 hover:bg-white/5'
-                        }`}
+                            }`}
                     >
                         <div className="flex items-center justify-center">
                             LLM-as-Judge
@@ -373,9 +371,8 @@ export function QualityTab({ settings, datasets, onModeChange, onResultsChange }
                 <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-4">
                         <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Results</span>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${
-                            results.mode === 'reference' ? 'bg-blue-500/20 text-blue-400' : 'bg-purple-500/20 text-purple-400'
-                        }`}>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${results.mode === 'reference' ? 'bg-blue-500/20 text-blue-400' : 'bg-purple-500/20 text-purple-400'
+                            }`}>
                             {results.mode === 'reference' ? 'Reference-Based' : 'LLM-as-Judge'}
                         </span>
                     </div>
@@ -403,6 +400,45 @@ export function QualityTab({ settings, datasets, onModeChange, onResultsChange }
                                     <div className="text-[10px] text-white/50 uppercase">Exact Match</div>
                                 </div>
                             </div>
+
+                            {/* Advanced Metrics (if available) */}
+                            {(results.summary?.bertscore !== undefined || results.summary?.perplexity !== undefined) && (
+                                <div className="mt-4 pt-4 border-t border-white/10">
+                                    <div className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                                            <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+                                        </svg>
+                                        Advanced Metrics
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {/* BERTScore */}
+                                        {results.summary?.bertscore !== undefined && (
+                                            <div className="bg-gradient-to-br from-emerald-900/30 to-emerald-900/10 border border-emerald-500/30 rounded-lg p-3 text-center">
+                                                <div className="text-xl font-bold text-emerald-300">
+                                                    {results.summary.bertscore.toFixed(3)}
+                                                </div>
+                                                <div className="text-[10px] text-emerald-400/80 uppercase font-semibold">BERTScore</div>
+                                                <div className="text-[8px] text-emerald-400/50 mt-1">Semantic Similarity</div>
+                                            </div>
+                                        )}
+
+                                        {/* Perplexity */}
+                                        {results.summary?.perplexity !== undefined && (
+                                            <div className="bg-gradient-to-br from-emerald-900/30 to-emerald-900/10 border border-emerald-500/30 rounded-lg p-3 text-center">
+                                                <div className="text-xl font-bold text-emerald-300">
+                                                    {results.summary.perplexity.toFixed(1)}
+                                                </div>
+                                                <div className="text-[10px] text-emerald-400/80 uppercase font-semibold">Perplexity</div>
+                                                <div className="text-[8px] text-emerald-400/50 mt-1">Lower is better</div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="mt-2 text-[9px] text-white/30 text-center">
+                                        Advanced metrics calculated using sentence-transformers
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Aggregates */}
                             {results.aggregates && (

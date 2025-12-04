@@ -161,11 +161,14 @@ const CATEGORIES = [
     'Custom'
 ];
 
-export function PromptLibrary({ onEvaluatePrompt }: PromptLibraryProps) {
+export function PromptLibrary({ onEvaluatePrompt: _onEvaluatePrompt }: PromptLibraryProps) {
     const [prompts, setPrompts] = useState<LibraryPrompt[]>([]);
     const [filteredPrompts, setFilteredPrompts] = useState<LibraryPrompt[]>([]);
     const [selectedPrompt, setSelectedPrompt] = useState<LibraryPrompt | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isEditing, setIsEditing] = useState(false);
+    const [draftName, setDraftName] = useState('');
+    const [draftText, setDraftText] = useState('');
 
     // Filters
     const [searchQuery, setSearchQuery] = useState('');
@@ -186,6 +189,15 @@ export function PromptLibrary({ onEvaluatePrompt }: PromptLibraryProps) {
     useEffect(() => {
         filterAndSortPrompts();
     }, [prompts, searchQuery, statusFilter, categoryFilter, sortBy]);
+
+    // Sync draft fields when selection changes
+    useEffect(() => {
+        if (selectedPrompt) {
+            setDraftName(selectedPrompt.name);
+            setDraftText(selectedPrompt.text);
+            setIsEditing(false);
+        }
+    }, [selectedPrompt]);
 
     const loadPrompts = () => {
         setIsLoading(true);
@@ -263,16 +275,6 @@ export function PromptLibrary({ onEvaluatePrompt }: PromptLibraryProps) {
                 : p
         );
         savePrompts(updated);
-    };
-
-    const handleCopyPrompt = (text: string) => {
-        if (navigator?.clipboard?.writeText) {
-            navigator.clipboard.writeText(text).catch(err => {
-                console.error('Clipboard copy failed:', err);
-            });
-        } else {
-            console.warn('Clipboard API not available');
-        }
     };
 
     const handleExportPrompt = (prompt: LibraryPrompt) => {
@@ -435,10 +437,20 @@ export function PromptLibrary({ onEvaluatePrompt }: PromptLibraryProps) {
                     <div className="px-5 py-4 border-b border-white/5 flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0 space-y-2">
                             <div className="flex items-center gap-2 flex-wrap">
-                                <h2 className="text-lg font-semibold text-white truncate flex items-center gap-2">
-                                    {selectedPrompt.name}
+                                <div className="flex items-center gap-2 min-w-0">
+                                    {isEditing ? (
+                                        <input
+                                            value={draftName}
+                                            onChange={(e) => setDraftName(e.target.value)}
+                                            className="bg-black/40 border border-white/20 rounded px-2 py-1 text-sm text-white/90 focus:outline-none focus:border-white/40 min-w-[160px] max-w-[260px]"
+                                        />
+                                    ) : (
+                                        <h2 className="text-lg font-semibold text-white truncate flex items-center gap-2">
+                                            {selectedPrompt.name}
+                                        </h2>
+                                    )}
                                     <span className="text-[11px] text-white/50">v{selectedPrompt.currentVersion}</span>
-                                </h2>
+                                </div>
                                 <span className={`text-[11px] px-2 py-1 rounded-full ${STATUS_CONFIG[selectedPrompt.status].color} ${STATUS_CONFIG[selectedPrompt.status].textColor}`}>
                                     {STATUS_CONFIG[selectedPrompt.status].label}
                                 </span>
@@ -453,6 +465,37 @@ export function PromptLibrary({ onEvaluatePrompt }: PromptLibraryProps) {
                         </div>
 
                         <div className="flex items-center gap-2 shrink-0">
+                            <button
+                                onClick={() => {
+                                    if (!selectedPrompt) return;
+                                    if (isEditing) {
+                                        const trimmedName = draftName.trim();
+                                        const trimmedText = draftText.trim();
+                                        if (!trimmedName || !trimmedText) {
+                                            setDraftName(selectedPrompt.name);
+                                            setDraftText(selectedPrompt.text);
+                                            setIsEditing(false);
+                                            return;
+                                        }
+                                        const updated = prompts.map(p =>
+                                            p.id === selectedPrompt.id
+                                                ? { ...p, name: trimmedName, text: trimmedText, updatedAt: new Date().toISOString() }
+                                                : p
+                                        );
+                                        savePrompts(updated);
+                                        const updatedSelected = updated.find(p => p.id === selectedPrompt.id) || null;
+                                        setSelectedPrompt(updatedSelected);
+                                        setIsEditing(false);
+                                    } else {
+                                        setIsEditing(true);
+                                        setDraftName(selectedPrompt.name);
+                                        setDraftText(selectedPrompt.text);
+                                    }
+                                }}
+                                className="px-3 py-1.5 text-xs font-medium rounded-lg border border-white/10 bg-white/[0.02] text-white/60 hover:text-white hover:border-white/30 transition-all"
+                            >
+                                {isEditing ? 'Save' : 'Edit'}
+                            </button>
                             <button
                                 onClick={() => handleExportPrompt(selectedPrompt)}
                                 className="px-3 py-1.5 text-xs font-medium rounded-lg border border-white/10 bg-white/[0.04] text-white/70 hover:text-white hover:border-white/30 transition-all"
@@ -531,27 +574,37 @@ export function PromptLibrary({ onEvaluatePrompt }: PromptLibraryProps) {
                                     </div>
                                 )}
                             </div>
-                            <div className="max-h-[520px] overflow-y-auto font-mono text-[12px] text-white/80 custom-scrollbar">
-                                {selectedPrompt.text.split('\n').map((line, idx) => {
-                                    const segments = line.split(/(\{\{.*?\}\})/g);
-                                    return (
-                                        <div key={idx} className="flex">
-                                            <div className="w-12 shrink-0 text-right pr-3 pl-4 text-white/30 select-none">
-                                                {idx + 1}
+                            {isEditing ? (
+                                <div className="p-4">
+                                    <textarea
+                                        value={draftText}
+                                        onChange={(e) => setDraftText(e.target.value)}
+                                        className="w-full min-h-[260px] bg-black/40 border border-white/15 rounded-lg px-3 py-2 font-mono text-[12px] text-white/80 focus:outline-none focus:border-white/40 custom-scrollbar resize-vertical"
+                                    />
+                                </div>
+                            ) : (
+                                <div className="max-h-[520px] overflow-y-auto font-mono text-[12px] text-white/80 custom-scrollbar">
+                                    {selectedPrompt.text.split('\n').map((line, idx) => {
+                                        const segments = line.split(/(\{\{.*?\}\})/g);
+                                        return (
+                                            <div key={idx} className="flex">
+                                                <div className="w-12 shrink-0 text-right pr-3 pl-4 text-white/30 select-none">
+                                                    {idx + 1}
+                                                </div>
+                                                <div className="flex-1 whitespace-pre-wrap pr-4">
+                                                    {segments.map((part, i) =>
+                                                        part.startsWith('{{') && part.endsWith('}}') ? (
+                                                            <span key={i} className="text-amber-300">{part}</span>
+                                                        ) : (
+                                                            <span key={i}>{part}</span>
+                                                        )
+                                                    )}
+                                                </div>
                                             </div>
-                                            <div className="flex-1 whitespace-pre-wrap pr-4">
-                                                {segments.map((part, i) =>
-                                                    part.startsWith('{{') && part.endsWith('}}') ? (
-                                                        <span key={i} className="text-amber-300">{part}</span>
-                                                    ) : (
-                                                        <span key={i}>{part}</span>
-                                                    )
-                                                )}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

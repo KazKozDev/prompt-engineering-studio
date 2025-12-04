@@ -14,6 +14,30 @@ from .metrics import (
     MetricResult
 )
 
+# Advanced metrics (optional dependencies)
+try:
+    from .advanced_metrics import (
+        BERTScoreCalculator,
+        PerplexityCalculator,
+        SemanticSimilarityCalculator,
+        calculate_bertscore,
+        calculate_perplexity,
+        calculate_semantic_similarity
+    )
+    ADVANCED_METRICS_AVAILABLE = True
+except ImportError:
+    ADVANCED_METRICS_AVAILABLE = False
+    BERTScoreCalculator = None
+    PerplexityCalculator = None
+    SemanticSimilarityCalculator = None
+    calculate_bertscore = None
+    calculate_perplexity = None
+    calculate_semantic_similarity = None
+
+# Evaluation history and caching
+from .history import EvaluationHistoryManager, EvaluationRun
+from .cache import ResponseCache
+
 __all__ = [
     "OfflineEvaluator",
     "ConsistencyScorer",
@@ -27,5 +51,18 @@ __all__ = [
     "calculate_rouge_n",
     "calculate_rouge_l",
     "calculate_semantic_similarity_simple",
-    "MetricResult"
+    "MetricResult",
+    # Advanced metrics
+    "BERTScoreCalculator",
+    "PerplexityCalculator",
+    "SemanticSimilarityCalculator",
+    "calculate_bertscore",
+    "calculate_perplexity",
+    "calculate_semantic_similarity",
+    "ADVANCED_METRICS_AVAILABLE",
+    # History and cache
+    "EvaluationHistoryManager",
+    "EvaluationRun",
+    "ResponseCache",
 ]
+

@@ -14,6 +14,8 @@ const TASK_TYPES = [
 ] as const;
 type TaskType = (typeof TASK_TYPES)[number]['value'];
 
+const ADVISOR_MODEL_LABEL = 'Advisor: gpt-5-mini';
+
 interface StudioProps {
     settings: {
         provider: string;
@@ -47,6 +49,43 @@ const TECH_ALIASES: Record<string, string> = {
     leasttomost: 'LtM',
     selfconsistency: 'SC',
 };
+
+interface TechniqueSuggestion {
+    key: string;
+    name: string;
+}
+
+interface AnalysisSuggestion {
+    taskProfile: string;
+    datasetHint: string;
+    benchmarkHint: string;
+    techniqueSuggestions: TechniqueSuggestion[];
+    localDatasetRecommendations?: {
+        id?: string;
+        name: string;
+        fit: string;
+        reason: string;
+    }[];
+    hfSuggestions?: {
+        query: string;
+        reason: string;
+    }[];
+    generatorSuggestion?: {
+        mode: string;
+        task_type: string;
+        include_edge_cases: boolean;
+        difficulty: string;
+        count: number;
+        reason: string;
+    };
+    dspyRecommendation?: {
+        suitable: boolean;
+        reason: string;
+        profile: string;
+        warnings: string;
+    };
+    steps?: string[];
+}
 
 const getTechniqueHints = (techKey: string, tech: Technique & { name: string }, techniques: Record<string, Technique>): string[] => {
     // First, try to get structure_hint from the current technique
@@ -93,9 +132,11 @@ export function Studio({ settings }: StudioProps) {
     const [generatedResults, setGeneratedResults] = useState<GeneratedPromptResult[]>([]);
     const [showSaveSuccess, setShowSaveSuccess] = useState(false);
     const [previewTechniqueKey, setPreviewTechniqueKey] = useState<string | null>(null);
-    const [uploadError] = useState<string | null>(null);
+    const [uploadError, setUploadError] = useState<string | null>(null);
     const [editingIdx, setEditingIdx] = useState<number | null>(null);
     const [editText, setEditText] = useState('');
+    const [analysisSuggestion, setAnalysisSuggestion] = useState<AnalysisSuggestion | null>(null);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
 
     // Shortcut: Cmd/Ctrl + Enter to generate
     useEffect(() => {
@@ -123,6 +164,141 @@ export function Studio({ settings }: StudioProps) {
             setTechniques(data.techniques);
         } catch (error) {
             console.error('Failed to load techniques:', error);
+        }
+    };
+
+    const inferTaskProfile = (task: string): string => {
+        const t = task.toLowerCase();
+        if (/(classif|intent|label|category|route|routing|priority)/.test(t)) return 'classification';
+        if (/(extract|field|entity|structured|json)/.test(t)) return 'extraction';
+        if (/(faq|knowledge base|kb|question.*answer|q&a)/.test(t)) return 'qa';
+        if (/(summariz|summary|tl;dr)/.test(t)) return 'summarization';
+        if (/(translate|translation)/.test(t)) return 'translation';
+        if (/(generate|draft|compose|write)/.test(t)) return 'generation';
+        return 'general';
+    };
+
+    const pickTechniquesByKeywords = (keywords: string[], max: number): TechniqueSuggestion[] => {
+        const entries = Object.entries(techniques);
+        const matches: TechniqueSuggestion[] = [];
+        for (const [key, tech] of entries) {
+            const hay = `${tech.name} ${tech.description}`.toLowerCase();
+            if (keywords.some(k => hay.includes(k))) {
+                matches.push({ key, name: getTechniqueDisplayName({ ...tech, name: tech.name }, key) });
+            }
+            if (matches.length >= max) break;
+        }
+        // Fallback: if nothing matched, just take first few techniques
+        if (matches.length === 0) {
+            for (const [key, tech] of entries.slice(0, max)) {
+                matches.push({ key, name: getTechniqueDisplayName({ ...tech, name: tech.name }, key) });
+            }
+        }
+        return matches.slice(0, max);
+    };
+
+    const applySuggestedTechniques = () => {
+        if (!analysisSuggestion) return;
+        const keys = analysisSuggestion.techniqueSuggestions
+            .map(t => t.key)
+            .filter(key => Boolean(techniques[key]));
+        if (keys.length === 0) return;
+        setSelectedTechniques(keys);
+        setPreviewTechniqueKey(keys[0] ?? null);
+    };
+
+    const analyzeTask = async () => {
+        if (!userPrompt.trim()) {
+            alert('Add a task description first.');
+            return;
+        }
+        setIsAnalyzing(true);
+        try {
+            const response = await api.analyzePromptSetup({
+                task_description: userPrompt,
+            });
+            const suggestion: AnalysisSuggestion = {
+                taskProfile: response.taskProfile,
+                datasetHint: response.datasetHint,
+                benchmarkHint: response.benchmarkHint,
+                techniqueSuggestions: response.techniqueSuggestions,
+                localDatasetRecommendations: response.localDatasetRecommendations,
+                hfSuggestions: response.hfSuggestions,
+                generatorSuggestion: response.generatorSuggestion,
+                dspyRecommendation: response.dspyRecommendation,
+                steps: response.steps,
+            };
+            setAnalysisSuggestion(suggestion);
+
+            const keys = suggestion.techniqueSuggestions
+                .map(t => t.key)
+                .filter(key => Boolean(techniques[key]));
+            if (keys.length > 0) {
+                setSelectedTechniques(keys);
+                setPreviewTechniqueKey(keys[0] ?? null);
+            }
+        } catch (error) {
+            console.error('Prompt setup analysis failed, falling back to heuristic:', error);
+
+            const profile = inferTaskProfile(userPrompt);
+
+            let datasetHint = '';
+            let benchmarkHint = '';
+            let keywords: string[] = [];
+
+            switch (profile) {
+                case 'classification':
+                    datasetHint = 'Rows with {input: text, output: single label} (e.g., intent, routing, risk level).';
+                    benchmarkHint = 'Start with Quality → Reference-Based, then Consistency and Robustness.';
+                    keywords = ['classif', 'self-consist', 'few-shot', 'cot', 'co-t', 'label'];
+                    break;
+                case 'extraction':
+                    datasetHint = 'Rows with {input: raw text, output: JSON/fields to extract}.';
+                    benchmarkHint = 'Quality → Reference-Based (Exact Match) + Robustness on noisy inputs.';
+                    keywords = ['extract', 'schema', 'json', 'structured', 'tag'];
+                    break;
+                case 'qa':
+                    datasetHint = 'Rows with {input: question, output: answer (+ article ID if KB-based)}.';
+                    benchmarkHint = 'Quality → Reference-Based or LLM-as-Judge; add Robustness for adversarial questions.';
+                    keywords = ['qa', 'question', 'answer', 'retrieval', 'rag'];
+                    break;
+                case 'summarization':
+                    datasetHint = 'Rows with {input: long text, output: target summary}.';
+                    benchmarkHint = 'Quality → Reference-Based (ROUGE) + Human Eval for style/clarity.';
+                    keywords = ['summary', 'summariz', 'chain-of-density', 'cod'];
+                    break;
+                case 'translation':
+                    datasetHint = 'Rows with {input: source sentence, output: target translation}.';
+                    benchmarkHint = 'Quality → Reference-Based (BLEU / ROUGE) on parallel corpus.';
+                    keywords = ['translate', 'translation'];
+                    break;
+                case 'generation':
+                case 'general':
+                default:
+                    datasetHint = 'Mix of realistic {input, output} examples that represent the target behavior.';
+                    benchmarkHint = 'Quality → LLM-as-Judge + Human Eval for style/clarity; add Robustness if user-facing.';
+                    keywords = ['cot', 'few-shot', 'reason', 'planning'];
+                    break;
+            }
+
+            const techniqueSuggestions = pickTechniquesByKeywords(keywords, 3);
+            const suggestion: AnalysisSuggestion = {
+                taskProfile: profile,
+                datasetHint,
+                benchmarkHint,
+                techniqueSuggestions,
+            };
+            setAnalysisSuggestion(suggestion);
+
+            const keys = suggestion.techniqueSuggestions
+                .map(t => t.key)
+                .filter(key => Boolean(techniques[key]));
+            if (keys.length > 0) {
+                setSelectedTechniques(keys);
+                setPreviewTechniqueKey(keys[0] ?? null);
+            }
+        } finally {
+            setIsAnalyzing(false);
         }
     };
 
@@ -382,8 +558,22 @@ export function Studio({ settings }: StudioProps) {
                         <p className="text-xs text-white/45 mt-1">Pick techniques, paste your task, and generate variants.</p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="text-[11px] px-2 py-1 rounded-md border border-white/10 text-white/50 bg-black/30">
-                            {settings.provider} · {settings.model}
+                        <Button
+                            onClick={analyzeTask}
+                            variant="outline"
+                            size="xs"
+                            disabled={isAnalyzing || !userPrompt.trim()}
+                            className={`px-3 py-1.5 text-[11px] ${isAnalyzing || !userPrompt.trim() ? 'opacity-60 cursor-not-allowed' : ''}`}
+                        >
+                            {isAnalyzing ? 'Analyzing…' : 'Suggest setup'}
+                        </Button>
+                        <div className="flex items-center gap-2">
+                            <div className="text-[11px] px-2 py-1 rounded-md border border-white/10 text-white/50 bg-black/30">
+                                {ADVISOR_MODEL_LABEL}
+                            </div>
+                            <div className="text-[11px] px-2 py-1 rounded-md border border-white/10 text-white/50 bg-black/40">
+                                Prompt: {settings.provider} · {settings.model}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -418,6 +608,122 @@ export function Studio({ settings }: StudioProps) {
                                 />
                             </label>
                         </div>
+                        {analysisSuggestion && (
+                            <div className="mt-2 bg-white/[0.03] border border-white/10 rounded-lg p-3 text-[11px] text-white/70 space-y-2">
+                                <div className="flex items-center justify-between gap-2">
+                                    <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest">
+                                        Suggested setup
+                                    </div>
+                                    {analysisSuggestion.techniqueSuggestions.length > 0 && (
+                                        <Button
+                                            onClick={applySuggestedTechniques}
+                                            size="xs"
+                                            variant="outline"
+                                            className="px-2 py-0.5 text-[10px] h-6"
+                                        >
+                                            Apply techniques
+                                        </Button>
+                                    )}
+                                </div>
+                                <div>
+                                    <span className="text-white/50">Task profile: </span>
+                                    <span>{analysisSuggestion.taskProfile}</span>
+                                </div>
+                                <div>
+                                    <span className="text-white/50">Dataset: </span>
+                                    <span>{analysisSuggestion.datasetHint}</span>
+                                </div>
+                                <div>
+                                    <span className="text-white/50">Benchmarks: </span>
+                                    <span>{analysisSuggestion.benchmarkHint}</span>
+                                </div>
+                                {analysisSuggestion.techniqueSuggestions.length > 0 && (
+                                    <div>
+                                        <div className="text-white/50 mb-1">Techniques to try:</div>
+                                        <ul className="space-y-1">
+                                            {analysisSuggestion.techniqueSuggestions.map((t) => (
+                                                <li key={t.key}>→ {t.name}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                                {analysisSuggestion.localDatasetRecommendations && analysisSuggestion.localDatasetRecommendations.length > 0 && (
+                                    <div>
+                                        <div className="text-white/50 mb-1">Local datasets:</div>
+                                        <ul className="space-y-1">
+                                            {analysisSuggestion.localDatasetRecommendations.map((d, idx) => (
+                                                <li key={`${d.id || d.name}-${idx}`}>
+                                                    → {d.name} ({d.fit}) — {d.reason}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                                {analysisSuggestion.hfSuggestions && analysisSuggestion.hfSuggestions.length > 0 && (
+                                    <div>
+                                        <div className="text-white/50 mb-1">Online catalog searches:</div>
+                                        <ul className="space-y-1">
+                                            {analysisSuggestion.hfSuggestions.map((h, idx) => (
+                                                <li key={`${h.query}-${idx}`}>
+                                                    → Search “{h.query}” — {h.reason}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                                {analysisSuggestion.generatorSuggestion && (
+                                    <div>
+                                        <div className="text-white/50 mb-1">Dataset Generator:</div>
+                                        <div>
+                                            → Mode: <span className="text-white/80">{analysisSuggestion.generatorSuggestion.mode}</span>,{' '}
+                                            task_type: <span className="text-white/80">{analysisSuggestion.generatorSuggestion.task_type}</span>,{' '}
+                                            difficulty: <span className="text-white/80">{analysisSuggestion.generatorSuggestion.difficulty}</span>,{' '}
+                                            edge cases: <span className="text-white/80">{analysisSuggestion.generatorSuggestion.include_edge_cases ? 'on' : 'off'}</span>,{' '}
+                                            count ≈ <span className="text-white/80">{analysisSuggestion.generatorSuggestion.count || 0}</span>.{' '}
+                                            {analysisSuggestion.generatorSuggestion.reason && (
+                                                <span>{analysisSuggestion.generatorSuggestion.reason}</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                                {analysisSuggestion.dspyRecommendation && (
+                                    <div>
+                                        <div className="text-white/50 mb-1">DSPy optimization:</div>
+                                        <div className="space-y-1">
+                                            <div>
+                                                → Suitability:{' '}
+                                                <span className={`text-white/80 ${analysisSuggestion.dspyRecommendation.suitable ? '' : 'text-white/60'}`}>
+                                                    {analysisSuggestion.dspyRecommendation.suitable ? 'Recommended' : 'Not recommended'}
+                                                </span>
+                                                {analysisSuggestion.dspyRecommendation.profile && analysisSuggestion.dspyRecommendation.suitable && (
+                                                    <span className="text-white/60"> — profile: {analysisSuggestion.dspyRecommendation.profile}</span>
+                                                )}
+                                            </div>
+                                            {analysisSuggestion.dspyRecommendation.reason && (
+                                                <div className="text-white/70">
+                                                    {analysisSuggestion.dspyRecommendation.reason}
+                                                </div>
+                                            )}
+                                            {analysisSuggestion.dspyRecommendation.warnings && (
+                                                <div className="text-[10px] text-amber-300">
+                                                    {analysisSuggestion.dspyRecommendation.warnings}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                                {analysisSuggestion.steps && analysisSuggestion.steps.length > 0 && (
+                                    <div>
+                                        <div className="text-white/50 mb-1">Plan:</div>
+                                        <ol className="space-y-1 list-decimal list-inside">
+                                            {analysisSuggestion.steps.map((s, idx) => (
+                                                <li key={idx}>{s}</li>
+                                            ))}
+                                        </ol>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                         <textarea
                             value={userPrompt}
                             onChange={(e) => setUserPrompt(e.target.value)}

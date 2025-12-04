@@ -7,6 +7,8 @@ import { RobustnessLab } from './evaluation/RobustnessLab';
 import { PerformanceTab, type PerformanceMode } from './evaluation/PerformanceTab';
 import { HumanEvalTab, type HumanEvalMode } from './evaluation/HumanEvalTab';
 import { OverviewTab } from './evaluation/OverviewTab';
+import { HistoryTab } from './evaluation/HistoryTab';
+import { AdvancedMetricsInfo } from './evaluation/AdvancedMetrics';
 import { type LibraryPrompt } from './PromptLibrary';
 import { MethodologyIcon } from './icons/MethodologyIcon';
 import { Button } from './ui/Button';
@@ -35,7 +37,7 @@ interface EvaluationLabProps {
   onSaveEvaluation?: (promptId: string, evaluation: EvaluationResults) => void;
 }
 
-type TabType = 'quality' | 'consistency' | 'robustness' | 'performance' | 'human' | 'overview';
+type TabType = 'quality' | 'consistency' | 'robustness' | 'performance' | 'human' | 'overview' | 'history';
 type RobustnessTestType = 'format' | 'length' | 'adversarial';
 
 const EVAL_CATEGORIES = [
@@ -44,8 +46,8 @@ const EVAL_CATEGORIES = [
     label: 'Quality',
     desc: 'BLEU, ROUGE, G-Eval',
     infoLines: [
-      'Does the model produce correct and useful answers?',
-      'Best for:',
+      'Does the model produce correct and useful answers?\n',
+      'Recommended for:',
       '→ Translation',
       '→ Q&A',
       '→ Summarization',
@@ -58,7 +60,10 @@ const EVAL_CATEGORIES = [
     desc: 'Self & Mutual',
     infoLines: [
       'Does the model give the same answer for the same request?',
-      'Recommended for finance, healthcare, and compliance workflows where stability matters.',
+      'Recommended for:',
+      '→ Finance workflows',
+      '→ Healthcare workflows',
+      '→ Compliance workflows where stability matters',
     ],
   },
   {
@@ -67,7 +72,10 @@ const EVAL_CATEGORIES = [
     desc: 'Format, Length, Adversarial',
     infoLines: [
       'Does the prompt break on noisy, unusual, or hostile inputs?',
-      'Recommended for public chatbots, moderation, and security‑sensitive applications.',
+      'Recommended for:',
+      '→ Public chatbots',
+      '→ Moderation systems',
+      '→ Security‑sensitive and red‑teaming scenarios',
     ],
   },
   {
@@ -75,8 +83,11 @@ const EVAL_CATEGORIES = [
     label: 'Performance',
     desc: 'Latency, Cost, Reliability',
     infoLines: [
-      'How fast is the system and сколько стоит один вызов?',
-      'Recommended for production deployment, SLAs, and budget/capacity planning.',
+      'How fast is the system and how much does each call cost?',
+      'Recommended for:',
+      '→ Production deployment',
+      '→ SLAs and reliability tracking',
+      '→ Budget and capacity planning',
     ],
   },
   {
@@ -84,8 +95,11 @@ const EVAL_CATEGORIES = [
     label: 'Human',
     desc: 'Rating, Ranking, A/B',
     infoLines: [
-      'Что думают люди о качестве ответов?',
-      'Recommended for creative copy, UI text, and high‑stakes decisions needing human review.',
+      'What do humans think about the responses?',
+      'Recommended for:',
+      '→ Creative copy and marketing text',
+      '→ UI microcopy and product messaging',
+      '→ High‑stakes decisions that require human review',
     ],
   },
   {
@@ -94,7 +108,22 @@ const EVAL_CATEGORIES = [
     desc: 'Aggregated Report',
     infoLines: [
       'Review combined scores across Quality, Consistency, and Robustness in one place.',
-      'Recommended before production launch and when presenting results to stakeholders.',
+      'Recommended for:',
+      '→ Pre‑launch reviews',
+      '→ Sharing results with stakeholders',
+      '→ Comparing prompts and models at a glance',
+    ],
+  },
+  {
+    id: 'history' as TabType,
+    label: 'History',
+    desc: 'Trends & Regressions',
+    infoLines: [
+      'Track evaluation runs over time and detect performance regressions.',
+      'Recommended for:',
+      '→ Continuous monitoring',
+      '→ Regression detection',
+      '→ Trend analysis',
     ],
   },
 ];
@@ -123,6 +152,20 @@ export function EvaluationLab({ settings, promptToEvaluate, onSaveEvaluation }: 
   useEffect(() => {
     loadDatasets();
     setIsClient(true);
+
+    const handleDatasetsUpdated = () => {
+      loadDatasets();
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('datasets-updated', handleDatasetsUpdated);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('datasets-updated', handleDatasetsUpdated);
+      }
+    };
   }, []);
 
   const loadDatasets = async () => {
@@ -156,13 +199,13 @@ export function EvaluationLab({ settings, promptToEvaluate, onSaveEvaluation }: 
         return consistencyMode === 'self' ? 'Self-Consistency' : 'Mutual-Consistency (GLaPE)';
       case 'robustness':
         return robustnessTestType === 'format' ? 'Format Sensitivity' :
-               robustnessTestType === 'length' ? 'Context Length' : 'Adversarial Tests';
+          robustnessTestType === 'length' ? 'Context Length' : 'Adversarial Tests';
       case 'performance':
         return performanceMode === 'latency' ? 'Latency Testing' :
-               performanceMode === 'cost' ? 'Cost Analysis' : 'Reliability Testing';
+          performanceMode === 'cost' ? 'Cost Analysis' : 'Reliability Testing';
       case 'human':
         return humanEvalMode === 'rating' ? 'Rating Scale' :
-               humanEvalMode === 'ranking' ? 'Ranking' : 'A/B Testing';
+          humanEvalMode === 'ranking' ? 'Ranking' : 'A/B Testing';
       case 'overview':
         return 'Evaluation Overview';
       default:
@@ -232,6 +275,10 @@ export function EvaluationLab({ settings, promptToEvaluate, onSaveEvaluation }: 
 
   const hasAnyResults = qualityResults || consistencyResults || robustnessResults;
 
+  const activeCategory = getActiveCategory();
+  const primaryInfoLine = activeCategory?.infoLines?.[0] ?? null;
+  const secondaryInfoLines = activeCategory?.infoLines?.slice(1) ?? [];
+
   return (
     <>
       <div className="h-full flex gap-6 p-6 overflow-hidden">
@@ -262,32 +309,45 @@ export function EvaluationLab({ settings, promptToEvaluate, onSaveEvaluation }: 
                 </div>
               </div>
 
-            {/* Selected Category Info */}
-            <div className="flex-1 p-4 space-y-4">
-              {getActiveCategory() && (
-                <div
-                  className={
-                    'bg-white/[0.02] border border-white/10 rounded-lg px-3 py-3 border-l-2 ' +
-                    getCategoryBorderAccent(activeTab)
-                  }
-                >
-                  <div className="text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">
-                    {getActiveCategory()!.label} checks
+              {/* Selected Category Info */}
+              <div className="flex-1 p-4 space-y-4">
+                {activeCategory && (
+                  <div
+                    className={
+                      'bg-white/[0.02] border border-white/10 rounded-lg px-3 py-3 border-l-2 ' +
+                      getCategoryBorderAccent(activeTab)
+                    }
+                  >
+                    <div className="text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">
+                      {activeCategory.label} checks
+                    </div>
+                    {primaryInfoLine && (
+                      <p className="text-[11px] text-white/60 mb-2">{primaryInfoLine}</p>
+                    )}
+                    {secondaryInfoLines.length > 0 && (
+                      <>
+                        {/* Optional subheading, e.g. "Best for:" */}
+                        <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-2 mb-1">
+                          {secondaryInfoLines[0].replace(/:$/, '')}
+                        </div>
+                        {secondaryInfoLines.length > 1 && (
+                          <ul className="space-y-1 text-[11px] text-white/60">
+                            {secondaryInfoLines.slice(1).map((line) => (
+                              <li key={line}>{line}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </>
+                    )}
                   </div>
-                  <ul className="space-y-1 text-[11px] text-white/60">
-                    {getActiveCategory()!.infoLines?.map((line) => (
-                      <li key={line}>{line}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Footer */}
           <div className="pt-2 border-t border-white/5 text-[10px] text-white/30 flex justify-between">
-            <span>5 evaluation types</span>
+            <span>6 evaluation types</span>
             <span className="text-white/50">
               {[qualityResults, consistencyResults, robustnessResults].filter(Boolean).length} completed
             </span>
@@ -298,8 +358,8 @@ export function EvaluationLab({ settings, promptToEvaluate, onSaveEvaluation }: 
         <div className="flex-1 min-w-0 bg-black/20 border border-white/5 rounded-2xl overflow-hidden flex flex-col">
           <div className="px-6 py-5 border-b border-white/5 bg-white/[0.02] flex items-start justify-between gap-4">
             <div>
-              <h2 className="text-xl font-semibold text-white/90 mb-1">{getActiveCategory()?.label} Evaluation</h2>
-              <p className="text-xs text-white/45 mt-1">{getActiveCategory()?.desc}</p>
+              <h2 className="text-xl font-semibold text-white/90 mb-1">{activeCategory?.label} Evaluation</h2>
+              <p className="text-xs text-white/45 mt-1">{activeCategory?.desc}</p>
             </div>
             <div className="flex items-center gap-2">
               <div className="text-[11px] px-2 py-1 rounded-md border border-white/10 text-white/50 bg-black/30">
@@ -367,6 +427,9 @@ export function EvaluationLab({ settings, promptToEvaluate, onSaveEvaluation }: 
                 }}
               />
             </div>
+            <div className={activeTab === 'history' ? 'block' : 'hidden'}>
+              <HistoryTab settings={settings} />
+            </div>
           </div>
         </div>
 
@@ -379,7 +442,7 @@ export function EvaluationLab({ settings, promptToEvaluate, onSaveEvaluation }: 
             </div>
           </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
             {/* Overall Score Card */}
             <div className="bg-gradient-to-br from-white/[0.04] to-transparent border border-white/10 rounded-xl p-4">
               <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-3">Overall Grade</div>
@@ -412,7 +475,7 @@ export function EvaluationLab({ settings, promptToEvaluate, onSaveEvaluation }: 
             {/* Dimension Scores */}
             <div className="space-y-2">
               <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Dimensions</div>
-              
+
               <div className="bg-white/[0.02] border border-white/5 rounded-lg p-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-blue-400/50"></div>
@@ -478,6 +541,9 @@ export function EvaluationLab({ settings, promptToEvaluate, onSaveEvaluation }: 
                 </div>
               </div>
             </div>
+
+            {/* Advanced Metrics Status */}
+            <AdvancedMetricsInfo />
 
             {/* Quick Actions */}
             <div className="space-y-2 pt-2">

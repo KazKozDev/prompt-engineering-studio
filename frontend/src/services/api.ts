@@ -69,6 +69,45 @@ class APIService {
     return this.request('/api/techniques');
   }
 
+  async analyzePromptSetup(request: {
+    task_description: string;
+  }): Promise<{
+    taskProfile: string;
+    datasetHint: string;
+    benchmarkHint: string;
+    techniqueSuggestions: { key: string; name: string }[];
+    localDatasetRecommendations?: {
+      id?: string;
+      name: string;
+      fit: string;
+      reason: string;
+    }[];
+    hfSuggestions?: {
+      query: string;
+      reason: string;
+    }[];
+    generatorSuggestion?: {
+      mode: string;
+      task_type: string;
+      include_edge_cases: boolean;
+      difficulty: string;
+      count: number;
+      reason: string;
+    };
+    dspyRecommendation?: {
+      suitable: boolean;
+      reason: string;
+      profile: string;
+      warnings: string;
+    };
+    steps?: string[];
+  }> {
+    return this.request('/api/analysis/prompt-setup', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
   async getModels(provider: string): Promise<{ models: string[] }> {
     return this.request(`/api/models/${provider}`);
   }
@@ -545,6 +584,13 @@ class APIService {
         };
         react_iterations: number;
         total_cost_usd: number;
+        optimizer_type?: string;
+        quality_profile?: string;
+        data_splits?: {
+          train: number;
+          dev: number;
+          test: number;
+        };
         steps: Array<{
           id: string;
           name: string;
@@ -561,7 +607,7 @@ class APIService {
     }
   ): () => void {
     const controller = new AbortController();
-    
+
     fetch(`${this.baseURL}/api/dspy/orchestrate/stream`, {
       method: 'POST',
       headers: {
@@ -576,29 +622,29 @@ class APIService {
           callbacks.onError(error.detail || 'Request failed');
           return;
         }
-        
+
         const reader = response.body?.getReader();
         if (!reader) {
           callbacks.onError('No response body');
           return;
         }
-        
+
         const decoder = new TextDecoder();
         let buffer = '';
-        
+
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          
+
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split('\n\n');
           buffer = lines.pop() || '';
-          
+
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               try {
                 const data = JSON.parse(line.slice(6));
-                
+
                 if (data.type === 'step') {
                   callbacks.onStep(data.step);
                 } else if (data.type === 'complete') {
@@ -619,7 +665,7 @@ class APIService {
           callbacks.onError(error.message || 'Connection failed');
         }
       });
-    
+
     // Return abort function
     return () => controller.abort();
   }
@@ -659,6 +705,13 @@ class APIService {
     };
     react_iterations: number;
     total_cost_usd: number;
+    optimizer_type?: string;
+    quality_profile?: string;
+    data_splits?: {
+      train: number;
+      dev: number;
+      test: number;
+    };
     steps: Array<{
       id: string;
       name: string;
@@ -705,6 +758,254 @@ class APIService {
     return this.request('/api/dspy/test', {
       method: 'POST',
       body: JSON.stringify(request),
+    });
+  }
+
+  // ==================== Advanced Evaluation Features ====================
+
+  /**
+   * Check if advanced metrics are available
+   */
+  async getAdvancedMetricsStatus(): Promise<{
+    advanced_metrics_available: boolean;
+    features: {
+      bertscore: boolean;
+      perplexity: boolean;
+      semantic_similarity: boolean;
+      evaluation_history: boolean;
+      response_cache: boolean;
+    };
+  }> {
+    return this.request('/api/evaluation/advanced/status');
+  }
+
+  /**
+   * Calculate BERTScore between prediction and reference
+   */
+  async calculateBERTScore(request: {
+    prediction: string;
+    reference: string;
+  }): Promise<{
+    score: number;
+    details: any;
+  }> {
+    return this.request('/api/evaluation/advanced/bertscore', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  /**
+   * Calculate BERTScore for batch of predictions
+   */
+  async calculateBERTScoreBatch(request: {
+    predictions: string[];
+    references: string[];
+  }): Promise<{
+    score: number;
+    details: any;
+  }> {
+    return this.request('/api/evaluation/advanced/bertscore/batch', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  /**
+   * Calculate perplexity for a text
+   */
+  async calculatePerplexity(request: {
+    text: string;
+  }): Promise<{
+    perplexity: number;
+    details: any;
+  }> {
+    return this.request('/api/evaluation/advanced/perplexity', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  /**
+   * Calculate perplexity for batch of texts
+   */
+  async calculatePerplexityBatch(request: {
+    texts: string[];
+  }): Promise<{
+    average_perplexity: number;
+    details: any;
+  }> {
+    return this.request('/api/evaluation/advanced/perplexity/batch', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  /**
+   * Calculate semantic similarity between two texts
+   */
+  async calculateSemanticSimilarity(request: {
+    text1: string;
+    text2: string;
+  }): Promise<{
+    similarity: number;
+    details: any;
+  }> {
+    return this.request('/api/evaluation/advanced/semantic-similarity', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  /**
+   * Save an evaluation run to history
+   */
+  async saveEvaluationToHistory(request: {
+    prompt_id: string;
+    prompt_text: string;
+    dataset_id: string;
+    dataset_name: string;
+    metrics: Record<string, number>;
+    metadata?: Record<string, any>;
+  }): Promise<{
+    success: boolean;
+    run_id: string;
+  }> {
+    return this.request('/api/evaluation/advanced/history/save', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  /**
+   * Get evaluation history for a specific prompt
+   */
+  async getPromptEvaluationHistory(
+    promptId: string,
+    limit: number = 20
+  ): Promise<{
+    prompt_id: string;
+    runs: any[];
+    count: number;
+  }> {
+    return this.request(
+      `/api/evaluation/advanced/history/prompt/${promptId}?limit=${limit}`
+    );
+  }
+
+  /**
+   * Get evaluation history for a specific dataset
+   */
+  async getDatasetEvaluationHistory(
+    datasetId: string,
+    limit: number = 20
+  ): Promise<{
+    dataset_id: string;
+    runs: any[];
+    count: number;
+  }> {
+    return this.request(
+      `/api/evaluation/advanced/history/dataset/${datasetId}?limit=${limit}`
+    );
+  }
+
+  /**
+   * Check for metric regression
+   */
+  async checkMetricRegression(request: {
+    prompt_id: string;
+    metric_name: string;
+    threshold?: number;
+    window?: number;
+  }): Promise<{
+    regression_detected: boolean;
+    metric: string;
+    recent_average: number;
+    baseline_average: number;
+    drop_percentage: number;
+    severity: string;
+  }> {
+    return this.request('/api/evaluation/advanced/history/regression', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  /**
+   * Get metric trend over time
+   */
+  async getMetricTrend(
+    promptId: string,
+    metricName: string,
+    limit: number = 20
+  ): Promise<{
+    metric: string;
+    data_points: number;
+    timestamps: string[];
+    values: number[];
+    current: number;
+    average: number;
+    min: number;
+    max: number;
+    std: number;
+    trend: string;
+  }> {
+    return this.request(
+      `/api/evaluation/advanced/history/trend/${promptId}/${metricName}?limit=${limit}`
+    );
+  }
+
+  /**
+   * Get evaluation history statistics
+   */
+  async getEvaluationHistoryStats(): Promise<{
+    total_runs: number;
+    unique_prompts: number;
+    unique_datasets: number;
+    most_evaluated_prompt: string | null;
+    most_used_dataset: string | null;
+  }> {
+    return this.request('/api/evaluation/advanced/history/stats');
+  }
+
+  /**
+   * Get cache statistics
+   */
+  async getCacheStats(): Promise<{
+    hits: number;
+    misses: number;
+    saves: number;
+    hit_rate: number;
+    memory_entries: number;
+    disk_entries: number;
+    total_bytes: number;
+    total_mb: number;
+    ttl_hours: number;
+  }> {
+    return this.request('/api/evaluation/advanced/cache/stats');
+  }
+
+  /**
+   * Clear all cache entries
+   */
+  async clearCache(): Promise<{
+    success: boolean;
+    entries_cleared: number;
+  }> {
+    return this.request('/api/evaluation/advanced/cache/clear', {
+      method: 'POST',
+    });
+  }
+
+  /**
+   * Clear expired cache entries
+   */
+  async clearExpiredCache(): Promise<{
+    success: boolean;
+    entries_cleared: number;
+  }> {
+    return this.request('/api/evaluation/advanced/cache/clear-expired', {
+      method: 'POST',
     });
   }
 }

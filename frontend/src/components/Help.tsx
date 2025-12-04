@@ -18,6 +18,8 @@ const articleDocs: Record<string, string> = {
   'Settings': '/docs/getting-started/08-settings.md',
   'Help': '/docs/getting-started/09-help.md',
   'DSPy Guide': '/docs/getting-started/10-dspy-guide.md',
+  'Methods Library': '/docs/getting-started/11-methods-library.md',
+  'Self-Consistency': '/docs/methods/self-consistency.md',
 };
 
 // Article descriptions
@@ -32,6 +34,7 @@ const articleDescriptions: Record<string, string> = {
   'Settings': 'Configure API keys and preferences',
   'Help': 'Documentation and guides',
   'DSPy Guide': 'Complete guide to DSPy framework',
+  'Methods Library': 'Production-focused summaries of prompting and evaluation methods',
 };
 
 const categories = [
@@ -51,24 +54,115 @@ const categories = [
     title: 'Deploy',
     description: 'Manage and monitor prompts',
     number: '3',
-    articles: ['Library', 'Metrics', 'History'],
+    articles: ['Library', 'Metrics'],
   },
   {
     title: 'Configuration',
     description: 'Settings and help',
     number: '4',
-    articles: ['Settings'],
+    articles: ['Settings', 'History'],
   },
   {
     title: 'Resources',
     description: 'Deep dive guides',
     number: '5',
-    articles: ['DSPy Guide'],
+    articles: ['Methods Library', 'DSPy Guide'],
   },
 ];
 
 // Flatten articles for next/prev navigation
 const allArticles = categories.flatMap(c => c.articles);
+
+function MethodsLibraryPanel({ onOpenMethodNote }: { onOpenMethodNote: (article: string) => void }) {
+  return (
+    <div className="p-6">
+      <div className="max-w-5xl space-y-6">
+        <div className="space-y-3">
+          <div className="text-[10px] font-bold text-white/35 uppercase tracking-[0.18em]">
+            Reasoning &amp; Consistency
+          </div>
+
+          {/* Self-Consistency card */}
+          <div
+            id="self-consistency-sc"
+            className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 flex gap-3"
+          >
+            <div className="w-12 h-12 rounded-xl bg-white/[0.05] flex items-center justify-center text-[11px] font-semibold text-white/75">
+              SC
+            </div>
+            <div className="flex-1 min-w-0 space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-sm font-semibold text-white/90">
+                    Self-Consistency
+                  </div>
+                  <div className="text-[11px] text-white/40">
+                    Reliable chain-of-thought reasoning via majority vote
+                  </div>
+                </div>
+                <div className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 border border-white/15 text-white/50">
+                  Consistency tab
+                </div>
+              </div>
+
+              <p className="text-[11px] text-white/65 leading-relaxed">
+                Instead of trusting a single chain-of-thought, the model samples several reasoning paths for the same question and
+                picks the most frequent final answer. This often brings large gains on math and logic benchmarks when you can afford
+                extra cost.
+              </p>
+
+              <div className="grid grid-cols-2 gap-3 text-[11px] text-white/60">
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-white/35 mb-1">
+                    Best for
+                  </div>
+                  <ul className="space-y-0.5 list-disc list-inside marker:text-white/35">
+                    <li>GSM8K / SVAMP / AQuA-style math word problems</li>
+                    <li>Commonsense reasoning (StrategyQA, ARC-Challenge)</li>
+                    <li>Offline evaluations and A/B tests</li>
+                  </ul>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-white/35 mb-1">
+                    Watch out
+                  </div>
+                  <ul className="space-y-0.5 list-disc list-inside marker:text-white/35">
+                    <li>Each query uses many samples → higher cost</li>
+                    <li>Not needed for simple single-label classification</li>
+                    <li>Longer latency on real-time endpoints</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2 text-[11px]">
+                <a
+                  href="https://arxiv.org/abs/2203.11171"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-2.5 py-1 rounded-lg border border-white/10 bg-white/[0.03] text-white/70 hover:border-white/30 hover:text-white transition-colors"
+                >
+                  Open paper
+                </a>
+                <button
+                  type="button"
+                  onClick={() => onOpenMethodNote('Self-Consistency')}
+                  className="px-2.5 py-1 rounded-lg border border-white/10 bg-white/[0.03] text-white/70 hover:border-white/30 hover:text-white transition-colors"
+                >
+                  Read method note
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-[11px] text-white/40">
+            Additional methods (Chain-of-Thought, PromptRobust, G-Eval, DSPy profiles) will appear here as production notes are
+            finalized.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 
 export function Help() {
@@ -185,7 +279,9 @@ export function Help() {
             </h2>
             <p className="text-xs text-white/45 mt-1">
               {selectedArticle
-                ? categories.find(c => c.articles.includes(selectedArticle))?.description
+                ? selectedArticle === 'Methods Library'
+                  ? 'High-level, production-focused summaries of the prompting and evaluation methods used in Prompt Engineering Studio.'
+                  : (categories.find(c => c.articles.includes(selectedArticle))?.description || 'Method deep dives and guides')
                 : 'Learn how to use Prompt Engineering Studio'}
             </p>
           </div>
@@ -229,9 +325,12 @@ export function Help() {
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           {selectedArticle ? (
-            <div className="p-6">
-              <div className="max-w-5xl">
-                {isLoading ? (
+            selectedArticle === 'Methods Library' ? (
+              <MethodsLibraryPanel onOpenMethodNote={handleArticleClick} />
+            ) : (
+              <div className="p-6">
+                <div className="max-w-5xl">
+                  {isLoading ? (
                   <div className="flex flex-col items-center justify-center py-32 gap-4">
                     <div className="relative w-12 h-12">
                       <div className="absolute inset-0 border-4 border-white/10 rounded-full"></div>
@@ -239,7 +338,7 @@ export function Help() {
                     </div>
                     <span className="text-sm text-white/50 font-medium animate-pulse">Loading article...</span>
                   </div>
-                ) : (
+                  ) : (
                   <article className="prose prose-invert max-w-3xl mb-32">
                     {/* Breadcrumbs */}
                     <div className="flex items-center gap-2 text-xs mb-6">
@@ -282,7 +381,8 @@ export function Help() {
                           </li>
                         ),
                         a: ({ node, href, children, ...props }) => {
-                          const text = typeof children?.[0] === 'string' ? children[0] : String(children);
+                          const childNode = Array.isArray(children) ? children[0] : children;
+                          const text = typeof childNode === 'string' ? childNode : String(childNode ?? '');
                           const isNumericRef = /^\d+$/.test(text.trim());
 
                           if (isNumericRef) {
@@ -352,9 +452,10 @@ export function Help() {
                     </ReactMarkdown>
 
                   </article>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
+            )
           ) : (
             <div className="flex-1 overflow-y-auto p-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -426,7 +527,7 @@ export function Help() {
                 <a
                   key={i}
                   href={`#${item.id}`}
-                  className={`block px-3 py-1.5 text-[13px] rounded-lg transition-colors hover:bg-white/5 hover:text-white ${
+                  className={`block px-3 py-1.5 text-xs font-medium rounded-lg transition-colors hover:bg-white/5 hover:text-white ${
                     item.level === 3 ? 'ml-3 text-white/40' : 'text-white/60'
                   }`}
                   onClick={(e) => {

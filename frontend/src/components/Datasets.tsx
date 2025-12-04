@@ -225,6 +225,10 @@ export function Datasets({ settings }: DatasetsProps) {
                 await loadDatasetDetail(selectedDatasetId);
             }
 
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('datasets-updated'));
+            }
+
             // Show success message
             alert(`Dataset "${savedName}" ${wasEditing ? 'updated' : 'created'} successfully!`);
         } catch (error: any) {
@@ -244,6 +248,10 @@ export function Datasets({ settings }: DatasetsProps) {
                 setSelectedDatasetId(null);
                 setDetailedDataset(null);
             }
+
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('datasets-updated'));
+            }
         } catch (error: any) {
             alert(`Error deleting dataset: ${error.message}`);
         }
@@ -262,6 +270,10 @@ export function Datasets({ settings }: DatasetsProps) {
             });
 
             await loadData();
+
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('datasets-updated'));
+            }
         } catch (error: any) {
             alert(`Error importing example: ${error.message}`);
         }
@@ -362,6 +374,10 @@ export function Datasets({ settings }: DatasetsProps) {
                 output_key: mappingOutput,
             });
             await loadData();
+
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('datasets-updated'));
+            }
             setShowCatalog(false);
             setMappingTarget(null);
             if (res.dataset?.id) {
