@@ -23,7 +23,7 @@ import threading
 import json
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, PlainTextResponse
 from pydantic import BaseModel
 
 # Get OpenAI API key from environment
@@ -108,6 +108,36 @@ def _normalize_key(text: str) -> str:
 @app.get("/")
 async def root():
     return {"message": "PE Studio API", "version": "1.0.0"}
+
+
+@app.get("/api/docs/{subpath:path}", response_class=PlainTextResponse)
+async def get_doc(subpath: str):
+    """Serve markdown documentation files from the docs/ directory.
+
+    This endpoint provides a single source of truth for in-app documentation
+    by reading files from the repository-level docs/ folder.
+    """
+    # Normalize and prevent path traversal above docs/
+    safe_subpath = subpath.lstrip("/\\")
+    docs_root = root_path / "docs"
+    doc_path = docs_root / safe_subpath
+
+    try:
+        # Resolve to prevent escaping docs_root
+        resolved = doc_path.resolve()
+        if not str(resolved).startswith(str(docs_root.resolve())):
+            raise HTTPException(status_code=400, detail="Invalid documentation path")
+
+        if not resolved.is_file():
+            raise HTTPException(status_code=404, detail="Documentation file not found")
+
+        content = resolved.read_text(encoding="utf-8")
+        return PlainTextResponse(content)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error reading documentation file {subpath}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to read documentation file")
 
 @app.get("/api/techniques")
 async def get_techniques():

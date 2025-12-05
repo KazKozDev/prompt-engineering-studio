@@ -391,8 +391,9 @@ export function Help() {
     setSelectedArticle(article);
 
     try {
-      // Add timestamp to prevent caching
-      const response = await fetch(`${docPath}?v=${new Date().getTime()}`);
+      // Proxy through backend docs API (single source of truth in docs/)
+      const apiPath = docPath.startsWith('/docs/') ? docPath.replace('/docs/', '') : docPath;
+      const response = await fetch(`/api/docs/${apiPath}?v=${new Date().getTime()}`);
       if (!response.ok) throw new Error('Failed to load article');
       const content = await response.text();
       setArticleContent(content);
