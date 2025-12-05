@@ -6,7 +6,7 @@ Local-first workbench for designing, evaluating, and deploying LLM prompts with 
 
 - **End-to-end workflow**: from prompt generation to systematic evaluation and deployment in a single tool.
 - **Evaluation Lab as the core**: one place for Quality, Consistency, and Robustness testing, powered by advanced metrics (BERTScore, perplexity, semantic similarity).
-- **DSPy as the optimization engine**: automatic prompt optimization using DSPy, LangChain, and multi-provider LLM support.
+- **Dedicated DSPy optimization layer**: standalone DSPy-powered workflows for automated prompt/program optimization, integrated with but not limited to Evaluation Lab.
 - **Production-minded design**: caching, evaluation history, regression detection, Docker, CI, and a clean architecture that’s easy to extend.
 
 ## Overview
@@ -46,11 +46,11 @@ Prompt Engineering Studio is a production-grade tool for systematic prompt devel
 - Techniques include: Chain-of-Thought, ReAct, Tree of Thoughts, Self-Consistency, DSPy optimization, and more
 - Each technique includes paper citation, arXiv link, and structure hints
 
-### 2. DSPy Orchestrator
-- Automated prompt optimization using DSPy framework
+### 2. DSPy Orchestrator (Dedicated Optimization Layer)
+- Dedicated DSPy-powered programs for prompt and LLM pipeline optimization
 - LangChain-based agent for task analysis and technique suggestion
 - Multi-provider support (GPT-4, Claude, Gemini, Ollama)
-- Iterative refinement with configurable strategies
+- Iterative refinement with configurable strategies, separate from but compatible with Evaluation Lab
 
 ### 3. Dataset Manager
 - Import from JSON, CSV, or HuggingFace datasets
