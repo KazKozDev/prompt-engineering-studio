@@ -220,7 +220,7 @@ Configure providers in **Settings** panel:
 1. **Define Task** → Business objective in plain language
 2. **Provide Dataset** → Examples of input/output pairs
 3. **Configure** → Select target model and quality profile
-4. **Run Optimization** → ReAct agent automatically optimizes
+4. **Run Optimization** → LangChain ReAct agent orchestrates DSPy optimization
 5. **Review Results** → Get optimized program with metrics
 6. **Deploy** → Save artifact for production use
 
