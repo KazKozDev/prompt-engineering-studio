@@ -9,6 +9,17 @@ Prompt Engineering Studio is a production-grade tool for systematic prompt devel
 
 **Status:** v2.0 Beta — Active development
 
+## Contributing / Dev Setup (Quick)
+
+- Fork or clone the repo
+- Use local virtualenv + Makefile:
+  ```bash
+  make install   # create .venv and install Python deps
+  make test      # run backend tests
+  make dev       # start backend + frontend
+  ```
+- Configure providers via `.env` (see Installation section)
+
 ## Screenshots
 
 <img width="1500" alt="Generator Interface" src="https://github.com/user-attachments/assets/9a5c60d2-fc37-4c8d-b5b6-bb4e33d4f3d3" />
@@ -159,6 +170,21 @@ make dev
 ```
 
 Application will open at `http://localhost:5173`
+
+### Running in Docker
+
+If you prefer containerized setup:
+
+```bash
+git clone https://github.com/KazKozDev/prompt-engineering-studio.git
+cd prompt-engineering-studio
+
+# Backend + frontend
+docker compose up
+```
+
+- Backend: http://localhost:8000
+- Frontend: http://localhost:5173
 
 ### Manual Backend / Frontend Setup (Alternative)
 
