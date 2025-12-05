@@ -32,10 +32,17 @@ The methods documentation is organized in two levels:
 
 ## Current Methods
 
-### Self-Consistency
-- **Catalog entry:** `/docs/getting-started/11-methods-library.md` (Section: Self-Consistency) – stored under `frontend/public/docs/getting-started/11-methods-library.md`
-- **Detailed guide:** `/docs/methods/self-consistency.md` – stored under `frontend/public/docs/methods/self-consistency.md`
-- **Original paper:** `/docs/references/2203.11171.pdf`
+### Current Methods
+- **Self-Consistency (SC):** Reliable reasoning via majority vote
+- **Chain-of-Thought (CoT):** Step-by-step reasoning
+- **Tree of Thoughts (ToT):** Deliberate problem solving with lookahead
+- **ReAct:** Synergizing Reasoning and Acting
+- **RAG:** Retrieval-Augmented Generation
+- **Chain-of-Verification (CoVe):** Trust, but verify
+- **Step-Back Prompting:** Evoking reasoning via abstraction
+- **System 2 Attention (S2A):** Focus on what matters
+
+All detailed guides are stored in `frontend/public/docs/methods/`.
 
 ## Navigation Flow
 
@@ -61,25 +68,29 @@ Help Section
 
 When adding a new method:
 
-1. **Add to catalog:** Update `/docs/getting-started/11-methods-library.md`
-   - Add new section with summary
-   - Include "Read full method note" link
+1. **Create detailed guide:** Create `/docs/methods/[method-name].md`
+   - Use existing method files as templates
+   - Include production guidance and arXiv reference
 
-2. **Create detailed guide:** Create `/docs/methods/[method-name].md`
-   - Use self-consistency.md as template
-   - Include breadcrumb navigation at top
-   - Add direct paper quotes
-   - Include production guidance
+2. **Update Help.tsx:** 
+   - Add entry to `articleDocs` mapping:
+     ```typescript
+     '[Method Name]': '/docs/methods/method-name.md',
+     ```
+   - Add entry to `articleDescriptions` mapping.
+   - Add new card object to `METHOD_CARDS` array:
+     ```typescript
+     {
+       id: 'method-id',
+       title: 'Method Name',
+       acronym: 'MN',
+       // ... details
+     }
+     ```
 
-3. **Update Help.tsx:** Add entry to `articleDocs` mapping
-   ```typescript
-   '[Method Name]': '/docs/methods/method-name.md',
-   ```
-
-4. **Add to Resources category:** Update `categories` array in Help.tsx
-   ```typescript
-   articles: ['Methods Library', 'Self-Consistency', 'New Method'],
-   ```
+3. **(Optional) Add to Resources category:** 
+   - Only if you want it to appear in the main "Quick Links" menu. 
+   - Otherwise, it will be accessible via the Methods Library panel.
 
 ## Template Structure for Detailed Guides
 
