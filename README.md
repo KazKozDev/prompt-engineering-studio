@@ -1,5 +1,10 @@
 # Prompt Engineering Studio
 
+[![CI](https://github.com/KazKozDev/prompt-engineering-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/KazKozDev/prompt-engineering-studio/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/python-3.12+-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Docker](https://img.shields.io/badge/docker-ready-2496ED.svg)
+
 Local-first workbench for designing, evaluating, and deploying LLM prompts with scientific rigor.
 
 ## Why This Project
