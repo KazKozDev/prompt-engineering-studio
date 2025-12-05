@@ -5,7 +5,7 @@
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-2496ED.svg)
 
-Local-first workbench for designing, evaluating, and deploying LLM prompts with scientific rigor.
+Local-first workbench for designing, evaluating, and deploying LLM prompts with scientific rigor and reproducibility.
 
 ## Why This Project
 
