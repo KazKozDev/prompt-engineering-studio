@@ -1,47 +1,83 @@
-# Tree of Thoughts (ToT)
+# Tree of Thoughts (ToT): Deliberate Problem Solving
 
-**Deliberate problem solving.** ToT generalizes Chain-of-Thought by allowing the model to explore multiple reasoning paths simultaneously, look ahead, and backtrack if necessary.
+> **Deep Dive Guide** | [← Back to Methods Library](../getting-started/11-methods-library.md)
 
-## The Core Idea
+**Category:** Planning & Search
+**Best for:** Strategic games, creative writing with constraints, complex planning
+**Original paper:** ["Tree of Thoughts: Deliberate Problem Solving with Large Language Models" (Yao et al., 2023)](https://arxiv.org/abs/2305.10601)
 
-If Chain-of-Thought is a single line of reasoning, Tree of Thoughts is a decision tree. The model generates multiple possible "next steps" (thoughts), evaluates each one (self-assessment), and decides which path to continue.
+This is a **detailed implementation guide** with direct paper quotes, production patterns, and analysis for integrating Tree of Thoughts into your workflows.
 
-This mimics how humans solve puzzles (like Crosswords or 24 Game): "If I put 'A' here, does it fit? No, let me try 'B' instead."
+---
 
-> "ToT allows LMs to perform deliberate decision making by considering multiple different reasoning paths and self-evaluating choices to decide the next course of action." — *Yao et al. (2023)*
+## 1. Core Idea
 
-## Production Implementation
+Tree of Thoughts (ToT) generalizes Chain-of-Thought by allowing the model to explore multiple reasoning paths (thoughts) simultaneously. It treats problem solving as a search over a tree, where each node is a partial solution ("thought"). The model generates potential next steps, evaluates them, and decides whether to explore further or backtrack.
 
-ToT usually requires an **orchestrator** (like a Python script or LangChain loop), not just a single prompt.
+> "ToT maintains a tree of thoughts, where each thought serves as an intermediate step... enables the LM to self-evaluate the progress intermediate thoughts make towards solving the problem." — *Yao et al., 2023*
 
-### The Algorithm
-1.  **Decomposition:** Break the problem into steps (e.g., "Write paragraph 1", "Write paragraph 2").
-2.  **Generation:** Generate 3-5 candidates for the current step.
-3.  **Evaluation:** Ask the LLM to score each candidate (e.g., "Is this coherent? Score 1-10").
-4.  **Selection:** Keep the best K candidates and repeat for the next step.
+## 2. Why It Matters for Production
 
-### Simplified Prompt-Based ToT
-You can approximate ToT in a single prompt for simpler tasks:
+Chain-of-Thought is linear and cannot correct early mistakes. ToT enables "lookahead" and "backtracking," allowing the model to recover from errors and find global optima rather than getting stuck in local paths.
 
-```text
-Imagine three different experts are answering this question.
-All experts will write down 1 step of their thinking,
-then share it with the group.
-Then all experts will go on to the next step, etc.
-If any expert realizes they're wrong at any point then they leave.
-```
+*   **Solves Hard Problems:** Achieved 74% success in Game of 24 (vs 4% with CoT).
+*   **Structured Search:** Brings classical AI search algorithms (BFS, DFS) to LLMs.
 
-## Best For
-*   **Creative Writing:** Writing a story where the plot needs to be consistent.
-*   **Planning:** Itinerary generation, project scheduling.
-*   **Coding:** System architecture design where early choices constrain later ones.
+## 3. How It Works
 
-## Watch Out
-*   **High Latency:** Requires multiple calls to the LLM (generation + evaluation).
-*   **Complexity:** Harder to implement than CoT; usually needs code support.
-*   **Cost:** Can be 10x-100x more expensive than a single call.
+ToT involves four components:
+1.  **Thought Decomposition:** Break the problem into steps (e.g., writing a paragraph, solving an equation part).
+2.  **Thought Generator:** Generate $k$ candidate next steps.
+3.  **State Evaluator:** Evaluate each candidate state (e.g., "Sure/Maybe/Impossible" or a score 1-10).
+4.  **Search Algorithm:** Use Breadth-First Search (BFS) or Depth-First Search (DFS) to navigate the tree.
 
-## Reference
-*   **Paper:** Tree of Thoughts: Deliberate Problem Solving with Large Language Models
-*   **Authors:** Shunyu Yao, Dian Yu, Jeffrey Zhao, et al. (Princeton & Google DeepMind)
-*   **ArXiv:** [2305.10601](https://arxiv.org/abs/2305.10601)
+> "ToT allows LLMs to perform deliberate decision making by considering multiple different reasoning paths and self-evaluating choices to decide the next course of action." — *Yao et al., 2023*
+
+## 4. When to Use (and When Not To)
+
+| Use When | Avoid When |
+| :--- | :--- |
+| The problem requires planning or "lookahead" (e.g., Sudoku, Crosswords). | The task is linear or simple (e.g., translation). |
+| Initial decisions significantly impact future possibilities. | Latency constraints are tight (ToT is very slow). |
+| Standard CoT fails repeatedly. | Token budget is limited (ToT consumes massive tokens). |
+
+## 5. Implementation in PE Studio
+
+Full ToT usually requires an external controller (Python script) to manage the tree. However, you can simulate a **"Prompted ToT"** in PE Studio:
+
+1.  **Generator Prompting (Step-by-Step Evaluation):**
+    *   **Step 1:** "Generate 3 possible first steps for [Problem]." -> Output: A, B, C.
+    *   **Step 2:** "For each option A, B, C, evaluate if it is possible to reach the goal. Assign a score." -> Output: A(bad), B(good), C(maybe).
+    *   **Step 3:** "Select B. Now generate 3 possible next steps from B."
+    
+    *This manual "Human-in-the-loop" approach mimics the Search Algorithm.*
+
+2.  **Variables:**
+    *   Use variables to store the current "State" and inject it into the next prompt.
+
+## 6. Cost & Risk Considerations
+
+*   **Extreme Cost:** ToT can easily consume 100x the tokens of a standard call because it generates and evaluates multiple branches at every step.
+*   **Complexity:** Hard to implement purely via prompt engineering; usually requires code (like the `dspy` or `langchain` implementations).
+
+## 7. Advanced Techniques
+
+*   **ToT-DFS vs ToT-BFS:** DFS is better for finding *any* solution; BFS is better for finding the *best* solution.
+*   **Monte Carlo Tree Search (MCTS):** A more advanced version (e.g., in AlphaGo) can be applied if a rigorous reward signal exists.
+
+## 8. Links to Original Research
+
+*   [Tree of Thoughts: Deliberate Problem Solving with Large Language Models (arXiv)](https://arxiv.org/abs/2305.10601)
+*   [Official GitHub Repository (Princeton NLP)](https://github.com/princeton-nlp/tree-of-thoughts)
+
+## 9. Quick Reference Card
+
+| Feature | Details |
+| :--- | :--- |
+| **Acronym** | ToT |
+| **Key Phrase** | "Generate, Evaluate, Search" |
+| **Key Paper** | Yao et al. (Princeton/Google, 2023) |
+| **Cost Impact** | Extreme |
+| **Latency** | Very High |
+
+

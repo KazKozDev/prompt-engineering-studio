@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { api } from '../services/api';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -268,7 +269,7 @@ function MethodsLibraryPanel({ onOpenMethodNote }: { onOpenMethodNote: (article:
                 id={card.id}
                 className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 flex gap-4 hover:border-white/20 transition-colors scroll-mt-24"
               >
-                <div className="w-12 h-12 shrink-0 rounded-xl bg-white/[0.05] flex items-center justify-center text-[11px] font-semibold text-white/75 border border-white/5">
+                <div className="w-12 h-12 shrink-0 rounded-xl bg-white/[0.05] flex items-center justify-center px-1 text-[10px] leading-none text-center font-semibold text-white/75 border border-white/5">
                   {card.acronym}
                 </div>
                 <div className="flex-1 min-w-0 space-y-3">
@@ -393,7 +394,8 @@ export function Help() {
     try {
       // Proxy through backend docs API (single source of truth in docs/)
       const apiPath = docPath.startsWith('/docs/') ? docPath.replace('/docs/', '') : docPath;
-      const response = await fetch(`/api/docs/${apiPath}?v=${new Date().getTime()}`);
+      const baseURL = (api as any).baseURL || 'http://localhost:8000';
+      const response = await fetch(`${baseURL}/api/docs/${apiPath}?v=${new Date().getTime()}`);
       if (!response.ok) throw new Error('Failed to load article');
       const content = await response.text();
       setArticleContent(content);

@@ -51,10 +51,12 @@ ENV/
 
 # User data (keep structure, ignore content)
 data/datasets/*.json
+data/datasets/*.jsonl
 data/history/*.json
 data/cache/
 data/outputs/
 data/embeddings/
+*.jsonl
 
 # Keep example datasets
 !data/datasets/examples/
