@@ -346,7 +346,7 @@ function MethodsLibraryPanel({ onOpenMethodNote }: { onOpenMethodNote: (article:
           </div>
 
           <p className="text-[11px] text-white/40 pt-4 text-center">
-            More methods (ReAct, RAG, DSPy Profiles) coming soon.
+            More methods coming soon.
           </p>
         </div>
       </div>
