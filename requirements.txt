@@ -1,17 +1,22 @@
 black>=24.0.0
 ruff>=0.4.0
+
 anthropic>=0.25.0
 openai>=1.0.0
 tiktoken>=0.6.0
 pyyaml>=6.0.0
 python-dotenv>=1.0.0
-pytest>=8.0.0
-pytest-cov>=4.0.0
-google-generativeai>=0.4.0
 requests>=2.31.0
 fastapi>=0.104.0
 uvicorn>=0.24.0
 pydantic>=2.0.0
+numpy>=1.24.0
+
+pytest>=8.0.0
+pytest-cov>=4.0.0
+
+google-generativeai>=0.4.0
+
 datasets>=2.19.0
 huggingface_hub>=0.24.0
 
@@ -19,4 +24,12 @@ huggingface_hub>=0.24.0
 sentence-transformers>=2.2.0
 transformers>=4.30.0
 torch>=2.0.0
-numpy>=1.24.0
+
+# LangChain / LangGraph stack
+langchain-core>=1.1.0
+langchain-openai>=1.1.0
+langgraph>=1.0.0
+
+# Extra libraries from actual imports
+dspy>=3.0.0
+protobuf>=3.20.0,<5.0.0

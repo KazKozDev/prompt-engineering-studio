@@ -1,0 +1,24 @@
+version: "3.9"
+
+services:
+  backend:
+    build: .
+    container_name: pes-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: pes-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+    depends_on:
+      - backend
+    restart: unless-stopped
