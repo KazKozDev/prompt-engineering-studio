@@ -1,17 +1,9 @@
 # Prompt Engineering Studio
 
-<p>
-  <a href="https://github.com/KazKozDev/prompt-engineering-studio/actions/workflows/ci.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/KazKozDev/prompt-engineering-studio/ci.yml?style=flat-square&label=CI" />
-  </a>
-  <img src="https://img.shields.io/badge/Python-526E87?style=flat-square&logo=python&logoColor=white" />
-  <img src="https://img.shields.io/badge/TypeScript-547696?style=flat-square&logo=typescript&logoColor=white" />
-  <img src="https://img.shields.io/badge/PyTorch-9E5C4B?style=flat-square&logo=pytorch&logoColor=white" />
-  <img src="https://img.shields.io/badge/LangChain-455A64?style=flat-square&logo=chainlink&logoColor=white" />
-  <img src="https://img.shields.io/badge/LangGraph-455A64?style=flat-square&logo=diagram&logoColor=white" />
-  <img src="https://img.shields.io/badge/License-MIT-4CAF50?style=flat-square" />
-  <img src="https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker&logoColor=white" />
-</p>
+[![CI](https://github.com/KazKozDev/prompt-engineering-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/KazKozDev/prompt-engineering-studio/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/python-3.12+-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Docker](https://img.shields.io/badge/docker-ready-2496ED.svg)
 
 Local-first workbench for designing, evaluating, and deploying LLM prompts with scientific rigor.
 
