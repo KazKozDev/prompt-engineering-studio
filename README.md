@@ -146,7 +146,24 @@ prompt-engineering-studio/
 git clone https://github.com/KazKozDev/prompt-engineering-studio.git
 cd prompt-engineering-studio
 
-# Backend setup
+# Preferred: use virtualenv + Makefile
+make install      # creates .venv, installs Python deps
+make test         # run backend tests
+
+# Configure providers (create .env file)
+cp .env.example .env
+# Add your API keys: OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY
+
+# Start full app (backend + frontend)
+make dev
+```
+
+Application will open at `http://localhost:5173`
+
+### Manual Backend / Frontend Setup (Alternative)
+
+```bash
+# Backend setup (without Makefile)
 pip install -r requirements.txt
 
 # Optional: Install advanced evaluation metrics
@@ -158,10 +175,6 @@ cd frontend
 npm install
 cd ..
 
-# Configure providers (create .env file)
-cp .env.example .env
-# Add your API keys: OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY
-
 # Start application (macOS)
 ./start.command
 
@@ -169,8 +182,6 @@ cp .env.example .env
 # Terminal 1: python src/api_server.py
 # Terminal 2: cd frontend && npm run dev
 ```
-
-Application will open at `http://localhost:5173`
 
 ### Advanced Metrics (Optional)
 
@@ -274,6 +285,54 @@ pytest tests/
 - Type hints required for all functions
 - Google-style docstrings
 - Configuration externalized to YAML files
+
+### Local Tooling
+
+- **Virtualenv:**
+  - `.venv/` is used as the default virtual environment (not committed to git).
+  - Recommended workflow:
+    ```bash
+    make install   # create .venv and install Python deps
+    make test      # run backend tests via pytest
+    make dev       # start backend + frontend for local development
+    ```
+
+- **Backend only:**
+  ```bash
+  make backend
+  ```
+
+- **Frontend only:**
+  ```bash
+  make frontend
+  ```
+
+### Docker & Docker Compose
+
+- **Build backend image:**
+  ```bash
+  docker build -t prompt-engineering-studio-backend .
+  ```
+
+- **Run backend only:**
+  ```bash
+  docker run --rm -p 8000:8000 prompt-engineering-studio-backend
+  ```
+
+- **Run backend + frontend via Docker Compose:**
+  ```bash
+  docker compose up
+  ```
+
+  - Backend: http://localhost:8000
+  - Frontend: http://localhost:5173
+
+### Continuous Integration (GitHub Actions)
+
+- CI config: `.github/workflows/ci.yml`
+- On each push/PR to `main`:
+  - Runs Python tests via `pytest`.
+  - For `main` branch, additionally builds the backend Docker image (without pushing).
 
 ## Documentation
 
