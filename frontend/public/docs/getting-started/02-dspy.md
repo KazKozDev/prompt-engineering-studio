@@ -52,7 +52,7 @@ Manual prompt engineering is brittle. A prompt that works for GPT-4 might fail f
 3.  **Portability:** If you switch models, just re-run the orchestrator to get a new optimized prompt for the new model.
 
 ### The ReAct Agent
-The Orchestrator is driven by an AI agent that uses **Reasoning + Acting (ReAct)**.
+The Orchestrator is driven by a **LangChain-based AI agent** that uses **Reasoning + Acting (ReAct)**.
 *   It analyzes your request.
 *   It decides which DSPy module to use.
 *   It runs the compilation pipeline.
