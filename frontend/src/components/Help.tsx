@@ -20,6 +20,13 @@ const articleDocs: Record<string, string> = {
   'DSPy Guide': '/docs/getting-started/10-dspy-guide.md',
   'Methods Library': '/docs/getting-started/11-methods-library.md',
   'Self-Consistency': '/docs/methods/self-consistency.md',
+  'Chain-of-Thought': '/docs/methods/chain-of-thought.md',
+  'Tree of Thoughts': '/docs/methods/tree-of-thoughts.md',
+  'ReAct': '/docs/methods/react.md',
+  'RAG': '/docs/methods/rag.md',
+  'Chain-of-Verification': '/docs/methods/chain-of-verification.md',
+  'Step-Back Prompting': '/docs/methods/step-back.md',
+  'System 2 Attention': '/docs/methods/s2a.md',
 };
 
 // Article descriptions
@@ -35,6 +42,14 @@ const articleDescriptions: Record<string, string> = {
   'Help': 'Documentation and guides',
   'DSPy Guide': 'Complete guide to DSPy framework',
   'Methods Library': 'Production-focused summaries of prompting and evaluation methods',
+  'Self-Consistency': 'Guide to Self-Consistency method',
+  'Chain-of-Thought': 'Guide to Chain-of-Thought method',
+  'Tree of Thoughts': 'Guide to Tree of Thoughts method',
+  'ReAct': 'Guide to ReAct (Reasoning + Acting) method',
+  'RAG': 'Guide to Retrieval-Augmented Generation',
+  'Chain-of-Verification': 'Guide to Chain-of-Verification method',
+  'Step-Back Prompting': 'Guide to Step-Back Prompting method',
+  'System 2 Attention': 'Guide to System 2 Attention (S2A) method',
 };
 
 const categories = [
@@ -73,90 +88,265 @@ const categories = [
 // Flatten articles for next/prev navigation
 const allArticles = categories.flatMap(c => c.articles);
 
+// Methods Library Cards Configuration
+const METHOD_CARDS = [
+  {
+    id: 'chain-of-thought',
+    title: 'Chain-of-Thought',
+    acronym: 'CoT',
+    subtitle: 'Step-by-step reasoning for complex tasks',
+    tag: 'Reasoning',
+    description: 'Enables complex problem-solving by forcing the model to output intermediate reasoning steps before the final answer. Mimics human cognition by "thinking out loud".',
+    bestFor: [
+      'Math & Logic word problems',
+      'Complex classification with explanation',
+      'Code generation planning'
+    ],
+    watchOut: [
+      'Increases token usage and cost',
+      'Can hallucinate logic steps',
+      'Overkill for simple lookup tasks'
+    ],
+    paperLink: 'https://arxiv.org/abs/2201.11903',
+    articleId: 'Chain-of-Thought'
+  },
+  {
+    id: 'tree-of-thoughts',
+    title: 'Tree of Thoughts',
+    acronym: 'ToT',
+    subtitle: 'Deliberate problem solving with lookahead',
+    tag: 'Planning',
+    description: 'Generalizes Chain-of-Thought by allowing the model to explore multiple reasoning paths simultaneously, look ahead, and backtrack if necessary.',
+    bestFor: [
+      'Creative writing & plot generation',
+      'Strategic planning & scheduling',
+      'System architecture design'
+    ],
+    watchOut: [
+      'High latency (multiple calls)',
+      'Complex implementation (needs orchestrator)',
+      'Significantly higher cost'
+    ],
+    paperLink: 'https://arxiv.org/abs/2305.10601',
+    articleId: 'Tree of Thoughts'
+  },
+  {
+    id: 'self-consistency',
+    title: 'Self-Consistency',
+    acronym: 'SC',
+    subtitle: 'Reliable reasoning via majority vote',
+    tag: 'Consistency',
+    description: 'Instead of trusting a single chain-of-thought, the model samples several reasoning paths for the same question and picks the most frequent final answer.',
+    bestFor: [
+      'GSM8K / SVAMP style math problems',
+      'Commonsense reasoning',
+      'Offline evaluations'
+    ],
+    watchOut: [
+      'Higher cost (multiple samples)',
+      'Not for single-label classification',
+      'Longer latency'
+    ],
+    paperLink: 'https://arxiv.org/abs/2203.11171',
+    articleId: 'Self-Consistency'
+  },
+  {
+    id: 'react',
+    title: 'ReAct',
+    acronym: 'ReAct',
+    subtitle: 'Synergizing Reasoning and Acting',
+    tag: 'Agents',
+    description: 'Combines Chain-of-Thought reasoning with the ability to take actions (like searching the web). The model runs a loop: Thought -> Action -> Observation -> Thought.',
+    bestFor: [
+      'Autonomous agents & assistants',
+      'Tasks requiring up-to-date info',
+      'Tool use (APIs, Databases)'
+    ],
+    watchOut: [
+      'Can get stuck in infinite loops',
+      'High latency (LLM + Tool calls)',
+      'Context window fills up quickly'
+    ],
+    paperLink: 'https://arxiv.org/abs/2210.03629',
+    articleId: 'ReAct'
+  },
+  {
+    id: 'rag',
+    title: 'RAG',
+    acronym: 'RAG',
+    subtitle: 'Retrieval-Augmented Generation',
+    tag: 'Knowledge',
+    description: 'Improves generation by retrieving relevant documents from an external knowledge base and feeding them to the LLM along with the question.',
+    bestFor: [
+      'Q&A over internal documents',
+      'Customer support bots',
+      'Reducing hallucinations'
+    ],
+    watchOut: [
+      'Retrieval quality is critical',
+      'Limited context window',
+      '"Lost in the middle" phenomenon'
+    ],
+    paperLink: 'https://arxiv.org/abs/2005.11401',
+    articleId: 'RAG'
+  },
+  {
+    id: 'chain-of-verification',
+    title: 'Chain-of-Verification',
+    acronym: 'CoVe',
+    subtitle: 'Trust, but verify',
+    tag: 'Factuality',
+    description: 'Reduces hallucinations by forcing the model to draft an answer, plan verification questions to check its own work, answer them, and then produce a final verified response.',
+    bestFor: [
+      'Fact-heavy list generation',
+      'Biography writing',
+      'High-stakes domains (Medical/Legal)'
+    ],
+    watchOut: [
+      ' significantly higher latency (4x)',
+      'Can hallucinate verification answers',
+      'Complex pipeline implementation'
+    ],
+    paperLink: 'https://arxiv.org/abs/2309.11495',
+    articleId: 'Chain-of-Verification'
+  },
+  {
+    id: 'step-back',
+    title: 'Step-Back Prompting',
+    acronym: 'Step-Back',
+    subtitle: 'Evoking reasoning via abstraction',
+    tag: 'Abstraction',
+    description: 'Improves reasoning by asking the model to first answer a high-level, abstract version of the question before tackling the specific details.',
+    bestFor: [
+      'Complex QA with obscure facts',
+      'Physics/Science problems',
+      'History & Multi-hop reasoning'
+    ],
+    watchOut: [
+      'Step-back question might be too broad',
+      'Adds an extra generation step',
+      'Requires careful prompt tuning'
+    ],
+    paperLink: 'https://arxiv.org/abs/2310.06117',
+    articleId: 'Step-Back Prompting'
+  },
+  {
+    id: 's2a',
+    title: 'System 2 Attention',
+    acronym: 'S2A',
+    subtitle: 'Focus on what matters',
+    tag: 'Attention',
+    description: 'Improves accuracy by asking the LLM to rewrite the input context, removing irrelevant or distracting information, before attempting to answer.',
+    bestFor: [
+      'RAG with noisy chunks',
+      'Long context window tasks',
+      'Removing bias/opinions'
+    ],
+    watchOut: [
+      'Can accidentally remove important details',
+      'Consumes more tokens (rewrite step)',
+      'Slower than standard prompting'
+    ],
+    paperLink: 'https://arxiv.org/abs/2311.11829',
+    articleId: 'System 2 Attention'
+  }
+];
+
 function MethodsLibraryPanel({ onOpenMethodNote }: { onOpenMethodNote: (article: string) => void }) {
   return (
     <div className="p-6">
-      <div className="max-w-5xl space-y-6">
-        <div className="space-y-3">
+      <div className="max-w-5xl space-y-8">
+        <div className="space-y-4">
           <div className="text-[10px] font-bold text-white/35 uppercase tracking-[0.18em]">
-            Reasoning &amp; Consistency
+            Production Methods
           </div>
 
-          {/* Self-Consistency card */}
-          <div
-            id="self-consistency-sc"
-            className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 flex gap-3"
-          >
-            <div className="w-12 h-12 rounded-xl bg-white/[0.05] flex items-center justify-center text-[11px] font-semibold text-white/75">
-              SC
-            </div>
-            <div className="flex-1 min-w-0 space-y-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="text-sm font-semibold text-white/90">
-                    Self-Consistency
-                  </div>
-                  <div className="text-[11px] text-white/40">
-                    Reliable chain-of-thought reasoning via majority vote
-                  </div>
+          <div className="grid grid-cols-1 gap-4">
+            {METHOD_CARDS.map((card) => (
+              <div
+                key={card.id}
+                id={card.id}
+                className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 flex gap-4 hover:border-white/20 transition-colors scroll-mt-24"
+              >
+                <div className="w-12 h-12 shrink-0 rounded-xl bg-white/[0.05] flex items-center justify-center text-[11px] font-semibold text-white/75 border border-white/5">
+                  {card.acronym}
                 </div>
-                <div className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 border border-white/15 text-white/50">
-                  Consistency tab
+                <div className="flex-1 min-w-0 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-semibold text-white/90">
+                        {card.title}
+                      </div>
+                      <div className="text-[11px] text-white/40">
+                        {card.subtitle}
+                      </div>
+                    </div>
+                    <div className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 border border-white/15 text-white/50">
+                      {card.tag}
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-white/65 leading-relaxed">
+                    {card.description}
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[11px] text-white/60 bg-black/20 rounded-lg p-3 border border-white/5">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-[0.18em] text-emerald-400/50 mb-1.5 flex items-center gap-1.5">
+                        <div className="w-1 h-1 rounded-full bg-emerald-500/50"></div>
+                        Best for
+                      </div>
+                      <ul className="space-y-1">
+                        {card.bestFor.map((item, i) => (
+                          <li key={i} className="flex gap-2 text-white/50">
+                            <span>•</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase tracking-[0.18em] text-rose-400/50 mb-1.5 flex items-center gap-1.5">
+                        <div className="w-1 h-1 rounded-full bg-rose-500/50"></div>
+                        Watch out
+                      </div>
+                      <ul className="space-y-1">
+                        {card.watchOut.map((item, i) => (
+                          <li key={i} className="flex gap-2 text-white/50">
+                            <span>•</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 text-[11px] pt-1">
+                    <a
+                      href={card.paperLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-3 py-1.5 rounded-lg border border-white/10 bg-white/[0.03] text-white/60 hover:border-white/30 hover:text-white transition-all flex items-center gap-2 group"
+                    >
+                      <span>ArXiv Paper</span>
+                      <svg className="w-3 h-3 opacity-50 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => onOpenMethodNote(card.articleId)}
+                      className="px-3 py-1.5 rounded-lg border border-white/10 bg-white/[0.03] text-white/80 hover:border-white/30 hover:text-white hover:bg-white/5 transition-all flex items-center gap-2"
+                    >
+                      <span>Read Method Note</span>
+                      <svg className="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                    </button>
+                  </div>
                 </div>
               </div>
-
-              <p className="text-[11px] text-white/65 leading-relaxed">
-                Instead of trusting a single chain-of-thought, the model samples several reasoning paths for the same question and
-                picks the most frequent final answer. This often brings large gains on math and logic benchmarks when you can afford
-                extra cost.
-              </p>
-
-              <div className="grid grid-cols-2 gap-3 text-[11px] text-white/60">
-                <div>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-white/35 mb-1">
-                    Best for
-                  </div>
-                  <ul className="space-y-0.5 list-disc list-inside marker:text-white/35">
-                    <li>GSM8K / SVAMP / AQuA-style math word problems</li>
-                    <li>Commonsense reasoning (StrategyQA, ARC-Challenge)</li>
-                    <li>Offline evaluations and A/B tests</li>
-                  </ul>
-                </div>
-                <div>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-white/35 mb-1">
-                    Watch out
-                  </div>
-                  <ul className="space-y-0.5 list-disc list-inside marker:text-white/35">
-                    <li>Each query uses many samples → higher cost</li>
-                    <li>Not needed for simple single-label classification</li>
-                    <li>Longer latency on real-time endpoints</li>
-                  </ul>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-2 text-[11px]">
-                <a
-                  href="https://arxiv.org/abs/2203.11171"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-2.5 py-1 rounded-lg border border-white/10 bg-white/[0.03] text-white/70 hover:border-white/30 hover:text-white transition-colors"
-                >
-                  Open paper
-                </a>
-                <button
-                  type="button"
-                  onClick={() => onOpenMethodNote('Self-Consistency')}
-                  className="px-2.5 py-1 rounded-lg border border-white/10 bg-white/[0.03] text-white/70 hover:border-white/30 hover:text-white transition-colors"
-                >
-                  Read method note
-                </button>
-              </div>
-            </div>
+            ))}
           </div>
 
-          <p className="text-[11px] text-white/40">
-            Additional methods (Chain-of-Thought, PromptRobust, G-Eval, DSPy profiles) will appear here as production notes are
-            finalized.
+          <p className="text-[11px] text-white/40 pt-4 text-center">
+            More methods (ReAct, RAG, DSPy Profiles) coming soon.
           </p>
         </div>
       </div>
@@ -331,127 +521,136 @@ export function Help() {
               <div className="p-6">
                 <div className="max-w-5xl">
                   {isLoading ? (
-                  <div className="flex flex-col items-center justify-center py-32 gap-4">
-                    <div className="relative w-12 h-12">
-                      <div className="absolute inset-0 border-4 border-white/10 rounded-full"></div>
-                      <div className="absolute inset-0 border-4 border-transparent border-t-white/60 rounded-full animate-spin"></div>
+                    <div className="flex flex-col items-center justify-center py-32 gap-4">
+                      <div className="relative w-12 h-12">
+                        <div className="absolute inset-0 border-4 border-white/10 rounded-full"></div>
+                        <div className="absolute inset-0 border-4 border-transparent border-t-white/60 rounded-full animate-spin"></div>
+                      </div>
+                      <span className="text-sm text-white/50 font-medium animate-pulse">Loading article...</span>
                     </div>
-                    <span className="text-sm text-white/50 font-medium animate-pulse">Loading article...</span>
-                  </div>
                   ) : (
-                  <article className="prose prose-invert max-w-3xl mb-32">
-                    {/* Breadcrumbs */}
-                    <div className="flex items-center gap-2 text-xs mb-6">
-                      <button
-                        onClick={handleBack}
-                        className="text-white/40 hover:text-white transition-colors"
-                      >
-                        Documentation
-                      </button>
-                      <svg className="w-2.5 h-2.5 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                      <span className="text-white/40">
-                        {categories.find(c => c.articles.includes(selectedArticle))?.title}
-                      </span>
-                      <svg className="w-2.5 h-2.5 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                      <span className="text-white/60">{selectedArticle}</span>
-                    </div>
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      components={{
-                        h1: () => null,
-                        h2: ({ node, children, ...props }) => {
-                          const id = String(children).toLowerCase().replace(/[^\w]+/g, '-');
-                          return <h2 id={id} className="text-lg font-semibold text-white mt-10 mb-4 scroll-mt-20 first:mt-0" {...props}>{children}</h2>;
-                        },
-                        h3: ({ node, children, ...props }) => {
-                          const id = String(children).toLowerCase().replace(/[^\w]+/g, '-');
-                          return <h3 id={id} className="text-sm font-semibold text-white/90 mt-6 mb-2 scroll-mt-20" {...props}>{children}</h3>;
-                        },
-                        p: ({ node, ...props }) => <p className="text-sm text-white/50 leading-relaxed mb-4" {...props} />,
-                        ul: ({ node, ...props }) => <ul className="space-y-2 mb-4" {...props} />,
-                        ol: ({ node, ...props }) => <ol className="space-y-2 mb-4 list-decimal list-inside marker:text-white/40" {...props} />,
-                        li: ({ node, children, ...props }) => (
-                          <li className="text-sm text-white/50 leading-relaxed flex gap-2" {...props}>
-                            <span className="text-white/30 mt-1.5">•</span>
-                            <span>{children}</span>
-                          </li>
-                        ),
-                        a: ({ node, href, children, ...props }) => {
-                          const childNode = Array.isArray(children) ? children[0] : children;
-                          const text = typeof childNode === 'string' ? childNode : String(childNode ?? '');
-                          const isNumericRef = /^\d+$/.test(text.trim());
+                    <article className="prose prose-invert max-w-3xl mb-32">
+                      {/* Breadcrumbs */}
+                      <div className="flex items-center gap-2 text-xs mb-6">
+                        <button
+                          onClick={handleBack}
+                          className="text-white/40 hover:text-white transition-colors"
+                        >
+                          Documentation
+                        </button>
+                        <svg className="w-2.5 h-2.5 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                        {METHOD_CARDS.some(c => c.articleId === selectedArticle) ? (
+                          <button
+                            onClick={() => handleArticleClick('Methods Library')}
+                            className="text-white/40 hover:text-white transition-colors"
+                          >
+                            Methods Library
+                          </button>
+                        ) : (
+                          <span className="text-white/40">
+                            {categories.find(c => c.articles.includes(selectedArticle))?.title}
+                          </span>
+                        )}
+                        <svg className="w-2.5 h-2.5 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                        <span className="text-white/60">{selectedArticle}</span>
+                      </div>
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          h1: () => null,
+                          h2: ({ node, children, ...props }) => {
+                            const id = String(children).toLowerCase().replace(/[^\w]+/g, '-');
+                            return <h2 id={id} className="text-lg font-semibold text-white mt-10 mb-4 scroll-mt-20 first:mt-0" {...props}>{children}</h2>;
+                          },
+                          h3: ({ node, children, ...props }) => {
+                            const id = String(children).toLowerCase().replace(/[^\w]+/g, '-');
+                            return <h3 id={id} className="text-sm font-semibold text-white/90 mt-6 mb-2 scroll-mt-20" {...props}>{children}</h3>;
+                          },
+                          p: ({ node, ...props }) => <p className="text-sm text-white/50 leading-relaxed mb-4" {...props} />,
+                          ul: ({ node, ...props }) => <ul className="space-y-2 mb-4" {...props} />,
+                          ol: ({ node, ...props }) => <ol className="space-y-2 mb-4 list-decimal list-inside marker:text-white/40" {...props} />,
+                          li: ({ node, children, ...props }) => (
+                            <li className="text-sm text-white/50 leading-relaxed flex gap-2" {...props}>
+                              <span className="text-white/30 mt-1.5">•</span>
+                              <span>{children}</span>
+                            </li>
+                          ),
+                          a: ({ node, href, children, ...props }) => {
+                            const childNode = Array.isArray(children) ? children[0] : children;
+                            const text = typeof childNode === 'string' ? childNode : String(childNode ?? '');
+                            const isNumericRef = /^\d+$/.test(text.trim());
 
-                          if (isNumericRef) {
+                            if (isNumericRef) {
+                              return (
+                                <sup>
+                                  <a
+                                    href={href}
+                                    className="text-white/40 hover:text-white/70 text-[10px] no-underline align-super"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    {...props}
+                                  >
+                                    {text}
+                                  </a>
+                                </sup>
+                              );
+                            }
+
                             return (
-                              <sup>
-                                <a
-                                  href={href}
-                                  className="text-white/40 hover:text-white/70 text-[10px] no-underline align-super"
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  {...props}
-                                >
-                                  {text}
-                                </a>
-                              </sup>
+                              <a
+                                href={href}
+                                className="text-white/60 hover:text-white underline underline-offset-2"
+                                target="_blank"
+                                rel="noreferrer"
+                                {...props}
+                              >
+                                {children}
+                              </a>
                             );
-                          }
-
-                          return (
-                            <a
-                              href={href}
-                              className="text-white/60 hover:text-white underline underline-offset-2"
-                              target="_blank"
-                              rel="noreferrer"
-                              {...props}
-                            >
-                              {children}
-                            </a>
-                          );
-                        },
-                        blockquote: ({ children }: any) => (
-                          <div className="border-l-2 border-white/20 pl-4 my-4 text-sm text-white/40 italic">{children}</div>
-                        ),
-                        code: ({ inline, children }: any) => {
-                          return !inline ? (
-                            <div className="my-4 rounded bg-white/5 border border-white/10">
-                              <pre className="p-3 overflow-x-auto">
-                                <code className="font-mono text-xs text-white/60">{children}</code>
-                              </pre>
+                          },
+                          blockquote: ({ children }: any) => (
+                            <div className="border-l-2 border-white/20 pl-4 my-4 text-sm text-white/40 italic">{children}</div>
+                          ),
+                          code: ({ inline, children }: any) => {
+                            return !inline ? (
+                              <div className="my-4 rounded bg-white/5 border border-white/10">
+                                <pre className="p-3 overflow-x-auto">
+                                  <code className="font-mono text-xs text-white/60">{children}</code>
+                                </pre>
+                              </div>
+                            ) : (
+                              <code className="bg-white/10 text-white/70 px-1 py-0.5 rounded text-xs font-mono">{children}</code>
+                            );
+                          },
+                          table: ({ node, ...props }) => (
+                            <div className="overflow-x-auto my-6 rounded-xl border border-white/10 bg-black/30">
+                              <table className="w-full text-left text-sm border-collapse" {...props} />
                             </div>
-                          ) : (
-                            <code className="bg-white/10 text-white/70 px-1 py-0.5 rounded text-xs font-mono">{children}</code>
-                          );
-                        },
-                        table: ({ node, ...props }) => (
-                          <div className="overflow-x-auto my-6 rounded-xl border border-white/10 bg-black/30">
-                            <table className="w-full text-left text-sm border-collapse" {...props} />
-                          </div>
-                        ),
-                        th: ({ node, ...props }) => (
-                          <th
-                            className="bg-white/10 border-b border-white/15 px-4 py-3 text-[11px] font-semibold text-white/70 uppercase tracking-wide align-top text-left"
-                            {...props}
-                          />
-                        ),
-                        td: ({ node, ...props }) => (
-                          <td
-                            className="border-b border-white/5 px-4 py-3 text-sm text-white/60 align-top text-left"
-                            {...props}
-                          />
-                        ),
-                        hr: () => <hr className="border-white/10 my-8" />,
-                        strong: ({ node, ...props }) => <strong className="text-white/70 font-medium" {...props} />,
-                      }}
-                    >
-                      {articleContent}
-                    </ReactMarkdown>
+                          ),
+                          th: ({ node, ...props }) => (
+                            <th
+                              className="bg-white/10 border-b border-white/15 px-4 py-3 text-[11px] font-semibold text-white/70 uppercase tracking-wide align-top text-left"
+                              {...props}
+                            />
+                          ),
+                          td: ({ node, ...props }) => (
+                            <td
+                              className="border-b border-white/5 px-4 py-3 text-sm text-white/60 align-top text-left"
+                              {...props}
+                            />
+                          ),
+                          hr: () => <hr className="border-white/10 my-8" />,
+                          strong: ({ node, ...props }) => <strong className="text-white/70 font-medium" {...props} />,
+                        }}
+                      >
+                        {articleContent}
+                      </ReactMarkdown>
 
-                  </article>
+                    </article>
                   )}
                 </div>
               </div>
@@ -462,45 +661,45 @@ export function Help() {
                 {categories
                   .filter(cat => cat.title !== 'Resources')
                   .map((cat) => (
-                  <div
-                    key={cat.title}
-                    className="bg-white/[0.02] border border-white/10 rounded-2xl p-5 space-y-4 hover:border-white/20 transition-all duration-300 hover:shadow-lg hover:shadow-black/20"
-                  >
-                    {/* Category Header */}
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-white/5 text-white/90 flex items-center justify-center text-2xl font-bold">
-                        {cat.number}
+                    <div
+                      key={cat.title}
+                      className="bg-white/[0.02] border border-white/10 rounded-2xl p-5 space-y-4 hover:border-white/20 transition-all duration-300 hover:shadow-lg hover:shadow-black/20"
+                    >
+                      {/* Category Header */}
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-xl bg-white/5 text-white/90 flex items-center justify-center text-2xl font-bold">
+                          {cat.number}
+                        </div>
+                        <div>
+                          <h3 className="text-base font-semibold text-white">{cat.title}</h3>
+                          <p className="text-[11px] text-white/40">{cat.description}</p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="text-base font-semibold text-white">{cat.title}</h3>
-                        <p className="text-[11px] text-white/40">{cat.description}</p>
-                      </div>
-                    </div>
 
-                    {/* Articles Grid */}
-                    <div className="space-y-2">
-                      {cat.articles.map((article) => (
-                        <button
-                          key={article}
-                          onClick={() => handleArticleClick(article)}
-                          className="w-full group flex items-center gap-3 py-2 px-3 rounded-xl bg-black/20 border border-white/5 hover:bg-black/40 hover:border-white/10 transition-all duration-200"
-                        >
-                          <div className="flex-1 text-left">
-                            <div className="text-sm font-medium text-white/80 group-hover:text-white transition-colors">
-                              {article}
+                      {/* Articles Grid */}
+                      <div className="space-y-2">
+                        {cat.articles.map((article) => (
+                          <button
+                            key={article}
+                            onClick={() => handleArticleClick(article)}
+                            className="w-full group flex items-center gap-3 py-2 px-3 rounded-xl bg-black/20 border border-white/5 hover:bg-black/40 hover:border-white/10 transition-all duration-200"
+                          >
+                            <div className="flex-1 text-left">
+                              <div className="text-sm font-medium text-white/80 group-hover:text-white transition-colors">
+                                {article}
+                              </div>
+                              <div className="text-[11px] text-white/30 group-hover:text-white/50 transition-colors">
+                                {articleDescriptions[article]}
+                              </div>
                             </div>
-                            <div className="text-[11px] text-white/30 group-hover:text-white/50 transition-colors">
-                              {articleDescriptions[article]}
-                            </div>
-                          </div>
-                          <svg className="w-4 h-4 text-white/20 group-hover:text-white/50 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </button>
-                      ))}
+                            <svg className="w-4 h-4 text-white/20 group-hover:text-white/50 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </div>
           )}
@@ -520,16 +719,31 @@ export function Help() {
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
-          {selectedArticle && !isLoading && toc.length > 0 ? (
+          {selectedArticle === 'Methods Library' ? (
+            <div className="space-y-1">
+              {METHOD_CARDS.map((card) => (
+                <a
+                  key={card.id}
+                  href={`#${card.id}`}
+                  className="block px-3 py-1.5 text-xs font-medium rounded-lg transition-colors hover:bg-white/5 hover:text-white text-white/60"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById(card.id)?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                >
+                  {card.title} <span className="text-white/30 ml-1">({card.acronym})</span>
+                </a>
+              ))}
+            </div>
+          ) : selectedArticle && !isLoading && toc.length > 0 ? (
             /* Table of Contents for selected article */
             <div className="space-y-1">
               {toc.map((item, i) => (
                 <a
                   key={i}
                   href={`#${item.id}`}
-                  className={`block px-3 py-1.5 text-xs font-medium rounded-lg transition-colors hover:bg-white/5 hover:text-white ${
-                    item.level === 3 ? 'ml-3 text-white/40' : 'text-white/60'
-                  }`}
+                  className={`block px-3 py-1.5 text-xs font-medium rounded-lg transition-colors hover:bg-white/5 hover:text-white ${item.level === 3 ? 'ml-3 text-white/40' : 'text-white/60'
+                    }`}
                   onClick={(e) => {
                     e.preventDefault();
                     document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' });

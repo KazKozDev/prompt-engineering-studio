@@ -79,10 +79,10 @@ function App() {
   useEffect(() => {
     const initApp = async () => {
       await loadModels(settings.provider);
-      // Show splash screen for 2 seconds
+      // Show splash screen for 1 second
       setTimeout(() => {
         setIsLoading(false);
-      }, 2000);
+      }, 1000);
     };
     initApp();
   }, []);
@@ -152,9 +152,9 @@ function App() {
             </div>
 
             {/* Spinner */}
-            <div className="relative w-12 h-12 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-              <div className="absolute inset-0 border-4 border-white/10 rounded-full"></div>
-              <div className="absolute inset-0 border-4 border-transparent border-t-white/60 rounded-full animate-spin"></div>
+            <div className="relative w-8 h-8 animate-slide-up" style={{ animationDelay: '0.2s' }}>
+              <div className="absolute inset-0 border-2 border-white/10 rounded-full"></div>
+              <div className="absolute inset-0 border-2 border-transparent border-t-white/60 rounded-full animate-spin"></div>
             </div>
           </div>
         </div>
@@ -271,7 +271,7 @@ function App() {
         <div style={{ display: activeSection === 'Evaluation Lab' ? 'block' : 'none', height: '100%' }}>
           <EvaluationLab settings={settings} promptToEvaluate={promptToEvaluate} onSaveEvaluation={handleSaveEvaluation} />
         </div>
-{/* Production Metrics hidden for now
+        {/* Production Metrics hidden for now
         <div style={{ display: activeSection === 'Production Metrics' ? 'block' : 'none', height: '100%' }}>
           <ProductionMetrics />
         </div>
