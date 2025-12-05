@@ -49,7 +49,7 @@ Prompt Engineering Studio is a production-grade tool for systematic prompt devel
 ### 2. DSPy Orchestrator (Dedicated Optimization Layer)
 - Dedicated DSPy-powered programs for prompt and LLM pipeline optimization
 - LangChain-based agent for task analysis and technique suggestion
-- Multi-provider support (GPT-4, Claude, Gemini, Ollama)
+- Multi-provider support (OpenAI, Claude, Gemini, Ollama)
 - Iterative refinement with configurable strategies, separate from but compatible with Evaluation Lab
 
 ### 3. Dataset Manager
