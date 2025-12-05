@@ -27,22 +27,22 @@ jobs:
       - name: Run tests
         run: pytest
 
-  docker-build:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+  # docker-build:
+  #   needs: test
+  #   runs-on: ubuntu-latest
+  #   if: github.ref == 'refs/heads/main'
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+  #     - name: Set up Docker Buildx
+  #       uses: docker/setup-buildx-action@v3
 
-      - name: Build backend image
-        continue-on-error: true
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: false
-          tags: pes-backend:ci
+  #     - name: Build backend image
+  #       continue-on-error: true
+  #       uses: docker/build-push-action@v6
+  #       with:
+  #         context: .
+  #         push: false
+  #         tags: pes-backend:ci
