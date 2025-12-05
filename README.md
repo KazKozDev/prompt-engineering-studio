@@ -2,6 +2,13 @@
 
 Local-first workbench for designing, evaluating, and deploying LLM prompts with scientific rigor.
 
+## Why This Project
+
+- **End-to-end workflow**: from prompt generation to systematic evaluation and deployment in a single tool.
+- **Evaluation Lab as the core**: one place for Quality, Consistency, and Robustness testing, powered by advanced metrics (BERTScore, perplexity, semantic similarity).
+- **DSPy as the optimization engine**: automatic prompt optimization using DSPy, LangChain, and multi-provider LLM support.
+- **Production-minded design**: caching, evaluation history, regression detection, Docker, CI, and a clean architecture that’s easy to extend.
+
 ## Overview
 
 
